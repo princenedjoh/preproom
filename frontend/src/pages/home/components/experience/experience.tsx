@@ -1,107 +1,51 @@
-import { images } from '../../../../assets'
-import * as i from '../../../../utils/defaultImports'
-import * as experienceStyle from './experirence.style'
-import { GiPowerLightning } from "react-icons/gi";
+import * as homeStyle from '../../home.styled'
+
+const steps = [
+    {
+        number : '01',
+        title : 'Pick your course',
+        text : 'Choose your programme and the courses you are writing this semester.',
+    },
+    {
+        number : '02',
+        title : 'Practice by topic',
+        text : 'Filter questions by topic and difficulty, then check your answer and the explanation.',
+    },
+    {
+        number : '03',
+        title : 'Test yourself on the clock',
+        text : 'Run a timed mock test, review what you missed and track how you are improving.',
+    },
+]
 
 const Experience = () => {
-
-    const [data, setData] = i.useState([
-        {
-            image : images.gradHat,
-            title : 'Boost your performance',
-            text : 'Leverage detailed insights to focus your efforts on areas that need improvements',
-            color : i.theme.colors2.main.primary
-        },
-        {
-            image : images.cert,
-            title : 'Personalize your studies',
-            text : 'Tailor your study sessions by selecting specific topics, setting study goals and creating a personalized study plan',
-            color : i.theme.colors2.orange.orange3
-        },
-        {
-            image : images.smartPhone,
-            title : 'Study anytime anywhere',
-            text : 'Access PrepRoom on your favorite device, allowing you to study on the go.',
-            color : i.theme.colors2.green.green3
-        },
-    ])
-
     return (
-        <experienceStyle.Main>
-            <i.Flex 
-                direction='column'
-                width={`${i.minimumWidth}px`}
-                align='center'
-            >
-                <i.Flex
-                    direction='column'
-                    width='fit-content'
-                    align='center'
-                    gap={5}
-                >
-                    <i.Flex
-                        width='fit-content'
-                        background={`${i.theme.colors2.main.primary}0d`}
-                        padding='15px'
-                        rounded='50%'
-                    >
-                        <GiPowerLightning
-                            color={i.theme.colors2.main.primary}
-                            size={26}
-                        />
-                    </i.Flex>
-                    <i.AppTypography
-                        size={i.TypographySize.lg2}
-                        bold={i.TypographyBold.md}
-                        textColor={i.theme.colors2.main.primary}
-                    >
-                        Experience the power of PrepRoom
-                    </i.AppTypography>
-                </i.Flex>
-                <i.Flex 
-                    width={`${i.minimumWidth}px`}
-                    justify='center'
-                    gap={50}
-                >
+        <homeStyle.Section band>
+            <homeStyle.Container className='flex flex-col gap-12 py-20 md:py-24'>
+                <div data-reveal className='flex flex-col md:flex-row md:items-end md:justify-between gap-4'>
+                    <div className='flex flex-col gap-4 max-w-[560px]'>
+                        <homeStyle.Eyebrow>How it works</homeStyle.Eyebrow>
+                        <homeStyle.Heading>From first question to exam day.</homeStyle.Heading>
+                    </div>
+                    <homeStyle.Lead className='max-w-[380px]'>
+                        Three steps, no setup. Your progress is saved as you go.
+                    </homeStyle.Lead>
+                </div>
+                <div data-stagger className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                     {
-                        data.map((item, index : number) => {
-                            return (
-                                <experienceStyle.Container
-                                    background={item.color}
-                                >
-                                    <i.Flex
-                                        key={index}
-                                        direction='column'
-                                        align='center'
-                                        padding='30px'
-                                        width='fit-content'
-                                    >
-                                        <experienceStyle.ImageContainer
-                                            bgURL={item.image}
-                                        >
-
-                                        </experienceStyle.ImageContainer>
-                                        <i.AppTypography
-                                            size={i.TypographySize.md2}
-                                            bold={i.TypographyBold.md}
-                                            textColor={i.theme.colors2.main.primary}
-                                        >
-                                            {item.title}
-                                        </i.AppTypography>
-                                        <i.AppTypography
-                                            textColor={i.theme.colors2.gray.gray3}
-                                            textAlign='center'
-                                        >
-                                            {item.text}
-                                        </i.AppTypography>
-                                    </i.Flex>
-                                </experienceStyle.Container>
-                            )
-                        })
+                        steps.map((step) => (
+                            <div key={step.number} className='flex flex-col gap-3 rounded-[12px] bg-white p-7'>
+                                <span className='font-display font-bold text-[60px] md:text-[72px] leading-none tracking-[-0.04em] text-onyx'>
+                                    {step.number}
+                                </span>
+                                <homeStyle.Title className='pt-2'>{step.title}</homeStyle.Title>
+                                <homeStyle.Body>{step.text}</homeStyle.Body>
+                            </div>
+                        ))
                     }
-                </i.Flex>
-            </i.Flex>
-        </experienceStyle.Main>
+                </div>
+            </homeStyle.Container>
+        </homeStyle.Section>
     )
 }
 

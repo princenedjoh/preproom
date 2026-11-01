@@ -1,300 +1,228 @@
 import * as topBarStyle from './topBar.styled'
 import {logos} from '../../assets/index'
-import { IoSearch } from 'react-icons/io5'
-import { RiMapPinUserFill } from 'react-icons/ri'
-import { useState, useEffect, Fragment, useContext } from 'react'
+import { useState, useEffect } from 'react'
 import { Outlet } from 'react-router'
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import type { MenuProps } from 'antd';
-import { Button, Dropdown, Divider, Badge } from 'antd';
-import './customStyles.css'
-import { BiSolidUser } from 'react-icons/bi'
-import { FaBell, FaPowerOff } from 'react-icons/fa'
+import { Badge } from 'antd';
+import { FaBell } from 'react-icons/fa'
 import Cookies from "universal-cookie"
-import { BASE_URL } from '../../variables/variables'
-import axios from "axios"
-import Context from '../../context/context'
 import { ToastContainer } from 'react-toastify'
-import { AppTypography, Clickable, ClickableTab, Flex } from '../../styles/global'
+import { AppTypography, ClickableTab } from '../../styles/global'
+import { TypographySize } from '../../styles/style.types'
 import theme from '../../styles/theme'
-import { minimumWidth } from '../../utils/types'
 import { HiFire } from "react-icons/hi";
 import { IoMdArrowDropdown } from "react-icons/io";
 import Chip from '@mui/material/Chip';
 import Input from '../../components/UI/input/input'
-import { FiSearch } from "react-icons/fi";
+import { FiSearch, FiMenu, FiX, FiArrowRight } from "react-icons/fi";
+import { RiMapPinUserFill } from 'react-icons/ri'
 import { ClickAwayListener } from '@mui/base/ClickAwayListener';
 import SwipeableTemporaryDrawer from './components/drawer'
-import { GoHomeFill } from "react-icons/go";
-import { RiQuestionAnswerFill } from "react-icons/ri";
-import { HiTrophy } from "react-icons/hi2";
-import { AiFillSafetyCertificate } from "react-icons/ai";
+import { getLenis } from '../smoothScroll/smoothScroll'
+import { notifications, profile } from '../../data/sample'
+import "react-toastify/dist/ReactToastify.css"
+import "../reactToastify/toastifyCustomStyles.css"
 
 const cookie = new Cookies()
 
+const programs = [
+    'Computer Science', 'Computer Engineering', 'Electrical Engineering', 'Mechanical Engineering',
+    'Biochemistry', 'Economics', 'Mathematics', 'Physics', 'Pharmacy', 'Medicine',
+]
+
+const navigations = [
+    { name : 'Home', route : '/', match : '' },
+    { name : 'Questions', route : '/questions', match : 'questions' },
+    { name : 'Challenges', route : '/challenges', match : 'challenges' },
+    { name : 'Test', route : '/test/testconfig', match : 'test' },
+]
+
 export const LogoText = () => {
     return (
-        <>
-            <topBarStyle.LogoText>
-                PrepRoom
-            </topBarStyle.LogoText>
-        </>
+        <topBarStyle.LogoText>
+            PrepRoom
+        </topBarStyle.LogoText>
     )
 }
 
 const TopBar = () => {
 
     const navigate = useNavigate()
-    const [searchValue, setSearchValue] = useState('')
-    const [program, setProgram] = useState('Compuer Science')
-    const [profileClick, setProfileClick] = useState(false)
-    const [courseVisibility, setCourseVisibility] = useState(false)
-    const handleLogout = () => {
-        cookie.remove("jwtToken")
-        navigate("/auth/login")
-
-    }
     const location = useLocation().pathname
-    const [navigations, setNavigation] = useState([
-        {
-            name : 'Home',
-            route : '/',
-            active : false,
-            icon : GoHomeFill
-        },
-        {
-            name : 'Questions',
-            route : '/questions',
-            active : false,
-            icon : RiQuestionAnswerFill
-        },
-        {
-            name : 'Challenges',
-            route : '/challenges',
-            active : false,
-            icon : HiTrophy
-        },
-        {
-            name : 'Test',
-            route : '/test/testconfig',
-            active : false,
-            icon : AiFillSafetyCertificate
-        }
-    ])
+    const currentTab = location.split('/')[1].toLowerCase()
+    const hasSession = !!cookie.get("jwtToken")
+    const unread = notifications.filter((item) => item.unread).length
 
-    const getCurrentTab = () => {
-        const locationSplit = location.split('/')
-        return locationSplit[1]
-    }
+    const [searchValue, setSearchValue] = useState('')
+    const [program, setProgram] = useState(profile.program.replace('BSc ', ''))
+    const [courseVisibility, setCourseVisibility] = useState(false)
+    const [menuOpen, setMenuOpen] = useState(false)
 
-    const setActiveTab = () => {
-        const currentTab = getCurrentTab().toLowerCase()
-        let navigationsCopy = navigations
-        for(let navigation of navigationsCopy){
-            currentTab === "" 
-                ? navigation.name.toLowerCase() === 'home'
-                ? navigation.active = true
-                : navigation.active = false
-                : navigation.name.toLowerCase() === currentTab
-                    ? navigation.active = true
-                    : navigation.active = false
-        }
-        setNavigation([...navigationsCopy])
-    }
+    useEffect(()=>{
+        setMenuOpen(false)
+    },[location])
 
-    const items: MenuProps['items'] = [
-        {
-          key: '1',
-          label: (
-            <topBarStyle.Menu>
-                <BiSolidUser
-                    size={"14px"}
-                    opacity={0.6}
-                />
-                <Link to={"/auth/login"}>
-                    Sign In
-                </Link>
-            </topBarStyle.Menu>
-          ),
-        },
-        {
-            key: '2',
-            label: (
-                <hr/>
-            ),
-          },
-        {
-            key: '3',
-            label: (
-                <topBarStyle.Menu
-                    onClick={(()=>handleLogout())}
-                >
-                    <FaPowerOff
-                        size={"14px"}
-                        opacity={0.6}
-                    />
-                    <div>
-                        Logout
-                    </div>
-                </topBarStyle.Menu>
-            ),
-          }
-    ]
-
-    const [themeSwitcher, setThemeSwitcher] = useState(false)
-
-    const isLoggedIn = async () => {
-        const getCookie = cookie.get("jwtToken")
-        if(cookie){
-            const isVerified = await axios.get(`${BASE_URL}/users/verifyUser`)
-            if(isVerified.status === 200){
-                return true
-            }
-            return false
-        }
-        return false
-    }
-
-    const menuItemsShow = () => {
-        const isUserLoggedIn = isLoggedIn()
-    }
+    useEffect(()=>{
+        const lenis = getLenis()
+        menuOpen ? lenis?.stop() : lenis?.start()
+        document.body.style.overflow = menuOpen ? 'hidden' : ''
+    },[menuOpen])
 
     const handleChangeCourse = (name : string) => {
         setCourseVisibility(false)
         setProgram(name)
     }
 
-    useEffect(()=>{
-        setActiveTab()
-    },[location])
+    const filteredPrograms = programs.filter((item) => item.toLowerCase().includes(searchValue.trim().toLowerCase()))
 
   return (
     <>
-        <ToastContainer/>
+      <ToastContainer/>
       <topBarStyle.Main>
-        <Flex 
-            width={`${minimumWidth}px`} 
-            align='center' 
-            justify='space-between'>
-            <Flex width='fit-content'>
-                <topBarStyle.Logo>
-                    <topBarStyle.LogoImg src = {logos.logoMark}/>
+        <topBarStyle.Inner>
+            <div className='flex items-center'>
+                <topBarStyle.Logo onClick={()=>navigate('/')}>
+                    <topBarStyle.LogoImg src = {logos.logoMark} alt=''/>
+                    <LogoText />
                 </topBarStyle.Logo>
                 <topBarStyle.Navigation>
                     {
-                        navigations.map((navigationMap, index : number) => {
-                            return(
-                                <Link 
-                                    to={navigationMap.route}
-                                    key={index}
-                                >
-                                    <topBarStyle.NavigationContainer
-                                        active={navigationMap.active}
-                                    >
-                                        <AppTypography
-                                            textColor={navigationMap.active ? theme.colors2.shades.white : 'inherit'}
-                                        >
-                                            {navigationMap.name}
-                                        </AppTypography>
-                                    </topBarStyle.NavigationContainer>
-                                </Link>
-                            )
-                        })
+                        navigations.map((navigationMap) => (
+                            <Link to={navigationMap.route} key={navigationMap.name}>
+                                <topBarStyle.NavigationContainer active={currentTab === navigationMap.match}>
+                                    {navigationMap.name}
+                                </topBarStyle.NavigationContainer>
+                            </Link>
+                        ))
                     }
                 </topBarStyle.Navigation>
-            </Flex>
+            </div>
             <ClickAwayListener onClickAway={()=>setCourseVisibility(false)}>
-                <Flex gap={10} width='fit-content' align='center'>
-                    <Flex width='fit-content' direction='column' gap={20} position='relative'>
+                <div className='flex items-center gap-[6px]'>
+                    <div className='hidden lg:flex flex-col relative'>
                         <Chip 
                             size='small'
                             onClick={()=>{setCourseVisibility(!courseVisibility)}}
                             deleteIcon={<IoMdArrowDropdown />} 
-                            onDelete={()=>{}}
+                            onDelete={()=>setCourseVisibility(!courseVisibility)}
                             label={
-                            <AppTypography
-                                textColor={theme.colors2.gray.gray2}
-                            >
+                            <AppTypography textColor={theme.colors2.gray.gray2}>
                                 {program}
                             </AppTypography>
                             } 
                         />
-                        <topBarStyle.CourseSearch
-                            visible={courseVisibility}
-                        >
-                            <AppTypography>
-                                Programs
+                        <topBarStyle.CourseSearch visible={courseVisibility} data-lenis-prevent>
+                            <AppTypography
+                                font='mono'
+                                size={TypographySize.xs}
+                                textColor={theme.colors2.gray.gray4}
+                                style={{ letterSpacing : '0.08em', textTransform : 'uppercase' }}
+                            >
+                                Programmes
                             </AppTypography>
                             <Input
                                 PreIcon={FiSearch}
                                 value={searchValue}
                                 setState={setSearchValue}
-                                background={`${theme.colors2.gray.gray6}80`}
+                                background={theme.colors.background.light.primary}
                                 border='none'
                                 type='text'
-                                placeholder='Search Programs'
+                                placeholder='Search programmes'
                             />
-                            <Flex direction='column' gap={0.1}>
+                            <div className='flex flex-col'>
                                 {
-                                    [1,2,3,4,5,6,7,8,9,1,2,3,4].map((result, index : number) => {
-                                        return (
-                                            <ClickableTab
-                                                key={index}
-                                                onClick={()=>handleChangeCourse('program')}
-                                                radius='5px'
-                                                padding='10px 10px'
-                                                style={{
-                                                    width : '100%'
-                                                }}
+                                    filteredPrograms.map((item) => (
+                                        <ClickableTab
+                                            key={item}
+                                            onClick={()=>handleChangeCourse(item)}
+                                            radius='8px'
+                                            padding='9px 10px'
+                                            style={{ width : '100%' }}
+                                        >
+                                            <AppTypography 
+                                                size={TypographySize.sm2}
+                                                textColor={item === program ? theme.colors.main.primary : theme.colors2.gray.gray3}
+                                                bold={item === program ? '600' as any : undefined}
                                             >
-                                                <AppTypography
-                                                    textColor={theme.colors2.gray.gray3}
-                                                >
-                                                    program
-                                                </AppTypography>
-                                            </ClickableTab>
-                                        )
-                                    })
+                                                {item}
+                                            </AppTypography>
+                                        </ClickableTab>
+                                    ))
                                 }
-                            </Flex>
+                                {
+                                    filteredPrograms.length === 0 &&
+                                    <AppTypography textColor={theme.colors2.gray.gray4} style={{ padding : '9px 10px' }}>No programmes found</AppTypography>
+                                }
+                            </div>
                         </topBarStyle.CourseSearch>
-                    </Flex>
-                    <Flex width='fit-content'>
-                        <Badge count={5} dot={true} color={theme.colors2.main.primary}>
-                            <ClickableTab 
-                                padding='7px'
-                                onClick={()=>navigate('/notification')}>
-                                <FaBell 
-                                    color={theme.colors2.main.primary}
-                                    size={'15px'}
-                                />
+                    </div>
+                    <Badge count={unread} dot color={theme.colors2.brand.violet}>
+                        <ClickableTab 
+                            padding='8px'
+                            aria-label='Notifications'
+                            onClick={()=>navigate('/notification')}>
+                            <FaBell color={theme.colors2.gray.gray3} size={'15px'} />
+                        </ClickableTab>
+                    </Badge>
+                    <div className='hidden sm:flex'>
+                        <Badge count={profile.streak} size='small' color={theme.colors2.brand.violet}>
+                            <ClickableTab padding='8px' aria-label='Streak' onClick={()=>navigate('/challenges')}>
+                                <HiFire color={theme.colors2.orange.orange3} size={'18px'} />
                             </ClickableTab>
                         </Badge>
-                    </Flex>
-                    <Flex width='fit-content' margin='-2px 0 0 0'>
-                        <Badge count={100} size='small' color={theme.colors2.main.primary}>
-                            <ClickableTab padding='7px'>
-                                <HiFire 
-                                    color={theme.colors2.main.primary}
-                                    size={'18px'}
-                                />
-                            </ClickableTab>
-                        </Badge>
-                    </Flex>
-                    <Flex width='fit-content'>
-                        <SwipeableTemporaryDrawer>
-                            <ClickableTab padding='7px'>
-                                < RiMapPinUserFill
-                                    color={theme.colors2.gray.gray3}
-                                    size={'18px'}
-                                />
-                            </ClickableTab>
-                        </SwipeableTemporaryDrawer>
-                    </Flex>
-                </Flex>
+                    </div>
+                    <SwipeableTemporaryDrawer hasSession={hasSession}>
+                        <ClickableTab padding='8px' aria-label='Account'>
+                            <RiMapPinUserFill color={theme.colors2.gray.gray3} size={'18px'} />
+                        </ClickableTab>
+                    </SwipeableTemporaryDrawer>
+                    {
+                        !hasSession &&
+                        <div className='hidden md:flex items-center gap-2 ml-[6px]'>
+                            <topBarStyle.AuthButton type='button' onClick={()=>navigate('/auth/login')}>
+                                Log in
+                            </topBarStyle.AuthButton>
+                            <topBarStyle.AuthButton type='button' filled onClick={()=>navigate('/auth/signup')}>
+                                Sign up
+                            </topBarStyle.AuthButton>
+                        </div>
+                    }
+                    <topBarStyle.MenuButton 
+                        type='button'
+                        aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+                        aria-expanded={menuOpen}
+                        onClick={()=>setMenuOpen(!menuOpen)}
+                    >
+                        {menuOpen ? <FiX size={18}/> : <FiMenu size={18}/>}
+                    </topBarStyle.MenuButton>
+                </div>
             </ClickAwayListener>
-        </Flex>
+        </topBarStyle.Inner>
       </topBarStyle.Main>
+      <topBarStyle.MobileMenu open={menuOpen} aria-hidden={!menuOpen}>
+        {
+            navigations.map((navigationMap) => (
+                <topBarStyle.MobileLink
+                    key={navigationMap.name}
+                    type='button'
+                    active={currentTab === navigationMap.match}
+                    onClick={()=>navigate(navigationMap.route)}
+                >
+                    {navigationMap.name} <FiArrowRight size={18}/>
+                </topBarStyle.MobileLink>
+            ))
+        }
+        <topBarStyle.MobileLink type='button' active={currentTab === 'profile'} onClick={()=>navigate('/profile')}>
+            Profile <FiArrowRight size={18}/>
+        </topBarStyle.MobileLink>
+        {
+            !hasSession &&
+            <div className='grid grid-cols-2 gap-3 mt-auto'>
+                <topBarStyle.AuthButton type='button' className='!py-3' onClick={()=>navigate('/auth/login')}>Log in</topBarStyle.AuthButton>
+                <topBarStyle.AuthButton type='button' filled className='!py-3' onClick={()=>navigate('/auth/signup')}>Sign up</topBarStyle.AuthButton>
+            </div>
+        }
+      </topBarStyle.MobileMenu>
       <Outlet/>
     </>
   )

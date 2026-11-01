@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { LogoText } from '../../components/top bar/topBar'
 import * as loginStyle from './login.styled'
-import { Fragment, useContext, useState } from 'react'
+import { Fragment, useState } from 'react'
 import { RiLockPasswordFill } from 'react-icons/ri'
 import {logos} from '../../assets'
 import { IoEnter } from 'react-icons/io5'
@@ -9,12 +8,11 @@ import { MdEmail } from 'react-icons/md'
 import theme from '../../styles/theme'
 import axios from 'axios'
 import Cookies from 'universal-cookie'
-import { ToastContainer, toast } from "react-toastify"
+import { toast } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 import "../../components/reactToastify/toastifyCustomStyles.css"
 import { BASE_URL } from '../../variables/variables'
 import Input from '../../components/UI/input/input'
-import { IconType } from 'react-icons'
 import { inputValuesType } from '../../utils/types'
 
 const Login = () => {
@@ -72,7 +70,7 @@ const Login = () => {
         }
     }
 
-    const [inputValues, setInputValues] = useState<inputValuesType[]>([
+    const [inputValues] = useState<inputValuesType[]>([
         {
             title : "Email",
             type : "email",
@@ -93,13 +91,8 @@ const Login = () => {
         },
     ])
 
-    const setErrorMessage = (index : number, message : string | null) => {
-        let inputValuesCopy = inputValues
-        inputValuesCopy[index].errorMessage = message
-        setInputValues(inputValuesCopy)
-    }
 
-    const [terms, setTerms] = useState([
+    const [terms] = useState([
         {
             name : 'Terms',
             route : '/usage/terms'
@@ -120,9 +113,8 @@ const Login = () => {
                 <loginStyle.Avatar
                     src={logos.logoMark}
                 />
-                <loginStyle.Title>
-                    {`Login`}&nbsp;{`•`}&nbsp;<LogoText/>
-                </loginStyle.Title>
+                <loginStyle.Title>Log in to PrepRoom</loginStyle.Title>
+                <loginStyle.Subtitle>Welcome back. Pick up where you left off.</loginStyle.Subtitle>
             </loginStyle.Head>
             <loginStyle.Container
                 onSubmit={(e)=>submitHandler(e)}
@@ -142,10 +134,13 @@ const Login = () => {
                         )
                     })
                 }
+                <Link to='/auth/forgot' className='self-end text-[13px] font-semibold text-muted hover:text-ink'>
+                    Forgot password?
+                </Link>
                 <loginStyle.Submit
                     type='submit'
                 >
-                    Login <IoEnter
+                    Log in <IoEnter
                         size={"20px"}
                         color={theme.colors.background.light.white}
                     />
@@ -154,7 +149,7 @@ const Login = () => {
             <loginStyle.HaveAnAccount>
                 New to PrepRoom? 
                 <loginStyle.Link>
-                    <Link to={"/auth/signUp"}>Sign Up</Link>
+                    <Link to={"/auth/signup"}>Sign up</Link>
                 </loginStyle.Link>
             </loginStyle.HaveAnAccount>
             <loginStyle.Terms>

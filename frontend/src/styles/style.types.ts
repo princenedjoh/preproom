@@ -28,6 +28,7 @@ export interface AppTypographyProps {
   ellipsis? : boolean
   maxLines? : number
   lineHeight? : number
+  font? : 'display' | 'body' | 'mono'
 }
 
 export interface buttonProps {
@@ -38,6 +39,8 @@ export interface buttonProps {
 export enum TypographyBold {
   sm = "400",
   md = "500",
+  md2 = "600",
+  lg2 = "700",
   lg = "800",
 }
 

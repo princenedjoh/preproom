@@ -1,85 +1,74 @@
-import { Chip } from '@mui/material'
 import * as i from '../../../../utils/defaultImports'
 import * as heroStyle from './hero.style'
-import Herocard from '../card/card'
+import * as homeStyle from '../../home.styled'
+import ProductMock from '../productMock/productMock'
+import { FaCheck } from "react-icons/fa6";
+import { FiArrowRight } from "react-icons/fi";
+
+const checks = [
+    { lead : 'Practice smarter.', text : 'Past MCQs sorted by course, topic and difficulty.' },
+    { lead : 'Learn faster.', text : 'An explanation and discussion for every answer.' },
+    { lead : 'Stay sharp.', text : 'Daily challenges and timed mock tests.' },
+]
+
+const tags = ['MCQs', 'Past papers', 'Challenges', 'Tests', 'Discussions']
 
 const Hero = () => {
+
+    const navigate = i.useNavigate()
+
     return (
-        <i.Flex
-            direction='column'
-            align='center'
-        >
-            <heroStyle.Main>
-                <i.Flex 
-                    width={`${i.minimumWidth}px`}
-                    justify='center'
-                    align='center'
-                    margin='-20px 0 0 0'
-                    z={1}
-                >
-                    <i.Flex
-                        direction='column'
-                        align='center'
-                        width='60%'
-                    >
-                        <Chip
-                            size='small'
-                            label={
-                                <i.AppTypography
-                                textColor={i.theme.colors2.gray.gray3}
-                                    size={i.TypographySize.xs}
-                                    bold={i.TypographyBold.md}
-                                    ellipsis
-                                    maxLines={1}
+        <homeStyle.Section>
+            <homeStyle.Container>
+                <heroStyle.Main>
+                    <heroStyle.Copy>
+                        <heroStyle.Announcement data-hero-fade>
+                            <heroStyle.Badge>New</heroStyle.Badge>
+                            Daily challenges are live
+                        </heroStyle.Announcement>
+                        <homeStyle.Display data-hero-title>
+                            Ace every exam, <span className='text-gradient-primary'>one question</span> at a time.
+                        </homeStyle.Display>
+                        <heroStyle.Checks data-hero-fade>
+                            {
+                                checks.map((check) => (
+                                    <heroStyle.Check key={check.lead}>
+                                        <FaCheck size={16} />
+                                        <span><b>{check.lead}</b> {check.text}</span>
+                                    </heroStyle.Check>
+                                ))
+                            }
+                        </heroStyle.Checks>
+                        <heroStyle.Actions data-hero-fade>
+                            <span className='conic-border'>
+                                <homeStyle.DarkButton 
+                                    type='button'
+                                    onClick={()=>navigate('/questions')}
                                 >
-                                    Education
-                                </i.AppTypography>
-                        } />
-                        <i.AppTypography
-                            size={i.TypographySize.xl}
-                            lineHeight={1.2}
-                            textAlign='center'
-                            textColor={i.theme.colors2.main.primary}
-                        >
-                            <b>PrepRoom</b>, Your ultimate exam
-                            preparation companion
-                        </i.AppTypography>
-                        <i.AppTypography
-                            textAlign='center'
-                            textColor={i.theme.colors2.gray.gray3}
-                        >
-                            Welcome to preproom, the go-to app for students seeking to ace their exams 
-                            and excel in their studies!
-                            Whether you’re preparing for a test, quiz or a crucial exam our app provides
-                            a comprehensive platform to enhance your
-                            learning experience
-                        </i.AppTypography>
-                        <i.Flex width='fit-content'>
-                            <i.PrimaryButton
-                                size={{
-                                    width : 'fit-content',
-                                    height : 'fit-content'
-                                }} 
+                                    Start practicing. It's free <FiArrowRight size={16} />
+                                </homeStyle.DarkButton>
+                            </span>
+                            <homeStyle.GhostButton 
                                 type='button'
-                                text='Solve Problems'
-                                radius={100}
-                            />
-                            <i.Button 
-                                type='button'
-                                text='Take a test'
-                                variant='text'
-                                radius={100}
-                                color={i.theme.colors2.main.primary}
-                            />
-                        </i.Flex>
-                    </i.Flex>
-                    {/* <i.Flex width='fit-content'>
-                        <heroStyle.CoverImage></heroStyle.CoverImage>
-                    </i.Flex> */}
-                </i.Flex>
-            </heroStyle.Main>
-            <Herocard/>
-        </i.Flex>
+                                onClick={()=>navigate('/test/testconfig')}
+                            >
+                                Take a test
+                            </homeStyle.GhostButton>
+                        </heroStyle.Actions>
+                        <heroStyle.Tags data-hero-fade>
+                            {
+                                tags.map((tag, index) => (
+                                    <homeStyle.TagPill key={tag} active={index === 0}>{tag}</homeStyle.TagPill>
+                                ))
+                            }
+                        </heroStyle.Tags>
+                    </heroStyle.Copy>
+                    <heroStyle.Visual data-hero-visual>
+                        <ProductMock />
+                    </heroStyle.Visual>
+                </heroStyle.Main>
+            </homeStyle.Container>
+        </homeStyle.Section>
     )
 }
 

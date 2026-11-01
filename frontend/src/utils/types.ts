@@ -10,4 +10,4 @@ export type inputValuesType = {
     errorMessage? : string | null
 }
 
-export const minimumWidth = 1080
+export const minimumWidth = 1200

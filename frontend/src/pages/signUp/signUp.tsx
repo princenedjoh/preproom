@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { LogoText } from '../../components/top bar/topBar'
 import * as signUpStyle from './signUp.styled'
-import { Fragment, useState } from 'react'
+import { useState } from 'react'
 import { RiLockPasswordFill } from 'react-icons/ri'
 import {logos} from '../../assets'
 import { IoEnter } from 'react-icons/io5'
@@ -24,17 +23,17 @@ const SignUp = () => {
     const [gender, setGender] = useState("")
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
-    const [genderTypes, setGenderTypes] = useState<tagType[]>([
+    const [genderTypes] = useState<tagType[]>([
         {
-            name : "male",
+            name : "Male",
             id : "male"
         },
         {
-            name : "female",
+            name : "Female",
             id : "female"
         },
         {
-            name : "other",
+            name : "Other",
             id : "other"
         },
     ])
@@ -97,50 +96,8 @@ const SignUp = () => {
         }
     }
 
-    const inputValues = [
-        {
-            title : "firstname",
-            type : "text",
-            placeholder : "firstname",
-            icon : BiSolidUserPin,
-            value : firstName,
-            setValue : setFirstName
-        },
-        {
-            title : "lastname",
-            type : "text",
-            placeholder : "lastname",
-            icon : BiSolidUserPin,
-            value : lastName,
-            setValue : setLastName
-        },
-        {
-            title : "Email",
-            type : "email",
-            placeholder : "email",
-            icon : MdEmail,
-            value : email,
-            setValue : setEmail
-        },
-        {
-            title : "gender",
-            type : "text",
-            placeholder : "gender",
-            icon : PiGenderIntersexBold,
-            value : gender,
-            setValue : setGender
-        },
-        {
-            title : "Password",
-            type : "password",
-            placeholder : "Password",
-            icon : RiLockPasswordFill,
-            value : password,
-            setValue : setPassword
-        },
-    ]
 
-    const [terms, setTerms] = useState([
+    const [terms] = useState([
         {
             name : 'Terms',
             route : '/usage/terms'
@@ -162,15 +119,15 @@ const SignUp = () => {
                 <signUpStyle.Avatar
                     src={logos.logoMark}
                 />
-                <signUpStyle.Title>
-                    {`Sign Up`}&nbsp;{`•`}&nbsp;<LogoText/>
-                </signUpStyle.Title>
+                <signUpStyle.Title>Create your account</signUpStyle.Title>
+                <signUpStyle.Subtitle>Free forever. Start practicing in under a minute.</signUpStyle.Subtitle>
             </signUpStyle.Head>
             <signUpStyle.Container
                 onSubmit={(e)=>submitHandler(e)}
             >
+                <div className='grid grid-cols-2 gap-3 w-full'>
                 <Input 
-                    placeholder='firstname'
+                    placeholder='First name'
                     value={firstName}
                     setState={setFirstName}
                     type="text"
@@ -178,14 +135,15 @@ const SignUp = () => {
                     PreIcon={BiSolidUserPin}
                 />
                 <Input 
-                    placeholder='lastname'
+                    placeholder='Last name'
                     value={lastName}
                     setState={setLastName}
                     type="text"
                     PreIcon={BiSolidUserPin}
                 />
+                </div>
                 <Input 
-                    placeholder='email'
+                    placeholder='Email'
                     value={email}
                     setState={setEmail}
                     type="email"
@@ -209,7 +167,7 @@ const SignUp = () => {
                 <signUpStyle.Submit
                     type='submit'
                 >
-                    Login <IoEnter
+                    Create account <IoEnter
                         size={"20px"}
                         color={theme.colors.background.light.white}
                     />
@@ -218,7 +176,7 @@ const SignUp = () => {
             <signUpStyle.HaveAnAccount>
                 Already have an account? 
                 <signUpStyle.Link>
-                    <Link to={"/auth/login"}>Login</Link>
+                    <Link to={"/auth/login"}>Log in</Link>
                 </signUpStyle.Link>
             </signUpStyle.HaveAnAccount>
             <signUpStyle.Terms>

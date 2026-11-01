@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { AppTypographyProps, TypographyBold, clickableProps } from "./style.types"
+import { AppTypographyProps, clickableProps } from "./style.types"
 import { flexProps } from "./style.types";
 import { hrProps } from "./style.types";
 
@@ -9,6 +9,7 @@ export const AppTypography = styled.span<AppTypographyProps>`
   -webkit-box-orient: ${({ ellipsis }) => ellipsis && 'vertical'};
   overflow: ${({ ellipsis }) => ellipsis && 'hidden'};
   text-overflow: ${({ ellipsis }) => ellipsis && 'ellipsis'};
+  font-family: ${({ font, theme }) => font && theme.fonts[font]};
   font-size: ${({ size, theme }) => size ?? theme.typography.size.sm};
   font-weight: ${({ bold, theme }) => bold ?? theme.typography.bold.sm};
   color: ${({ theme, textColor, colorTheme }) => colorTheme ? colorTheme : textColor ? textColor : theme.colors2.gray.gray1};
@@ -28,7 +29,7 @@ export const AppTypography = styled.span<AppTypographyProps>`
     opacity: ${({ clickable }) => (clickable ? 0.7 : undefined)};
     text-decoration : ${({ clickableLink }) => clickableLink ? 'underline' : 'none'};
     color: ${({ theme, colorTheme }) => colorTheme ? "inherit" : null};
-    color: ${({ theme, clickableLink }) => clickableLink ? theme.colors.blue.blue4 : null};
+    color: ${({ theme, clickableLink }) => clickableLink ? theme.colors2.blue.blue3 : null};
   }
 `;
 
@@ -85,8 +86,8 @@ export const ClickableTab = styled.div.attrs({
   border-radius : ${({ radius }) => radius ?? '100px'};
   margin : ${({ margin }) => margin ?? 0};
   padding : ${({ padding }) => padding ?? "3px 10px"};
+  transition: background ${({ theme }) => theme.motion.hover} ease;
   &:hover{
-    background: ${({ theme }) => `${theme.colors2.gray.gray5}80`};
-    opacity : 0.8;
+    background: rgba(0, 0, 0, 0.04);
  }
 `

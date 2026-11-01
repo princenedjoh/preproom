@@ -64,25 +64,6 @@ const Input = ({
     allowClear
 } : inputProps) => {
 
-    const getStyleProps : inputStyleProps = {
-        PreIcon, 
-        PostIcon, 
-        color, 
-        errorMessage, 
-        background, 
-        colorTheme, 
-        border, 
-        id,
-        radius, 
-        padding, 
-        maxWidth, 
-        size, 
-        shadow, 
-        textSize, 
-        textBold, 
-        disabled,
-        variant
-    }
 
     return (
         <inputStyle.Main>
@@ -99,14 +80,14 @@ const Input = ({
                     onChange={(e)=>setState(e.target.value)}
                     style={{
                         color,
-                        borderRadius : radius ? `${radius}px` : '5px',
+                        borderRadius : radius ? `${radius}px` : '9px',
                         padding,
                         maxWidth,
                         background,
                         border,
                         width : size?.width,
-                        height : size?.height ?? '47px',
-                        fontSize : '12px'
+                        height : size?.height ?? '44px',
+                        fontSize : '14px'
                     }}
                 />
                 :
@@ -121,14 +102,14 @@ const Input = ({
                     onChange={(e)=>setState(e.target.value)}
                     style={{
                         color,
-                        borderRadius : radius ? `${radius}px` : '5px',
+                        borderRadius : radius ? `${radius}px` : '9px',
                         padding,
                         maxWidth,
                         background,
                         border,
                         width : size?.width,
-                        height : size?.height ?? '47px',
-                        fontSize : '12px'
+                        height : size?.height ?? '44px',
+                        fontSize : '14px'
                     }}
                 />
             }

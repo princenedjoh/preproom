@@ -1,6 +1,7 @@
-import { AppTypography, Flex } from '../../styles/global'
+import { AppTypography, ClickableTab } from '../../styles/global'
+import { TypographySize } from '../../styles/style.types'
 import * as footerStyle from './footer.style'
-import { BsInstagram, BsLinkedin, BsFacebook, BsGithub, BsTwitter } from 'react-icons/bs'
+import { BsInstagram, BsLinkedin, BsFacebook, BsTwitter } from 'react-icons/bs'
 import { TiSocialYoutube } from 'react-icons/ti'
 import { FaTiktok } from 'react-icons/fa'
 import { logos } from '../../assets'
@@ -52,6 +53,33 @@ interface propsType {
     rigid? : boolean
 }
 
+const columns = [
+    {
+        title : 'Practice',
+        links : [
+            { name : 'Questions', route : '/questions' },
+            { name : 'Challenges', route : '/challenges' },
+            { name : 'Take a test', route : '/test/testconfig' },
+        ]
+    },
+    {
+        title : 'Account',
+        links : [
+            { name : 'Log in', route : '/auth/login' },
+            { name : 'Sign up', route : '/auth/signup' },
+            { name : 'Notifications', route : '/notification' },
+        ]
+    },
+    {
+        title : 'Company',
+        links : [
+            { name : 'Terms', route : '/usage/terms' },
+            { name : 'Privacy', route : '/usage/privacy' },
+            { name : 'Contact', route : '/contact' },
+        ]
+    },
+]
+
 const Footer = ({rigid} : propsType) => {
 
     const navigate = useNavigate()
@@ -63,33 +91,60 @@ const Footer = ({rigid} : propsType) => {
         <>
             <footerStyle.Main rigid={rigid}>
                 <footerStyle.MainWrap>
-                    <footerStyle.Socials>
+                    <footerStyle.Columns>
+                        <footerStyle.Brand>
+                            <footerStyle.LogoIcon 
+                                onClick={()=>{
+                                    navigate( navRoutes.find(route => route.name === 'home')!.path )
+                                }}
+                                src={logos.fullLogo}
+                            />
+                            <AppTypography size={TypographySize.sm2} textColor={theme.colors2.gray.gray3} lineHeight={1.55}>
+                                Past questions, daily challenges and timed tests for students who want to walk into exams prepared.
+                            </AppTypography>
+                        </footerStyle.Brand>
                         {
-                            socials.map((socialMap, index : number)=>{
-                                return (
-                                    <Tooltip 
-                                        title={socialMap.name} 
-                                        arrow placement='top'
-                                        key={index}>
-                                        <Flex width='fit-content' cursor='pointer'>
-                                            <socialMap.icon 
-                                                color={theme.colors2.gray.gray3}
-                                                onClick={()=>handleSocialClick(socialMap.route)}/>
-                                        </Flex>
-                                    </Tooltip>
-                                )
-                            })
+                            columns.map((column) => (
+                                <footerStyle.Column key={column.title}>
+                                    <footerStyle.ColumnTitle>{column.title}</footerStyle.ColumnTitle>
+                                    {
+                                        column.links.map((link) => (
+                                            <footerStyle.FooterLink 
+                                                key={link.name}
+                                                type='button'
+                                                onClick={()=>navigate(link.route)}
+                                            >
+                                                {link.name}
+                                            </footerStyle.FooterLink>
+                                        ))
+                                    }
+                                </footerStyle.Column>
+                            ))
                         }
-                    </footerStyle.Socials>
-                    <footerStyle.Rights>
-                        <AppTypography textColor={theme.colors2.gray.gray3}> © 2023 PrepRoom ALL RIGHTS RESERVED. </AppTypography>
-                    </footerStyle.Rights>
-                    <footerStyle.LogoIcon 
-                        onClick={()=>{
-                            navigate( navRoutes.find(route => route.name === 'home')!.path )
-                        }}
-                        src={logos.fullLogo}
-                    />
+                    </footerStyle.Columns>
+                    <footerStyle.Bottom>
+                        <footerStyle.Rights>
+                            © {new Date().getFullYear()} PrepRoom. All rights reserved.
+                        </footerStyle.Rights>
+                        <footerStyle.Socials>
+                            {
+                                socials.map((socialMap, index : number)=>{
+                                    return (
+                                        <Tooltip 
+                                            title={socialMap.name} 
+                                            arrow placement='top'
+                                            key={index}>
+                                            <ClickableTab padding='8px'>
+                                                <socialMap.icon 
+                                                    color={theme.colors2.gray.gray4}
+                                                    onClick={()=>handleSocialClick(socialMap.route)}/>
+                                            </ClickableTab>
+                                        </Tooltip>
+                                    )
+                                })
+                            }
+                        </footerStyle.Socials>
+                    </footerStyle.Bottom>
                 </footerStyle.MainWrap>
             </footerStyle.Main>
         </>

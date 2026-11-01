@@ -2,10 +2,9 @@ import { AppTypography, Flex } from "../../../styles/global";
 import theme from "../../../styles/theme";
 import * as buttonStyle from './cButton.style'
 import { TypographySize, TypographyBold } from "../../../styles/style.types";
-import { IconType } from "react-icons/lib";
 import { CircularProgress } from "@mui/material";
 import LoadingButton from '@mui/lab/LoadingButton';
-import { ElementType, useState } from "react";
+import { ElementType } from "react";
 import './antd.style.css'
 
 type ButtonTypes = 'submit' | 'button'
@@ -78,7 +77,9 @@ const Button = ({
           color,
           padding,
           border,
-          borderRadius : `${radius}px`,
+          borderRadius : `${radius ?? 9999}px`,
+          fontFamily : theme.fonts.body,
+          transition : `opacity ${theme.motion.hover} ease, transform ${theme.motion.hover} ease`,
           maxWidth,
           width : size?.width,
           height : size?.height
@@ -106,11 +107,11 @@ const Button = ({
           disabled && showLoader ?
           <CircularProgress style={{color : theme.colors2.shades.white}} size={"20px"} color={"inherit"} /> :
           <AppTypography 
-            size={textSize ? TypographySize?.[textSize] : TypographySize.sm} 
-            bold={textBold ? TypographyBold?.[textBold] : TypographyBold.md} 
+            size={textSize ? TypographySize?.[textSize] : TypographySize.sm2} 
+            bold={textBold ? TypographyBold?.[textBold] : TypographyBold.lg2} 
             textColor={color? color : theme.colors2.main.primary}
             colorTheme={colorTheme && "inherit"}>
-            {text.toLowerCase()}
+            {text}
           </AppTypography>
         }
         {
@@ -152,8 +153,8 @@ export const PrimaryButton = ({
   showLoader={showLoader}
   type={type ?? 'button'} 
   text={text ?? 'Submit'} 
-  size={{width : size?.width ?? "280px", height : size?.height ?? "47px"}}
-  radius={radius ?? rounded ? 1000 : 5}
+  size={{width : size?.width ?? "280px", height : size?.height ?? "44px"}}
+  radius={radius ?? 9999}
   background={background ?? theme.colors2.main.primary}
   color={color ?? theme.colors2.shades.white}
   textSize={textSize ?? "sm"}/>

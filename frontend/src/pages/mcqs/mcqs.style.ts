@@ -1,100 +1,92 @@
 import styled from "styled-components";
 
-export const Main = styled.div.attrs({
-    className : `Main text-xs w-full flex flex-col gap-3 pb-[100px]`
+export const Card = styled.article.attrs({
+    className : ` Card rounded-[12px] p-5 md:p-6 flex flex-col gap-4` as string
 })`
-    color : ${({theme}) => theme.colors.text.dark.black};
+    background : ${({theme}) => theme.colors.background.light.white};
+    border : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
+    transition : border-color ${({theme}) => theme.motion.hover} ease;
+    &:hover { border-color : ${({theme}) => theme.colors2.gray.gray5}; }
 `
 
-export const QuestionContainer = styled.div.attrs({
-    className : `QeustionContainer  p-[13px] rounded-[10px] w-full flex flex-col hover:shadow duration-300`
+export const Meta = styled.div.attrs({
+    className : ` Meta flex flex-wrap items-center gap-2 text-[12px]` as string
 })`
-    border : ${({theme}) => `0.5px solid ${theme.colors2.main.primary}1a`};
-    background : ${({theme}) => theme.colors2.gray.gray9};
-    &:hover{
-        box-shadow : ${({theme}) => `0 0 20px 2px ${theme.colors2.main.primary}26`};
+    color : ${({theme}) => theme.colors2.gray.gray4};
+`
+
+export const Number = styled.span.attrs({
+    className : ` Number text-[12px] mr-1` as string
+})`
+    font-family : ${({theme}) => theme.fonts.mono};
+    color : ${({theme}) => theme.colors2.gray.gray4};
+`
+
+export const Prompt = styled.div.attrs({
+    className : ` Prompt text-[16px] md:text-[17px] leading-[1.5] font-semibold` as string
+})`
+    letter-spacing : -0.01em;
+    color : ${({theme}) => theme.colors.main.primary};
+`
+
+export const Options = styled.div.attrs({
+    className : ` Options grid grid-cols-1 sm:grid-cols-2 gap-2` as string
+})``
+
+export type OptionState = 'idle' | 'correct' | 'wrong' | 'muted'
+
+export const Option = styled.button.attrs({
+    className : ` Option flex items-center gap-3 rounded-[9px] px-3 py-[10px] text-left text-[14px]` as string
+})<{state : OptionState}>`
+    color : ${({theme, state}) => state === 'muted' ? theme.colors2.gray.gray4 : theme.colors.main.primary};
+    background : ${({theme, state}) => ({
+        idle : theme.colors.background.light.white,
+        correct : theme.colors2.green.green5,
+        wrong : theme.colors2.red.red5,
+        muted : theme.colors.background.light.primary,
+    })[state]};
+    border : ${({theme, state}) => `1px solid ${({
+        idle : theme.colors.border.light.primary,
+        correct : theme.colors2.brand.mint,
+        wrong : theme.colors2.red.red4,
+        muted : theme.colors.border.light.primary,
+    })[state]}`};
+    cursor : ${({state}) => state === 'idle' ? 'pointer' : 'default'};
+    transition : background ${({theme}) => theme.motion.hover} ease, border-color ${({theme}) => theme.motion.hover} ease;
+    &:hover {
+        border-color : ${({theme, state}) => state === 'idle' ? theme.colors2.gray.gray5 : undefined};
+        background : ${({theme, state}) => state === 'idle' ? theme.colors.background.light.primary : undefined};
     }
 `
 
-export const QuestionNumber = styled.div.attrs({
-    className : `QuestionNumber rounded-full w-[90px] mb-[10px] flex items-center pb-[7px] pt-[6px] font-semibold justify-center`
-})`
-    background : ${({theme}) => theme.colors.background.light.white};
-`
-
-export const Question = styled.div.attrs({
-    className : `Question duration-300 w-full mb-[10px] p-[15px] flex rounded-[7px] justify-between gap-5`
-})<{showAnswer : boolean}>
-`
-    margin-bottom : ${({showAnswer}) => showAnswer? "10px" : "0"};
-    background : ${({theme}) => theme.colors.background.light.white};
-`
-
-export const Left = styled.div.attrs({
-    className : `Left w-full rounded-full h-full flex flex-col gap-3`
-})``
-
-export const MainQuestion = styled.div.attrs({
-    className : `MainQuestion`
-})``
-
-export const PossibleAnswers = styled.div.attrs({
-    className : `PossibleAnswers flex flex-col gap-2`
-})``
-
-export const PossibleAnswer = styled.div.attrs({
-    className : `PossibleAnswer flex flex gap-2`
-})``
-
-export const ShowAnswer = styled.div.attrs({
-    className : `ShowAnswer hover:opacity-[0.85] cursor-pointer `
-})
-`
-`
-
-export const AnswerContainer = styled.div.attrs({
-    className : `w-full rounded-b-[10px] p-[10px] duration-300`
-})<{showAnswer : boolean}>
-`
-    transition-property : max-height;
-    max-height : ${({showAnswer}) => showAnswer? "500px" : "0"};
-    padding : ${({showAnswer}) => showAnswer? "10px" : "0"};
-    background : ${({theme}) => theme.colors.background.light.white};
-    color : ${({theme}) => theme.colors.text.dark.black};
+export const OptionKey = styled.span.attrs({
+    className : ` OptionKey w-[24px] h-[24px] rounded-full inline-flex items-center justify-center text-[11px] font-bold shrink-0` as string
+})<{state : OptionState}>`
+    color : ${({theme, state}) => state === 'correct' || state === 'wrong' ? theme.colors.text.light.white : theme.colors2.gray.gray3};
+    background : ${({theme, state}) => state === 'correct' ? theme.colors2.brand.emerald
+        : state === 'wrong' ? theme.colors2.red.red3 : theme.colors.background.light.white};
+    border : ${({theme, state}) => state === 'correct' || state === 'wrong' ? 'none' : `1px solid ${theme.colors.border.light.primary}`};
 `
 
 export const Explanation = styled.div.attrs({
-    className : ``
-})
-`
-`
-
-export const Right = styled.div.attrs({
-    className : `Right rounded-full h-[25px] w-[25px] font-bold cursor-pointer hover:opacity-[0.7] flex justify-center items-center`
+    className : ` Explanation rounded-[9px] p-4 flex flex-col gap-1 text-[14px] leading-[1.55]` as string
 })`
-    background : ${({theme}) => `${theme.colors.main.primary}80`};
-    color : ${({theme}) => theme.colors.text.light.white};
+    color : ${({theme}) => theme.colors2.gray.gray3};
+    background : ${({theme}) => theme.colors.background.light.primary};
+    b { color : ${({theme}) => theme.colors.main.primary}; }
 `
 
-export const ExplanationText = styled.div.attrs({
-    className : `font-bold`
-})`
-    color : ${({theme}) => theme.colors.main.primary};
-`
-
-export const AnswerText = styled.span.attrs({
-    className : `font-bold`
-})`
-    color : ${({theme}) => theme.colors.main.primary};
-`
-
-export const Answer = styled.div.attrs({
-    className : `Answer`
-})<{showAnswer : boolean}>
-`
-    margin-bottom : ${({showAnswer}) => showAnswer? "5px" : "0"};
-`
-
-export const nameHere = styled.div.attrs({
-    className : ``
+export const Footer = styled.div.attrs({
+    className : ` Footer flex flex-wrap items-center justify-between gap-2 pt-1` as string
 })``
+
+export const Action = styled.button.attrs({
+    className : ` Action inline-flex items-center gap-[6px] rounded-full px-3 py-[6px] text-[13px] font-semibold` as string
+})<{active? : boolean}>`
+    color : ${({theme, active}) => active ? theme.colors2.brand.violet : theme.colors2.gray.gray3};
+    transition : background ${({theme}) => theme.motion.hover} ease, color ${({theme}) => theme.motion.hover} ease;
+    &:hover {
+        color : ${({theme, active}) => active ? theme.colors2.brand.violet : theme.colors.main.primary};
+        background : rgba(0, 0, 0, 0.04);
+    }
+`

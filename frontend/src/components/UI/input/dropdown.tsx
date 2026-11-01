@@ -1,10 +1,3 @@
-import { useState, useEffect } from 'react'
-import { AppTypography, Flex } from '../../../styles/global'
-import { TypographyBold } from '../../../styles/style.types'
-import theme from '../../../styles/theme'
-import Input from '../input/input'
-import * as tagsStyle from './dropdown.style'
-import { GiCancel } from 'react-icons/gi'
 import { Select, type SelectProps } from 'antd';
 import './antd.style.css'
 import { IconType } from 'react-icons'
@@ -77,11 +70,11 @@ const Dropdown = ({
             <Select
                 style={{ 
                     width: size?.width ?? '100%',
-                    height : size?.height ?? "47px",
+                    height : size?.height ?? "44px",
                     background,
                     color,
-                    borderRadius : radius ? `${radius}px` : '5px',
-                    fontSize : '12px',
+                    borderRadius : radius ? `${radius}px` : '9px',
+                    fontSize : '14px',
                     border
                  }}
                 filterOption={
@@ -94,7 +87,7 @@ const Dropdown = ({
                             .toLowerCase()
                         )
                 }
-                value={value}
+                value={value || undefined}
                 placeholder={placeholder ?? "Search or select"}
                 onChange={handleChange}
                 options={options}

@@ -1,96 +1,93 @@
 import * as React from 'react';
-import Box from '@mui/material/Box';
 import SwipeableDrawer from '@mui/material/SwipeableDrawer';
-import Button from '@mui/material/Button';
-import List from '@mui/material/List';
-import Divider from '@mui/material/Divider';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import { RiLockPasswordFill } from 'react-icons/ri'
-import { Flex } from '../../../styles/global';
+import { useNavigate } from 'react-router-dom';
+import Cookies from 'universal-cookie';
+import * as kit from '../../../styles/kit';
+import { profile } from '../../../data/sample';
+import { FiUser, FiClipboard, FiBookmark, FiBell, FiSettings, FiLogOut, FiLogIn } from "react-icons/fi";
+import { HiFire } from "react-icons/hi2";
 
-type Anchor = 'top' | 'left' | 'bottom' | 'right';
+const cookie = new Cookies()
+
 interface drawerChildrenProp {
     children: React.ReactNode;
+    hasSession : boolean
+}
+
+const links = [
+  { icon : FiUser, label : 'Profile', route : '/profile' },
+  { icon : FiClipboard, label : 'Test history', route : '/test/testconfig' },
+  { icon : FiBookmark, label : 'Saved questions', route : '/questions' },
+  { icon : FiBell, label : 'Notifications', route : '/notification' },
+  { icon : FiSettings, label : 'Settings', route : '/profile' },
+]
+
+// Account panel that slides in from the right of the top bar
+const SwipeableTemporaryDrawer = ({
+    children, hasSession
+} : drawerChildrenProp) => {
+
+  const navigate = useNavigate()
+  const [open, setOpen] = React.useState(false)
+
+  const go = (route : string) => {
+    setOpen(false)
+    navigate(route)
   }
 
-const SwipeableTemporaryDrawer = ({
-    children
-} : drawerChildrenProp) => {
-  const [state, setState] = React.useState({
-    top: false,
-    left: false,
-    bottom: false,
-    right: false,
-  });
-
-  const toggleDrawer =
-    (anchor: Anchor, open: boolean) =>
-    (event: React.KeyboardEvent | React.MouseEvent) => {
-      if (
-        event &&
-        event.type === 'keydown' &&
-        ((event as React.KeyboardEvent).key === 'Tab' ||
-          (event as React.KeyboardEvent).key === 'Shift')
-      ) {
-        return;
-      }
-
-      setState({ ...state, [anchor]: open });
-    };
-
-  const list = (anchor: Anchor) => (
-    <Box
-      sx={{ width: anchor === 'top' || anchor === 'bottom' ? 'auto' : 250 }}
-      role="presentation"
-      onClick={toggleDrawer(anchor, false)}
-      onKeyDown={toggleDrawer(anchor, false)}
-    >
-      <List>
-        {['Inbox', 'Starred', 'Send email', 'Drafts'].map((text, index) => (
-          <ListItem key={text} disablePadding>
-            <ListItemButton>
-              <ListItemIcon>
-                {index % 2 === 0 ? <RiLockPasswordFill /> : <RiLockPasswordFill />}
-              </ListItemIcon>
-              <ListItemText primary={text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-      <Divider />
-      <List>
-        {['All mail', 'Trash', 'Spam'].map((text, index) => (
-          <ListItem key={text} disablePadding>
-            <ListItemButton>
-              <ListItemIcon>
-                {index % 2 === 0 ? <RiLockPasswordFill /> : <RiLockPasswordFill />}
-              </ListItemIcon>
-              <ListItemText primary={text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </Box>
-  );
+  const logout = () => {
+    cookie.remove('jwtToken', { path : '/' })
+    go('/auth/login')
+  }
 
   return (
     <div>
-      {(['right'] as const).map((anchor) => (
-        <React.Fragment key={anchor}>
-          <Flex onClick={toggleDrawer(anchor, true)}>{children}</Flex>
-          <SwipeableDrawer
-            anchor={anchor}
-            open={state[anchor]}
-            onClose={toggleDrawer(anchor, false)}
-            onOpen={toggleDrawer(anchor, true)}
-          >
-            {list(anchor)}
-          </SwipeableDrawer>
-        </React.Fragment>
-      ))}
+      <div onClick={()=>setOpen(true)}>{children}</div>
+      <SwipeableDrawer
+        anchor='right'
+        open={open}
+        onClose={()=>setOpen(false)}
+        onOpen={()=>setOpen(true)}
+        PaperProps={{ sx : { width : 300, borderLeft : '1px solid #e8e8e8', boxShadow : 'none' } }}
+      >
+        <div className='flex flex-col h-full p-5 gap-5' data-lenis-prevent>
+          <div className='flex items-center gap-3'>
+            <kit.Avatar color='#202020' size={44} ring='transparent' className='!text-[14px]'>{profile.initials}</kit.Avatar>
+            <div className='flex flex-col min-w-0'>
+              <span className='text-[15px] font-bold text-ink truncate'>{hasSession ? profile.name : 'Guest'}</span>
+              <span className='text-[13px] text-ash truncate'>{hasSession ? `${profile.program} · ${profile.school}` : 'Log in to save progress'}</span>
+            </div>
+          </div>
+          {
+            hasSession &&
+            <div className='flex items-center gap-2 rounded-[12px] bg-mist border border-bone px-4 py-3 text-[13px] text-carbon'>
+              <HiFire className='text-[#fd9a46]' size={16}/> <b className='text-ink'>{profile.streak}-day streak</b> · keep it going
+            </div>
+          }
+          <nav className='flex flex-col gap-1'>
+            {
+              links.map((link) => (
+                <button
+                  key={link.label}
+                  type='button'
+                  onClick={()=>go(link.route)}
+                  className='flex items-center gap-3 rounded-[9px] px-3 py-[10px] text-[14px] font-medium text-carbon hover:bg-black/[0.04] transition-colors duration-150'
+                >
+                  <link.icon size={16} className='text-ash'/> {link.label}
+                </button>
+              ))
+            }
+          </nav>
+          <div className='mt-auto pt-4 border-t border-bone'>
+            {
+              hasSession ?
+              <kit.GhostButton type='button' className='w-full' onClick={logout}><FiLogOut size={14}/> Log out</kit.GhostButton>
+              :
+              <kit.DarkButton type='button' className='w-full' onClick={()=>go('/auth/login')}><FiLogIn size={14}/> Log in</kit.DarkButton>
+            }
+          </div>
+        </div>
+      </SwipeableDrawer>
     </div>
   );
 }

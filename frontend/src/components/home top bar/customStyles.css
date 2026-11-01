@@ -1,7 +1,0 @@
-button, [type='button'], [type='reset'], [type='submit'] {
-    border: none;
-}
-
-[type='button'] {
-    color: inherit !important;
-}

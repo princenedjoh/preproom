@@ -2,18 +2,92 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&display=swap');
+:root {
+  --color-ink: #202020;
+  --color-onyx: #090c1d;
+  --color-slate: #646464;
+  --color-ash: #838383;
+  --color-bone: #e8e8e8;
+  --color-mist: #f8f9fa;
+  --color-plaster: #e9ebf0;
+  --color-brand-violet: #6647f0;
+  --color-signal-blue: #0091ff;
+  --gradient-rainbow-conic: conic-gradient(from var(--conic-angle, 90deg), rgb(125, 91, 231) 19%, rgb(188, 63, 218) 28%, rgb(250, 36, 206) 37%, rgb(251, 73, 165) 45%, rgb(252, 109, 123) 52%, rgb(253, 132, 97) 55%, rgb(253, 154, 70) 58%, rgb(246, 135, 198) 65%, rgb(163, 160, 224) 80%, rgb(79, 185, 250) 95%, rgb(0, 145, 255) 100%);
+  --gradient-primary: linear-gradient(83deg, rgb(64, 221, 255) -5%, rgb(118, 18, 250) 51%, rgb(250, 18, 227) 125%);
+  --ease-settle: cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+html, body {
+  background: #ffffff;
+}
 
 body {
   margin: 0;
+  color: var(--color-ink);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
+  font-feature-settings: "calt" 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+  font-family: 'Sometype Mono', 'JetBrains Mono', source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+/* Lenis smooth scrolling */
+html.lenis, html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: clip;
+}
+
+/* Rotating rainbow conic border — use on one hero element per page */
+@property --conic-angle {
+  syntax: '<angle>';
+  initial-value: 90deg;
+  inherits: false;
+}
+
+@keyframes conic-spin {
+  to { --conic-angle: 450deg; }
+}
+
+.conic-border {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 9999px;
+  background: var(--gradient-rainbow-conic);
+  animation: conic-spin 3s linear infinite;
+}
+
+.text-gradient-primary {
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .conic-border { animation: none; }
+}
+
+/* Tailwind preflight resets button backgrounds, which beats antd's zero-specificity styles */
+.ant-switch { background: rgba(0, 0, 0, 0.18); }
+.ant-switch:hover:not(.ant-switch-disabled) { background: rgba(0, 0, 0, 0.28); }
+.ant-switch.ant-switch-checked,
+.ant-switch.ant-switch-checked:hover:not(.ant-switch-disabled) { background: var(--color-ink); }
+.ant-btn-primary { background: var(--color-ink); }
+.ant-btn-primary:not(:disabled):hover { background: #3a3a3a; }
+.ant-btn { font-weight: 600; }

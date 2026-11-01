@@ -1,79 +1,39 @@
 import styled from "styled-components";
-import { minimumWidth } from "../../utils/types";
 
-export const Main = styled.div.attrs({
-    className : `w-full flex justify-center mt-[100px] text-sm w-full `
-})`
-    color : ${({theme}) => theme.colors.text.dark.primary};
-`
-
-export const Head = styled.div.attrs({
-    className : `Head cursor-default`
+export const Layout = styled.div.attrs({
+    className : `Layout grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start` as string
 })``
 
-export const title = styled.div.attrs({
-    className : `title font-bold text-base `
+export const Rail = styled.aside.attrs({
+    className : `Rail flex flex-col gap-4 lg:sticky lg:top-[88px]` as string
 })``
 
-export const Subtitle = styled.div.attrs({
-    className : `Subtitle text-[11px] font-semibold flex mb-[10px]`
+export const Toolbar = styled.div.attrs({
+    className : `Toolbar flex flex-col gap-3` as string
+})``
+
+export const Search = styled.div.attrs({
+    className : `Search relative w-full md:max-w-[360px]` as string
 })`
-    color : ${({theme}) => theme.colors.text.dark.tetiary};
-`
-
-export const Switcher = styled.div.attrs({
-    className : `Switcher flex p-[5px] mb-[20px] font-semibold text-xs gap-1 h-[40px] w-[130px] flex items-center justify-center rounded-full`
-})
-`
-    color : ${({theme}) => theme.colors.text.light.white};
-    background : ${({theme}) => theme.colors.background.light.primary};
-`
-
-export const Mcqs = styled.div.attrs({
-    className : `Mcqs w-full h-full cursor-pointer duration-300 rounded-full flex items-center justify-center`
-})<{mcqs? : boolean}>
-`
-    &:hover{
-        background : ${({theme, mcqs}) => !mcqs && theme.colors.background.light.secondary};
+    svg {
+        position : absolute;
+        left : 14px;
+        top : 50%;
+        transform : translateY(-50%);
+        color : ${({theme}) => theme.colors2.gray.gray4};
     }
-    color : ${({theme, mcqs}) => !mcqs && theme.colors.text.dark.primary};
-    background : ${({theme, mcqs}) => mcqs && theme.colors.main.primary};
+    input { padding-left : 38px; }
 `
 
-export const Test = styled.div.attrs({
-    className : `Test w-full h-full cursor-pointer duration-500 rounded-full flex items-center justify-center`
-})<{mcqs? : boolean}>
-`
-    &:hover{
-        background : ${({theme, mcqs}) => mcqs && theme.colors.background.light.secondary};
-    }
-    color : ${({theme, mcqs}) => mcqs && theme.colors.text.dark.primary};
-    background : ${({theme, mcqs}) => !mcqs && theme.colors.main.primary};
-`
-
-export const Body = styled.div.attrs({
-    className : `Body flex gap-[20px] justify-between w-full`
-})``
-
-export const Left = styled.div.attrs({
-    className : `Left w-full rounded-[10px] flex flex-col gap-[20px]`
+export const ChipRow = styled.div.attrs({
+    className : `ChipRow flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0 md:flex-wrap` as string
 })`
+    scrollbar-width : none;
+    &::-webkit-scrollbar { display : none; }
 `
 
-export const Right = styled.div.attrs({
-    className : `Right w-[350px] flex flex-col gap-[20px]`
+export const SettingRow = styled.div.attrs({
+    className : `SettingRow flex items-center justify-between gap-3 text-[14px]` as string
 })`
-    
-`
-
-export const Ads = styled.div.attrs({
-    className : `Ads w-full h-[400px] rounded-[10px] flex flex-col justify-center items-center`
-})`
-    background : ${({theme}) => theme.colors2.gray.gray8};
-    border : ${({theme}) => `0.5px solid ${theme.colors2.main.primary}1a`};
-`
-
-export const nameHere = styled.div.attrs({
-    className : ``
-})`
+    color : ${({theme}) => theme.colors2.gray.gray2};
 `
