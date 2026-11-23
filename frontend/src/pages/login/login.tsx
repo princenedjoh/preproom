@@ -52,11 +52,11 @@ const Login = () => {
                     value={email} onChange={(e)=>setEmail(e.target.value)} error={emailError}/>
                 <Field label='Password' type='password' autoComplete='current-password' placeholder='Your password'
                     value={password} onChange={(e)=>setPassword(e.target.value)} error={passwordError}/>
-                <Link to='/auth/forgot' className='self-end -mt-1 text-[13px] font-semibold text-muted hover:text-ink'>Forgot password?</Link>
-                <kit.DarkButton type='submit' className='w-full h-[46px]' disabled={loading} aria-busy={loading}>
+                <Link to='/auth/forgot' className='self-end -mt-1 text-[13px] font-medium text-ink-3 hover:text-ink'>Forgot password?</Link>
+                <kit.PrimaryButton type='submit' className='w-full !h-10' disabled={loading} aria-busy={loading}>
                     {loading ? <><Spinner/> Logging in</> : 'Log in'}
-                </kit.DarkButton>
-                <button type='button' onClick={()=>navigate('/today')} className='inline-flex items-center justify-center gap-1 text-[13px] font-semibold text-muted hover:text-ink transition-colors'>
+                </kit.PrimaryButton>
+                <button type='button' onClick={()=>navigate('/today')} className='inline-flex items-center justify-center gap-1 text-[13px] font-medium text-ink-3 hover:text-ink transition-colors'>
                     Continue without an account <FiArrowRight size={13}/>
                 </button>
             </form>

@@ -15,13 +15,13 @@
     max-width: min(420px, calc(100vw - 32px));
     margin: 8px auto 0;
     padding: 11px 18px;
-    border-radius: 9999px;
-    background: #202020;
-    color: #ffffff;
-    font-family: 'Inter', system-ui, sans-serif;
+    border-radius: 8px;
+    background: rgb(var(--inverse));
+    color: rgb(var(--on-inverse));
+    font-family: var(--font-sans);
     font-size: 14px;
-    font-weight: 600;
-    box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.35);
+    font-weight: 500;
+    box-shadow: var(--shadow-float);
     cursor: default;
 }
 

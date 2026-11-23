@@ -37,11 +37,9 @@ export const Number = styled.span.attrs({
 `
 
 export const Prompt = styled.div.attrs({
-    className : `Prompt text-[18px] md:text-[19px] leading-[1.55]` as string
+    className : `Prompt text-[16px] md:text-[17px] leading-[1.6]` as string
 })`
-    font-family : var(--font-serif);
-    font-optical-sizing : auto;
-    font-weight : 450;
+    font-weight : 400;
     color : ${color.ink};
     text-wrap : pretty;
     sup, sub { line-height : 0; }

@@ -33,7 +33,7 @@ const ForgotPassword = () => {
         <AuthShell
             title={sent ? 'Check your email' : 'Reset your password'}
             subtitle={sent ? `If an account exists for ${email.trim()}, we sent a link to reset your password. It expires in an hour.` : 'Enter the email you signed up with and we’ll send you a reset link.'}
-            footer={<Link to='/auth/login' className='inline-flex items-center gap-1 text-[14px] font-semibold text-muted hover:text-ink'><FiArrowLeft size={14}/> Back to log in</Link>}
+            footer={<Link to='/auth/login' className='inline-flex items-center gap-1 text-[14px] font-semibold text-ink-3 hover:text-ink'><FiArrowLeft size={14}/> Back to log in</Link>}
         >
             {
                 sent ?
@@ -46,9 +46,9 @@ const ForgotPassword = () => {
                     {error && <FormError>{error}</FormError>}
                     <Field label='Email' type='email' autoComplete='email' inputMode='email' autoFocus placeholder='you@school.edu'
                         value={email} onChange={(e)=>setEmail(e.target.value)} error={touched && !isEmail(email) ? 'Enter a valid email address' : null}/>
-                    <kit.DarkButton type='submit' className='w-full h-[46px]' disabled={loading} aria-busy={loading}>
+                    <kit.PrimaryButton type='submit' className='w-full !h-10' disabled={loading} aria-busy={loading}>
                         {loading ? <><Spinner/> Sending</> : 'Send reset link'}
-                    </kit.DarkButton>
+                    </kit.PrimaryButton>
                 </form>
             }
         </AuthShell>

@@ -27,6 +27,7 @@ export interface Question {
     saves : number
     institution? : string | null
     stats? : { attempts : number, correctRate : number, options : number[] }   // from the API, once you've answered
+    acceptance? : { attempts : number, correctRate : number | null }                // from the API, safe to show before answering
 }
 
 export const questions : Question[] = [

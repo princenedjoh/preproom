@@ -39,12 +39,12 @@ const Contact = () => {
                                         type='button'
                                         onClick={()=>setReason(item.title)}
                                         aria-pressed={reason === item.title}
-                                        className={`flex items-start gap-4 rounded-[12px] p-4 text-left border transition-colors duration-150 ${reason === item.title ? 'border-ink bg-white shadow-[inset_0_0_0_1px_#202020]' : 'border-bone hover:border-cloud'}`}
+                                        className={`flex items-start gap-4 rounded-lg p-4 text-left border transition-colors duration-150 ${reason === item.title ? 'border-accent/60 bg-accent-tint' : 'border-line hover:border-line-strong'}`}
                                     >
                                         <kit.IconTile><item.icon size={16}/></kit.IconTile>
                                         <span className='flex flex-col gap-1'>
                                             <span className='text-[15px] font-bold text-ink'>{item.title}</span>
-                                            <span className='text-[14px] text-muted'>{item.text}</span>
+                                            <span className='text-[14px] text-ink-2'>{item.text}</span>
                                         </span>
                                     </button>
                                 ))
@@ -69,7 +69,7 @@ const Contact = () => {
                                 className='!h-auto py-3 resize-y'
                             />
                         </kit.Label>
-                        <kit.DarkButton type='submit' className='self-start'>Send message <FiArrowRight size={15}/></kit.DarkButton>
+                        <kit.PrimaryButton type='submit' className='self-start'>Send message <FiArrowRight size={15}/></kit.PrimaryButton>
                     </kit.Panel>
                 </div>
             </kit.PageInner>

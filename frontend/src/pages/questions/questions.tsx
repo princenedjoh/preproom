@@ -1,28 +1,41 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import CourseIcon from '../../components/courseIcon/courseIcon'
+import { useNavigate, useParams, useSearchParams, NavLink } from 'react-router-dom'
 import { confirm } from '../../components/dialog/confirm'
 import * as kit from '../../styles/kit'
-import Mcqs from '../mcqs/mcqs'
-import SegmentedControl from '../../components/UI/segmented/segmented'
+import CourseIcon from '../../components/courseIcon/courseIcon'
 import { Question, Difficulty } from '../../data/sample'
 import { getCourse, fetchQuestions, useCatalog } from '../../data/catalog'
 import { progress, useProgress, courseProgress } from '../../store/progress'
-import { FiSearch, FiBookmark, FiCheckCircle, FiClock, FiEye, FiEyeOff, FiRotateCcw } from "react-icons/fi";
+import { difficultyClass, difficultyShort } from '../mcqs/mcqs'
+import { DailyCalendar, SolvedCard, StatusGlyph, acceptanceOf, plainText } from './parts'
+import { FiSearch, FiBookmark, FiCheckCircle, FiClock, FiRotateCcw, FiShuffle, FiChevronDown, FiX, FiCalendar } from "react-icons/fi";
+import { useChallengeView } from '../../store/challenge'
 
 const difficulties : ('All' | Difficulty)[] = ['All', 'Easy', 'Medium', 'Hard']
-const sorts = ['Newest', 'Oldest', 'Hardest'] as const
+const sorts = ['Default', 'Newest', 'Oldest', 'Hardest', 'Acceptance'] as const
 const statuses = ['all', 'unanswered', 'mistakes', 'saved'] as const
 type Status = typeof statuses[number]
 const statusLabels : Record<Status, string> = { all : 'All', unanswered : 'Unanswered', mistakes : 'Mistakes', saved : 'Saved' }
 const difficultyRank = { Easy : 0, Medium : 1, Hard : 2 }
+
+// A quiet native select styled as a toolbar button
+const Select = <T extends string,>({ label, value, options, onChange, format } : { label : string, value : T, options : readonly T[], onChange : (value : T) => void, format? : (value : T) => string }) => (
+    <label className={`relative inline-flex items-center h-8 rounded-md text-[13px] transition-colors ${value !== options[0] ? 'bg-accent-tint text-accent' : 'bg-ink/[0.05] text-ink-2 hover:bg-ink/[0.08]'}`}>
+        <span className='sr-only'>{label}</span>
+        <select value={value} onChange={(e)=>onChange(e.target.value as T)} className='appearance-none bg-transparent h-full pl-3 pr-7 outline-none cursor-pointer'>
+            {options.map((item) => <option key={item} value={item}>{format ? format(item) : item}</option>)}
+        </select>
+        <FiChevronDown size={13} className='absolute right-2 pointer-events-none'/>
+    </label>
+)
 
 const Questions = () => {
 
     const navigate = useNavigate()
     const { courseID } = useParams()
     const state = useProgress()
-    useCatalog()
+    const { courses } = useCatalog()
+    const challenge = useChallengeView()
     // /questions with no course opens the one you practised most recently
     const lastCourseID = Object.values(state.attempts).sort((a, b) => b.at - a.at)[0]?.courseID
     const course = getCourse(courseID ?? lastCourseID)
@@ -34,9 +47,7 @@ const Questions = () => {
     const [search, setSearch] = useState(() => params.get('q') ?? '')
     const [difficulty, setDifficulty] = useState<'All' | Difficulty>('All')
     const [topic, setTopic] = useState('All')
-    const [sort, setSort] = useState<typeof sorts[number]>('Newest')
-    const [revealAll, setRevealAll] = useState(false)
-    const [schools, setSchools] = useState<string[]>([])
+    const [sort, setSort] = useState<typeof sorts[number]>('Default')
 
     useEffect(()=>{
         let active = true
@@ -67,15 +78,13 @@ const Questions = () => {
         return true
     }
 
-    const counts = useMemo(() => Object.fromEntries(statuses.map((which) =>
-        [which, data.filter((question) => matchesStatus(question, which)).length])) as Record<Status, number>,
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [data, state])
-
-    const institutions = useMemo(() => Array.from(new Set(data.map((question) => question.institution).filter(Boolean) as string[])).sort(), [data])
-    const toggleSchool = (school : string) => setSchools(schools.includes(school) ? schools.filter((item) => item !== school) : [...schools, school])
-
-    const topics = useMemo(() => ['All', ...Array.from(new Set(data.map((question) => question.topic)))], [data])
+    // Stable numbering: the order questions sit in the bank, like problem numbers
+    const numberOf = useMemo(() => new Map(data.map((question, index) => [question.id, index + 1])), [data])
+    const topics = useMemo(() => {
+        const counts = new Map<string, number>()
+        data.forEach((question) => counts.set(question.topic, (counts.get(question.topic) ?? 0) + 1))
+        return Array.from(counts.entries()).sort((a, b) => b[1] - a[1])
+    }, [data])
 
     const visible = useMemo(() => {
         const term = search.trim().toLowerCase()
@@ -83,174 +92,202 @@ const Questions = () => {
             .filter((question) => matchesStatus(question, status))
             .filter((question) => difficulty === 'All' || question.difficulty === difficulty)
             .filter((question) => topic === 'All' || question.topic === topic)
-            .filter((question) => schools.length === 0 || schools.includes(question.institution ?? ''))
-            .filter((question) => !term || question.question.toLowerCase().includes(term) || question.topic.toLowerCase().includes(term))
+            .filter((question) => !term || plainText(question.question).toLowerCase().includes(term) || question.topic.toLowerCase().includes(term) || String(numberOf.get(question.id)) === term)
             .sort((a, b) => sort === 'Newest' ? b.year - a.year
                 : sort === 'Oldest' ? a.year - b.year
-                : difficultyRank[b.difficulty] - difficultyRank[a.difficulty])
-    // Status membership is frozen while answering so a card doesn't vanish the moment it is answered
+                : sort === 'Hardest' ? difficultyRank[b.difficulty] - difficultyRank[a.difficulty]
+                : sort === 'Acceptance' ? (acceptanceOf(a) ?? 101) - (acceptanceOf(b) ?? 101)
+                : (numberOf.get(a.id) ?? 0) - (numberOf.get(b.id) ?? 0))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [data, search, difficulty, topic, sort, status, schools])
+    }, [data, search, difficulty, topic, sort, status, state.attempts, state.saved])
 
     const stats = courseProgress(state, course.id, data.length || course.questions)
-    const filtersActive = search || difficulty !== 'All' || topic !== 'All' || status !== 'all' || schools.length > 0
+    const solved = data.filter((question) => state.attempts[question.id]?.correct).length
+    const filtersActive = !!search || difficulty !== 'All' || topic !== 'All' || status !== 'all' || sort !== 'Default'
 
     const clearFilters = () => {
-        setSearch('')
-        setDifficulty('All')
-        setTopic('All')
-        setStatus('all')
-        setSchools([])
+        setSearch(''); setDifficulty('All'); setTopic('All'); setStatus('all'); setSort('Default')
     }
 
-    const resetCourse = () => {
-        confirm({
-            title : `Reset ${course.name}?`,
-            content : 'This clears your answers for this course on this device. Saved questions and test history stay.',
-            okText : 'Reset progress',
-            cancelText : 'Cancel',
-            danger : true,
-            onOk : () => progress.clearAttempts(course.id),
-        })
+    const open = (question : Question) => navigate(`/questions/${course.id}/${question.id}${params.toString() ? `?${params.toString()}` : ''}`)
+
+    const shuffle = () => {
+        const pool = visible.filter((question) => !state.attempts[question.id])
+        const pick = (pool.length ? pool : visible)[Math.floor(Math.random() * (pool.length ? pool.length : visible.length))]
+        if(pick) open(pick)
     }
 
-    const emptyCopy = status === 'saved' ? { icon : FiBookmark, title : 'No saved questions yet', text : 'Press Save on any question to keep it here for revision.' }
-        : status === 'mistakes' ? { icon : FiCheckCircle, title : 'No mistakes to review', text : 'Questions you get wrong will collect here.' }
+    const resetCourse = () => confirm({
+        title : `Reset ${course.name}?`,
+        content : 'This clears your answers for this course. Saved questions and test history stay.',
+        okText : 'Reset progress',
+        danger : true,
+        onOk : () => progress.clearAttempts(course.id),
+    })
+
+    const mistakes = Object.values(state.attempts).filter((attempt) => !attempt.correct && attempt.courseID === course.id).length
+    const saved = data.filter((question) => state.saved[question.id]).length
+
+    const emptyCopy = status === 'saved' ? { icon : FiBookmark, title : 'No saved questions yet', text : 'Press S on any question to keep it here.' }
+        : status === 'mistakes' ? { icon : FiCheckCircle, title : 'No mistakes to review', text : 'Questions you get wrong collect here.' }
         : status === 'unanswered' ? { icon : FiCheckCircle, title : `You've answered every ${course.name} question`, text : 'Review your mistakes or take a timed test.' }
-        : { icon : FiSearch, title : 'No questions match your filters', text : 'Try a different topic or difficulty.' }
+        : { icon : FiSearch, title : 'No questions match', text : 'Try another topic or clear the filters.' }
 
-    const years = data.map((question) => question.year)
-    const span = years.length ? (Math.min(...years) === Math.max(...years) ? `${Math.min(...years)}` : `${Math.min(...years)}–${Math.max(...years)}`) : '—'
-    const topicCount = (name : string) => name === 'All' ? data.filter((question) => matchesStatus(question, status)).length : data.filter((question) => question.topic === name && matchesStatus(question, status)).length
+    const libraryRow = (active : boolean) => `flex items-center gap-[10px] h-9 px-2 rounded-md text-[14px] transition-colors ${active ? 'bg-ink/[0.07] text-ink font-medium' : 'text-ink-2 hover:bg-ink/[0.04] hover:text-ink'}`
 
     return (
-        <kit.Page>
-            <div className='w-full max-w-[780px] flex flex-col gap-7'>
-                <header className='flex flex-col gap-5 pt-2'>
-                    <CourseIcon course={course} size={44}/>
-                    <div className='flex flex-col gap-1'>
-                        <kit.PageTitle>{course.name}</kit.PageTitle>
-                        <span className='text-[14px] text-ink-3'>{course.code} · Past questions</span>
+        <main className='w-full max-w-[1440px] mx-auto px-3 md:px-5 py-5 md:py-6 grid grid-cols-1 lg:grid-cols-[216px_minmax(0,1fr)] xl:grid-cols-[216px_minmax(0,1fr)_288px] gap-5 items-start'>
+
+            {/* Library rail */}
+            <aside className='hidden lg:flex flex-col gap-1 sticky top-[66px]' aria-label='Library'>
+                <span className='px-2 pb-1 text-[12px] font-medium text-ink-3'>Courses</span>
+                {courses.map((item) => {
+                    const value = courseProgress(state, item.id, item.questions)
+                    return (
+                        <NavLink key={item.id} to={`/questions/${item.id}`} className={libraryRow(item.id === course.id && status === 'all')}>
+                            <CourseIcon course={item} size={20}/>
+                            <span className='flex-1 truncate'>{item.name}</span>
+                            {value.answered > 0 && <span className='text-[11px] text-ink-3 tabular-nums'>{value.answered}/{item.questions}</span>}
+                        </NavLink>
+                    )
+                })}
+                <span className='px-2 pt-4 pb-1 text-[12px] font-medium text-ink-3'>My lists</span>
+                <button type='button' onClick={()=>setStatus('mistakes')} className={libraryRow(status === 'mistakes')}>
+                    <FiRotateCcw size={15} className='text-hard'/> <span className='flex-1 text-left'>Mistakes</span>
+                    {mistakes > 0 && <span className='text-[11px] text-ink-3 tabular-nums'>{mistakes}</span>}
+                </button>
+                <button type='button' onClick={()=>setStatus('saved')} className={libraryRow(status === 'saved')}>
+                    <FiBookmark size={15} className='text-accent'/> <span className='flex-1 text-left'>Saved</span>
+                    {saved > 0 && <span className='text-[11px] text-ink-3 tabular-nums'>{saved}</span>}
+                </button>
+            </aside>
+
+            {/* The list */}
+            <section className='flex flex-col gap-4 min-w-0' aria-label={`${course.name} questions`}>
+                <div className='flex flex-wrap items-center gap-3'>
+                    <CourseIcon course={course} size={36}/>
+                    <div className='flex flex-col min-w-0 flex-1'>
+                        <h1 className='text-[20px] font-semibold tracking-[-0.02em] text-ink leading-tight truncate'>{course.name}</h1>
+                        <span className='text-[12px] text-ink-3'>{course.code} · {data.length || course.questions} past questions{stats.answered ? ` · ${stats.accuracy}% right` : ''}</span>
                     </div>
-                    {/* Page properties, the way Notion lists them under a title */}
-                    <dl className='grid grid-cols-[120px_minmax(0,1fr)] gap-y-[6px] text-[14px]'>
-                        <dt className='text-ink-3'>Progress</dt>
-                        <dd className='flex items-center gap-3 min-w-0'>
-                            <span className='w-[140px] max-w-[40%]'><kit.ProgressTrack height={4}><kit.ProgressFill value={stats.percent}/></kit.ProgressTrack></span>
-                            <span className='text-ink-2 tabular-nums'>{stats.answered} of {data.length || course.questions} answered</span>
-                        </dd>
-                        <dt className='text-ink-3'>Accuracy</dt>
-                        <dd className='text-ink-2 tabular-nums'>{stats.answered ? `${stats.accuracy}%` : 'No answers yet'}</dd>
-                        <dt className='text-ink-3'>Papers</dt>
-                        <dd className='text-ink-2 tabular-nums'>{span}{institutions.length ? ` · ${institutions.join(', ')}` : ''}</dd>
-                    </dl>
-                    <div className='flex flex-wrap items-center gap-2'>
-                        <kit.PrimaryButton type='button' onClick={()=>navigate('/test/testconfig', { state : { courseID : course.id } })}>
-                            <FiClock size={14}/> Timed test
+                    <div className='flex items-center gap-2'>
+                        {stats.answered > 0 && <kit.GhostButton type='button' className='!h-8' onClick={resetCourse}><FiRotateCcw size={13}/> Reset</kit.GhostButton>}
+                        <kit.PrimaryButton type='button' className='!h-8' onClick={()=>navigate('/test/testconfig', { state : { courseID : course.id } })}>
+                            <FiClock size={13}/> Timed test
                         </kit.PrimaryButton>
-                        <kit.SecondaryButton type='button' onClick={()=>setRevealAll(!revealAll)} aria-pressed={revealAll}>
-                            {revealAll ? <FiEyeOff size={14}/> : <FiEye size={14}/>} {revealAll ? 'Hide answers' : 'Show all answers'}
-                        </kit.SecondaryButton>
-                        {
-                            stats.answered > 0 &&
-                            <kit.GhostButton type='button' onClick={resetCourse}><FiRotateCcw size={14}/> Reset</kit.GhostButton>
-                        }
-                    </div>
-                </header>
-
-                {/* View bar: status tabs on the left, search and refine on the right */}
-                <div className='flex flex-col gap-3 sticky top-[52px] lg:top-2 z-10 bg-surface/90 backdrop-blur-xl -mx-4 px-4 md:-mx-8 md:px-8 pt-2'>
-                    <div className='flex items-center gap-3 border-b border-line'>
-                        <div role='tablist' aria-label='Show' className='flex items-center gap-1 overflow-x-auto -mb-px' style={{ scrollbarWidth : 'none' }}>
-                            {statuses.map((which) => (
-                                <button
-                                    key={which}
-                                    type='button'
-                                    role='tab'
-                                    aria-selected={status === which}
-                                    onClick={()=>setStatus(which)}
-                                    className={`h-9 px-2 inline-flex items-center gap-[6px] text-[14px] whitespace-nowrap border-b-2 transition-colors
-                                    ${status === which ? 'border-ink text-ink font-medium' : 'border-transparent text-ink-3 hover:text-ink'}`}
-                                >
-                                    {statusLabels[which]}
-                                    <span className='text-[12px] text-ink-4 tabular-nums'>{loading ? '' : counts[which]}</span>
-                                </button>
-                            ))}
-                        </div>
-                        <div className='ml-auto flex items-center gap-1 pb-1'>
-                            <label className='relative hidden sm:block'>
-                                <FiSearch size={14} className='absolute left-[10px] top-1/2 -translate-y-1/2 text-ink-3'/>
-                                <input
-                                    type='search'
-                                    value={search}
-                                    onChange={(e)=>setSearch(e.target.value)}
-                                    placeholder='Search'
-                                    aria-label='Search questions'
-                                    className='h-8 w-[150px] focus:w-[220px] rounded-md bg-transparent hover:bg-ink/[0.04] focus:bg-subtle pl-8 pr-2 text-[13px] text-ink placeholder:text-ink-3 outline-none transition-[width,background-color] duration-200 ease-out'
-                                />
-                            </label>
-                            <select
-                                value={sort}
-                                onChange={(e)=>setSort(e.target.value as typeof sorts[number])}
-                                aria-label='Sort by'
-                                className='h-8 rounded-md bg-transparent hover:bg-ink/[0.04] px-2 text-[13px] text-ink-2 outline-none cursor-pointer'
-                            >
-                                {sorts.map((item) => <option key={item} value={item}>{item}</option>)}
-                            </select>
-                        </div>
-                    </div>
-                    <div className='flex items-center gap-2 overflow-x-auto md:overflow-visible md:flex-wrap pb-3' style={{ scrollbarWidth : 'none' }}>
-                        <div className='shrink-0'><SegmentedControl aria-label='Difficulty' value={difficulty} onChange={setDifficulty} options={difficulties}/></div>
-                        <span className='w-px h-5 bg-line shrink-0 mx-1'/>
-                        {topics.map((item) => (
-                            <kit.FilterChip key={item} type='button' className='shrink-0' active={topic === item} aria-pressed={topic === item} onClick={()=>setTopic(item)}>
-                                {item === 'All' ? 'All topics' : item}
-                                <span className={`text-[11px] tabular-nums ${topic === item ? 'text-accent/70' : 'text-ink-4'}`}>{loading ? '' : topicCount(item)}</span>
-                            </kit.FilterChip>
-                        ))}
-                        {institutions.length > 1 && <span className='w-px h-5 bg-line shrink-0 mx-1'/>}
-                        {institutions.length > 1 && institutions.map((school) => (
-                            <kit.FilterChip key={school} type='button' active={schools.includes(school)} aria-pressed={schools.includes(school)} onClick={()=>toggleSchool(school)}>{school}</kit.FilterChip>
-                        ))}
                     </div>
                 </div>
 
-                <div className='sm:hidden -mt-3'>
-                    <kit.TextInput type='search' value={search} onChange={(e)=>setSearch(e.target.value)} placeholder='Search questions or topics' aria-label='Search questions'/>
+                {/* Topics, with counts */}
+                <div className='flex flex-wrap items-center gap-x-1 gap-y-1'>
+                    {[['All', data.length] as [string, number], ...topics].map(([name, count]) => (
+                        <button key={name} type='button' onClick={()=>setTopic(name)} aria-pressed={topic === name}
+                            className={`h-7 px-[10px] rounded-full text-[13px] inline-flex items-center gap-[6px] transition-colors
+                            ${topic === name ? 'bg-ink text-surface' : 'text-ink-2 hover:bg-ink/[0.06]'}`}>
+                            {name === 'All' ? 'All topics' : name}
+                            <span className={`text-[11px] tabular-nums ${topic === name ? 'opacity-70' : 'text-ink-4'}`}>{count}</span>
+                        </button>
+                    ))}
                 </div>
 
+                {/* Toolbar */}
+                <div className='flex flex-wrap items-center gap-2'>
+                    <label className='relative flex-1 min-w-[180px] max-w-[300px]'>
+                        <FiSearch size={14} className='absolute left-[10px] top-1/2 -translate-y-1/2 text-ink-3'/>
+                        <input type='search' value={search} onChange={(e)=>setSearch(e.target.value)} placeholder='Search questions' aria-label='Search questions'
+                            className='w-full h-8 rounded-md bg-ink/[0.05] focus:bg-surface focus:ring-1 focus:ring-accent/60 pl-8 pr-2 text-[13px] text-ink placeholder:text-ink-3 outline-none transition-colors'/>
+                    </label>
+                    <Select label='Status' value={status} options={statuses} onChange={setStatus} format={(value) => value === 'all' ? 'Status' : statusLabels[value]}/>
+                    <Select label='Difficulty' value={difficulty} options={difficulties} onChange={setDifficulty} format={(value) => value === 'All' ? 'Difficulty' : value}/>
+                    <Select label='Sort' value={sort} options={sorts} onChange={setSort} format={(value) => value === 'Default' ? 'Sort' : value}/>
+                    {filtersActive && <button type='button' onClick={clearFilters} className='h-8 px-2 inline-flex items-center gap-1 rounded-md text-[13px] text-ink-3 hover:text-ink hover:bg-ink/[0.05]'><FiX size={13}/> Clear</button>}
+                    <span className='ml-auto flex items-center gap-3'>
+                        <span className='inline-flex items-center gap-2 text-[13px] text-ink-2 tabular-nums'>
+                            <svg viewBox='0 0 20 20' className='w-[18px] h-[18px] -rotate-90' aria-hidden>
+                                <circle cx='10' cy='10' r='8' fill='none' strokeWidth='2.5' stroke='rgb(var(--ink) / 0.1)'/>
+                                <circle cx='10' cy='10' r='8' fill='none' strokeWidth='2.5' stroke='rgb(var(--success))' strokeLinecap='round' strokeDasharray={`${data.length ? 50.3 * solved / data.length : 0} 50.3`}/>
+                            </svg>
+                            {solved}/{data.length} Solved
+                        </span>
+                        <button type='button' onClick={shuffle} disabled={!visible.length} title='Pick one at random' aria-label='Random question'
+                            className='w-8 h-8 inline-flex items-center justify-center rounded-full bg-ink/[0.05] text-ink-2 hover:bg-ink/[0.08] hover:text-ink transition-colors disabled:opacity-40'>
+                            <FiShuffle size={14}/>
+                        </button>
+                    </span>
+                </div>
+
+                {/* Table */}
                 {
                     loading ?
-                    <div className='flex flex-col gap-3' aria-busy='true'>
-                        {[0,1,2].map((item) => <div key={item} className='h-[240px] rounded-lg bg-subtle animate-pulse'/>)}
+                    <div className='flex flex-col gap-[2px]' aria-busy='true'>
+                        {Array.from({ length : 8 }).map((_, index) => <div key={index} className={`h-11 rounded-md ${index % 2 ? '' : 'bg-ink/[0.03]'} animate-pulse`}/>)}
                     </div>
                     : visible.length === 0 ?
                     <kit.Empty>
                         <emptyCopy.icon size={20}/>
                         <span className='text-[15px] font-medium text-ink'>{emptyCopy.title}</span>
                         <span className='text-[14px] max-w-[360px]'>{emptyCopy.text}</span>
-                        {
-                            filtersActive &&
-                            <kit.SecondaryButton type='button' className='mt-2' onClick={clearFilters}>
-                                Show all questions
-                            </kit.SecondaryButton>
-                        }
+                        {filtersActive && <kit.SecondaryButton type='button' className='mt-2' onClick={clearFilters}>Show all questions</kit.SecondaryButton>}
                     </kit.Empty>
                     :
-                    <div className='flex flex-col gap-3'>
-                        <div className='flex items-center justify-between text-[12px] text-ink-3' aria-live='polite'>
-                            <span>{visible.length === data.length ? `${data.length} questions` : `${visible.length} of ${data.length} questions`}</span>
-                            <span className='hidden lg:flex items-center gap-3'>
-                                <span className='flex items-center gap-1'><kit.Kbd>J</kit.Kbd><kit.Kbd>K</kit.Kbd> move</span>
-                                <span className='flex items-center gap-1'><kit.Kbd>1</kit.Kbd>–<kit.Kbd>4</kit.Kbd> answer</span>
-                                <span className='flex items-center gap-1'><kit.Kbd>S</kit.Kbd> save</span>
-                            </span>
+                    <div role='table' aria-label='Questions' className='flex flex-col'>
+                        <div role='row' className='hidden md:grid grid-cols-[28px_minmax(0,1fr)_140px_92px_64px_48px] gap-3 px-3 h-9 items-center text-[12px] text-ink-3'>
+                            <span role='columnheader'><span className='sr-only'>Status</span></span>
+                            <span role='columnheader'>Question</span>
+                            <span role='columnheader'>Topic</span>
+                            <span role='columnheader' className='text-right'>Acceptance</span>
+                            <span role='columnheader'>Difficulty</span>
+                            <span role='columnheader' className='text-right'>Year</span>
                         </div>
-                        <Mcqs questions={visible} revealAll={revealAll}/>
+                        {/* Today's challenge pinned on top */}
+                        {
+                            status === 'all' && topic === 'All' && !search &&
+                            <button type='button' role='row' onClick={()=>navigate('/challenges')}
+                                className='grid grid-cols-[28px_minmax(0,1fr)_auto] md:grid-cols-[28px_minmax(0,1fr)_140px_92px_64px_48px] gap-3 px-3 h-11 items-center text-left rounded-md bg-ink/[0.035] hover:bg-ink/[0.06] transition-colors'>
+                                <FiCalendar size={15} className='text-accent'/>
+                                <span className='text-[14px] text-ink truncate'>Daily challenge · {challenge.course.name}</span>
+                                <span className='hidden md:block text-[13px] text-ink-3'>{challenge.count} questions</span>
+                                <span className='hidden md:block'/>
+                                <span className='text-[13px] text-medium font-medium'>Mixed</span>
+                                <span className='hidden md:block text-right text-[12px] text-ink-3'>{challenge.result ? 'Done' : 'Today'}</span>
+                            </button>
+                        }
+                        {visible.map((question, index) => {
+                            const attempt = state.attempts[question.id]
+                            const acceptance = acceptanceOf(question)
+                            return (
+                                <button
+                                    key={question.id}
+                                    type='button'
+                                    role='row'
+                                    onClick={()=>open(question)}
+                                    className={`group grid grid-cols-[28px_minmax(0,1fr)_auto] md:grid-cols-[28px_minmax(0,1fr)_140px_92px_64px_48px] gap-3 px-3 h-11 items-center text-left rounded-md transition-colors
+                                    ${index % 2 ? 'bg-ink/[0.035]' : ''} hover:bg-ink/[0.07]`}
+                                >
+                                    <span role='cell' className='flex items-center'><StatusGlyph attempt={attempt}/></span>
+                                    <span role='cell' className='flex items-center gap-2 min-w-0'>
+                                        <span className='text-[14px] text-ink truncate group-hover:text-accent transition-colors'>
+                                            <span className='tabular-nums'>{numberOf.get(question.id)}.</span> {plainText(question.question)}
+                                        </span>
+                                        {state.saved[question.id] && <FiBookmark size={12} className='text-accent shrink-0' fill='currentColor' aria-label='Saved'/>}
+                                    </span>
+                                    <span role='cell' className='hidden md:block text-[13px] text-ink-3 truncate'>{question.topic}</span>
+                                    <span role='cell' className='hidden md:block text-right text-[13px] text-ink-2 tabular-nums'>{acceptance === null ? <span className='text-ink-4'>—</span> : `${acceptance}%`}</span>
+                                    <span role='cell' className={`text-[13px] font-medium ${difficultyClass[question.difficulty]}`}>{difficultyShort[question.difficulty]}</span>
+                                    <span role='cell' className='hidden md:block text-right text-[13px] text-ink-3 tabular-nums'>{question.year}</span>
+                                </button>
+                            )
+                        })}
                     </div>
                 }
-            </div>
-        </kit.Page>
+            </section>
+
+            {/* Right rail */}
+            <aside className='hidden xl:flex flex-col gap-4 sticky top-[66px]' aria-label='Progress'>
+                <DailyCalendar/>
+                {!loading && <SolvedCard questions={data}/>}
+            </aside>
+        </main>
     )
 }
 

@@ -60,7 +60,7 @@ const ResetPassword = () => {
             <AuthShell title='Link not valid' subtitle={invalid}>
                 <div className='flex flex-col items-center gap-4'>
                     <kit.IconTile className='!w-14 !h-14'><FiAlertCircle size={22}/></kit.IconTile>
-                    <kit.DarkButton type='button' onClick={()=>navigate('/auth/forgot')}>Request a new link</kit.DarkButton>
+                    <kit.PrimaryButton type='button' onClick={()=>navigate('/auth/forgot')}>Request a new link</kit.PrimaryButton>
                 </div>
             </AuthShell>
         )
@@ -77,9 +77,9 @@ const ResetPassword = () => {
                     value={password} onChange={(e)=>setPassword(e.target.value)} error={errors.password} hint='At least 8 characters'/>
                 <Field label='Confirm password' type='password' autoComplete='new-password' disabled={!info}
                     value={confirm} onChange={(e)=>setConfirm(e.target.value)} error={errors.confirm}/>
-                <kit.DarkButton type='submit' className='w-full h-[46px]' disabled={!info || loading} aria-busy={loading}>
+                <kit.PrimaryButton type='submit' className='w-full !h-10' disabled={!info || loading} aria-busy={loading}>
                     {loading ? <><Spinner/> Saving</> : invite ? 'Set password and continue' : 'Update password'}
-                </kit.DarkButton>
+                </kit.PrimaryButton>
             </form>
         </AuthShell>
     )

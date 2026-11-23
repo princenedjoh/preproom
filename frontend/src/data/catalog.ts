@@ -54,6 +54,7 @@ const normalize = (item : any) : Question => ({
     saves : item.saves ?? 0,
     institution : item.institution ?? null,
     ...(item.stats ? { stats : item.stats } : {}),
+    ...(item.acceptance ? { acceptance : item.acceptance } : {}),
 })
 
 export const normalizeQuestion = (item : any) => {

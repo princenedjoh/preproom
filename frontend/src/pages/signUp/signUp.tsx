@@ -15,7 +15,7 @@ const strength = (password : string) => {
     return score
 }
 const strengthLabel = ['Too short', 'Weak', 'Fair', 'Good', 'Strong']
-const strengthColor = ['#f0457a', '#f0457a', '#fd9a46', '#0091ff', '#00c07a']
+const strengthColor = ['rgb(var(--hard))', 'rgb(var(--hard))', 'rgb(var(--medium))', 'rgb(var(--accent))', 'rgb(var(--success))']
 
 const SignUp = () => {
 
@@ -73,17 +73,17 @@ const SignUp = () => {
                         <div className='flex items-center gap-3' aria-live='polite'>
                             <div className='flex-1 grid grid-cols-4 gap-1'>
                                 {[1, 2, 3, 4].map((step) => (
-                                    <span key={step} className='h-[4px] rounded-full transition-colors duration-200' style={{ background : score >= step ? strengthColor[score] : '#eeeeee' }}/>
+                                    <span key={step} className='h-[4px] rounded-full transition-colors duration-200' style={{ background : score >= step ? strengthColor[score] : 'rgb(var(--ink) / 0.08)' }}/>
                                 ))}
                             </div>
-                            <span className='text-[12px] text-ash w-[60px] text-right'>{strengthLabel[score]}</span>
+                            <span className='text-[12px] text-ink-3 w-[60px] text-right'>{strengthLabel[score]}</span>
                         </div>
                     }
                 </div>
-                <kit.DarkButton type='submit' className='w-full h-[46px] mt-1' disabled={loading} aria-busy={loading}>
+                <kit.PrimaryButton type='submit' className='w-full !h-10 mt-1' disabled={loading} aria-busy={loading}>
                     {loading ? <><Spinner/> Creating account</> : 'Create account'}
-                </kit.DarkButton>
-                <p className='text-[12px] leading-[1.5] text-ash text-center'>
+                </kit.PrimaryButton>
+                <p className='text-[12px] leading-[1.5] text-ink-3 text-center'>
                     By signing up you agree to our <Link to='/usage/terms' className='underline hover:text-ink'>Terms</Link> and <Link to='/usage/privacy' className='underline hover:text-ink'>Privacy Policy</Link>.
                 </p>
             </form>
