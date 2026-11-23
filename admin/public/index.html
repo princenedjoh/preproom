@@ -4,20 +4,13 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/logo mark.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#f7f8fa" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
-    <meta name="color-scheme" content="light dark" />
-    <!-- We ship our own dark theme, so Dark Reader shouldn't invert it -->
+    <meta name="theme-color" content="#0b0b0d" />
+    <meta name="color-scheme" content="dark" />
+    <!-- We ship our own dark theme; tell Dark Reader not to repaint the page -->
     <meta name="darkreader-lock" />
     <script>
-      // Set the theme before first paint so there's no light flash in dark mode
-      (function () {
-        var choice = 'system'
-        try { choice = localStorage.getItem('preproom-theme') || 'system' } catch (e) {}
-        var dark = choice === 'dark' || (choice === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
-        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
-        document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
-      })()
+      // PrepRoom is dark-only
+      document.documentElement.setAttribute('data-theme', 'dark');
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

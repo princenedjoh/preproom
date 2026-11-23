@@ -117,7 +117,7 @@ const Flags = () => {
                     body={tab === 'open' ? 'There are no open flags. New ones from students land here.' : undefined} />
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] gap-4 items-start">
-                    <div className="flex flex-col rounded-lg border border-line bg-surface overflow-hidden" role="listbox" aria-label={`${tab} flags`}>
+                    <div className="flex flex-col rounded-lg border border-line bg-surface shadow-card overflow-hidden" role="listbox" aria-label={`${tab} flags`}>
                         {list.map((flag) => {
                             const item = questionFor(flag)
                             const active = flag.id === selected?.id

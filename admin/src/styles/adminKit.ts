@@ -133,6 +133,7 @@ export const TableWrap = styled.div.attrs({
 })`
     background : ${({theme}) => theme.color.surface};
     border : 1px solid ${({theme}) => theme.color.line};
+    box-shadow : var(--card);
 `
 
 export const Table = styled.table.attrs({
@@ -159,7 +160,7 @@ export const Tr = styled.tr.attrs({
 })<{clickable? : boolean}>`
     cursor : ${({clickable}) => clickable ? 'pointer' : 'default'};
     transition : background ${({theme}) => theme.motion.hover} ease;
-    tbody > &:nth-child(even) { background : ${({theme}) => theme.color.alpha('ink', 0.035)}; }
+    tbody > &:nth-child(even) { background : var(--stripe); }
     @media (hover : hover) and (pointer : fine) {
         tbody > &:hover { background : ${({clickable, theme}) => clickable ? theme.color.alpha('ink', 0.07) : ''}; }
     }

@@ -28,7 +28,9 @@ module.exports = {
           easy : v('easy'),
           medium : v('medium'),
           hard : v('hard'),
-          success : v('success'),
+          success : { DEFAULT : v('success'), solid : v('success-solid') },
+          frame : v('frame'),
+          stripe : 'var(--stripe)',
           inverse : v('inverse'),
           'on-inverse' : v('on-inverse'),
           tag : Object.fromEntries(tags.flatMap((t) => [[t, v(`tag-${t}`)], [`${t}-bg`, v(`tag-${t}-bg`)]])),
@@ -70,6 +72,8 @@ module.exports = {
         boxShadow : {
           float : 'var(--shadow-float)',
           press : 'var(--shadow-press)',
+          edge : 'var(--edge)',
+          card : 'var(--card)',
         },
         maxWidth : {
           page : '1200px',

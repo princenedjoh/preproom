@@ -7,15 +7,14 @@ import { useAdmin } from '../../context/admin'
 import { PrimaryButton, Kbd } from '../../styles/kit'
 import { IconButton } from '../../styles/adminKit'
 import { PersonAvatar, EmptyState, Skeleton } from '../ui/ui'
-import { Menu, MenuItem, MenuDivider, MenuLabel } from '../ui/menu'
-import ThemeSwitch from './themeSwitch'
+import { Menu, MenuItem } from '../ui/menu'
 import { Mark } from '../brand/logo'
 import CommandMenu from './commandMenu'
 import { navSections, isActive, currentNav } from './nav'
 
 // Same frame as the student app (frontend/src/components/shell/appShell.tsx):
 // a quiet sidebar on the canvas, the page on an inset sheet, ⌘\ to collapse,
-// and a drawer on phones.
+// and a drawer on phones. PrepRoom is dark-only, so there is no theme switch.
 
 const COLLAPSE_KEY = 'preproom.admin.sidebar.collapsed'
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
@@ -95,9 +94,6 @@ const Sidebar = ({ onCollapse, onSearch } : { onCollapse? : () => void, onSearch
                 </button>
                 <Menu open={menu} onClose={closeMenu} side="top" className="!left-2 !right-2">
                     {email && <div className="px-2 pt-[6px] pb-1 text-[12px] text-ink-3 truncate">{email}</div>}
-                    <MenuLabel>Theme</MenuLabel>
-                    <div className="px-1 pb-1"><ThemeSwitch wide /></div>
-                    <MenuDivider />
                     <MenuItem role="menuitem" onClick={() => { closeMenu(); signOut().then(() => navigate('/login', { replace : true })) }}>
                         <FiLogOut size={14} /> Log out
                     </MenuItem>

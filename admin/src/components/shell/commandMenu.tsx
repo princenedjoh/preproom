@@ -2,11 +2,10 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styled, { keyframes } from 'styled-components'
 import { IconType } from 'react-icons'
-import { FiSearch, FiPlus, FiSun, FiMoon, FiMonitor, FiLogOut, FiFileText, FiCornerDownLeft } from 'react-icons/fi'
+import { FiSearch, FiPlus, FiLogOut, FiFileText, FiCornerDownLeft } from 'react-icons/fi'
 import * as api from '../../data/api'
 import * as sample from '../../data/sample'
 import { useAdmin } from '../../context/admin'
-import { useTheme, setTheme, ThemeChoice } from '../../store/theme'
 import { Kbd } from '../../styles/kit'
 import { CourseDot } from '../../styles/adminKit'
 import { navSections } from './nav'
@@ -54,12 +53,9 @@ interface Command {
     run : () => void
 }
 
-const themeIcons : Record<ThemeChoice, IconType> = { light : FiSun, dark : FiMoon, system : FiMonitor }
-
 const CommandMenu = ({ open, onClose } : { open : boolean, onClose : () => void }) => {
     const navigate = useNavigate()
     const { can, signOut } = useAdmin()
-    const { choice } = useTheme()
     const [query, setQuery] = useState('')
     const [active, setActive] = useState(0)
     const [found, setFound] = useState<sample.Question[]>([])
@@ -120,22 +116,13 @@ const CommandMenu = ({ open, onClose } : { open : boolean, onClose : () => void 
             })))
             .filter((command) => matches(`${command.label} ${command.hint ?? ''}`))
 
-        const themes = (['light', 'dark', 'system'] as ThemeChoice[]).filter((option) => option !== choice).map((option) => ({
-            id : `t-${option}`,
-            group : 'Actions' as const,
-            label : option === 'system' ? 'Use system theme' : `Switch to ${option} theme`,
-            icon : themeIcons[option],
-            run : () => setTheme(option),
-        }))
-
         const actions = ([
             { id : 'a-new', group : 'Actions', label : 'New question', icon : FiPlus, run : go('/addQuestions') },
-            ...themes,
             { id : 'a-out', group : 'Actions', label : 'Log out', icon : FiLogOut, run : () => { signOut().then(() => navigate('/login', { replace : true })) } },
         ] as Command[]).filter((command) => matches(command.label))
 
         return [...questions, ...pages, ...actions]
-    }, [found, query, can.managePeople, choice, navigate, signOut])
+    }, [found, query, can.managePeople, navigate, signOut])
 
     useEffect(() => { setActive(0) }, [query, found.length])
 

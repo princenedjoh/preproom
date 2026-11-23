@@ -92,7 +92,3 @@ button:disabled { cursor: not-allowed; }
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
 
-/* Deliberate theme switches cross-fade colours (store/theme.ts adds the class briefly) */
-html.theme-transition, html.theme-transition *, html.theme-transition *::before, html.theme-transition *::after {
-  transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease, fill 200ms ease !important;
-}

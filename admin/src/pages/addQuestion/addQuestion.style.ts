@@ -37,6 +37,7 @@ export const Preview = styled.div.attrs({
 })`
     background : ${({theme}) => theme.color.surface};
     border : 1px solid ${({theme}) => theme.color.line};
+    box-shadow : var(--card);
 `
 
 export const Chip = styled.span.attrs({

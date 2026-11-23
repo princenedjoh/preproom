@@ -86,7 +86,7 @@ export const Body = styled.p.attrs({
 
 /* Buttons: 8px rounded rectangles. Primary is the single blue; the rest stay quiet. */
 
-const buttonBase = `inline-flex items-center justify-center gap-2 rounded-md text-[14px] font-medium whitespace-nowrap h-9 px-4 select-none`
+const buttonBase = `inline-flex items-center justify-center gap-2 rounded-[5px] text-[14px] font-medium whitespace-nowrap h-9 px-4 select-none`
 
 export const PrimaryButton = styled.button.attrs({
     className : `PrimaryButton ${buttonBase}` as string
@@ -162,6 +162,7 @@ export const Card = styled.div.attrs({
 })`
     background : ${color.surface};
     border : 1px solid ${color.line};
+    box-shadow : var(--card);
 `
 
 export const IconTile = styled.span.attrs({
@@ -218,6 +219,7 @@ export const Panel = styled.div.attrs({
 })`
     background : ${color.surface};
     border : 1px solid ${color.line};
+    box-shadow : var(--card);
 `
 
 export const PanelTitle = styled.div.attrs({
@@ -276,6 +278,7 @@ export const Stat = styled.div.attrs({
 })`
     background : ${color.surface};
     border : 1px solid ${color.line};
+    box-shadow : var(--card);
 `
 
 export const StatValue = styled.span.attrs({
