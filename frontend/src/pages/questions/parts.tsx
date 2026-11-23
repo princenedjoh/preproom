@@ -11,7 +11,7 @@ export const plainText = (html : string) => html.replace(/<[^>]+>/g, ' ').replac
 // Share of first attempts that were right; only shown with enough answers to mean something
 export const acceptanceOf = (question : Question) => {
     const source = question.acceptance ?? question.stats
-    return source && source.attempts >= 5 && source.correctRate !== null ? Math.round(source.correctRate * 100) : null
+    return source && source.attempts >= 5 && source.correctRate !== null ? Math.round(source.correctRate * 1000) / 10 : null
 }
 
 // Solved / attempted / untouched, the way a problem list marks rows
@@ -80,10 +80,10 @@ export const DailyCalendar = () => {
                                 onClick={()=> done ? navigate('/challenges') : startChallenge(navigate, view.course.id)}
                                 title={isToday ? (done ? "Today's challenge: done" : "Start today's challenge") : practised ? 'Practised' : undefined}
                                 className={`relative w-7 h-7 rounded-full text-[12px] tabular-nums inline-flex items-center justify-center transition-transform
-                                ${isToday ? (done ? 'bg-success text-white font-semibold' : 'bg-success text-white font-semibold enabled:hover:scale-110 enabled:active:scale-95') : future ? 'text-ink-4' : 'text-ink-2'}`}
+                                ${isToday ? (done ? 'bg-success-solid text-white font-semibold' : 'bg-success-solid text-white font-semibold enabled:hover:scale-110 enabled:active:scale-95') : future ? 'text-ink-4' : 'text-ink-2'}`}
                             >
                                 {index + 1}
-                                {practised && !isToday && <span className='absolute bottom-[2px] left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-success'/>}
+                                {practised && !isToday && <span className='absolute bottom-[2px] left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-success-solid'/>}
                             </button>
                         </span>
                     )
@@ -133,7 +133,7 @@ export const SolvedCard = ({ questions } : { questions : Question[] }) => {
                 </span>
             </div>
             <div className='flex flex-col gap-[6px] flex-1 min-w-0'>
-                {attempted > 0 && <span className='text-[11px] text-ink-3 px-1'>{attempted} attempted, not yet solved</span>}
+                {attempted > 0 && <span className='text-[11px] text-ink-3 px-1'>{attempted} attempting</span>}
                 {rows.map((row) => (
                     <div key={row.level} className='flex items-center justify-between rounded-md bg-ink/[0.04] px-3 h-9 text-[12px]'>
                         <span className={`font-medium text-${tone[row.level]}`}>{row.level === 'Medium' ? 'Med.' : row.level}</span>

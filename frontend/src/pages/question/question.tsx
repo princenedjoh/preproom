@@ -17,10 +17,13 @@ import { useRemote } from '../../api/useRemote'
 import { notify } from '../../utils/notify'
 import { alphabets, optionFromKey, difficultyClass } from '../mcqs/mcqs'
 import { acceptanceOf, plainText } from '../questions/parts'
-import { FiList, FiChevronLeft, FiChevronRight, FiShuffle, FiBookmark, FiFlag, FiLink, FiMessageCircle, FiFileText, FiBookOpen, FiLock, FiCheck, FiX, FiRotateCcw, FiClock } from 'react-icons/fi'
+import { FiList, FiChevronLeft, FiChevronRight, FiShuffle, FiBookmark, FiFlag, FiLink, FiMessageCircle, FiFileText, FiBookOpen, FiLock, FiCheck, FiX, FiRotateCcw, FiClock, FiUploadCloud, FiEdit3, FiChevronDown, FiTag, FiSearch } from 'react-icons/fi'
 
 interface Stats { attempts : number, correctRate : number, options : number[] }
-type Tab = 'question' | 'explanation' | 'discussion'
+type Tab = 'question' | 'explanation' | 'discussion' | 'notes'
+
+const NOTES_KEY = 'preproom.notes.v1'
+const readNotes = () : Record<string, string> => { try { return JSON.parse(localStorage.getItem(NOTES_KEY) ?? '{}') } catch { return {} } }
 
 const SPLIT_KEY = 'preproom.split'
 const readSplit = () => { try { const value = Number(localStorage.getItem(SPLIT_KEY)); return value >= 30 && value <= 70 ? value : 52 } catch { return 52 } }
@@ -48,6 +51,10 @@ const QuestionPage = () => {
     const [reporting, setReporting] = useState(false)
     const [reported, setReported] = useState(false)
     const body = useRef<HTMLDivElement>(null)
+    const [drawer, setDrawer] = useState(false)
+    const [drawerSearch, setDrawerSearch] = useState('')
+    const [openSections, setOpenSections] = useState<Record<string, boolean>>({ similar : true })
+    const [notes, setNotes] = useState<Record<string, string>>(readNotes)
 
     useEffect(() => {
         let active = true
@@ -75,6 +82,27 @@ const QuestionPage = () => {
 
     useEffect(() => { setPicked(null); setTab('question'); setReported(false); setDiscussions(question?.discussions ?? 0) }, [questionID, question?.discussions])
     useEffect(() => { body.current?.scrollTo({ top : 0 }) }, [questionID])
+
+    const saveNote = (text : string) => {
+        if(!question) return
+        const next = { ...notes, [question.id] : text }
+        if(!text.trim()) delete next[question.id]
+        setNotes(next)
+        try { localStorage.setItem(NOTES_KEY, JSON.stringify(next)) } catch { /* private mode */ }
+    }
+
+    useEffect(() => {
+        if(!drawer) return
+        const onKey = (event : KeyboardEvent) => { if(event.key === 'Escape') setDrawer(false) }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+    }, [drawer])
+
+    const similar = useMemo(() => {
+        if(!list || !question) return []
+        const same = list.filter((item) => item.topic === question.topic && item.id !== question.id)
+        return (same.length ? same : list.filter((item) => item.id !== question.id)).slice(0, 6)
+    }, [list, question])
 
     const embedded = question?.stats
     const fetched = useRemote<Stats>(question && answered && signedIn && online && !embedded ? `qstats:${question.id}:${attempt?.at}` : null,
@@ -147,15 +175,15 @@ const QuestionPage = () => {
     const acceptance = question ? acceptanceOf(question) : null
 
     return (
-        <div className='h-[100dvh] flex flex-col bg-canvas overflow-hidden'>
+        <div className='h-[100dvh] flex flex-col bg-frame overflow-hidden'>
             <CommandPalette open={paletteOpen} onClose={()=>setPaletteOpen(false)}/>
 
             {/* Workspace bar */}
             <header className='h-12 shrink-0 flex items-center gap-1 px-2 md:px-3'>
                 <Link to='/today' aria-label='PrepRoom home' className='w-8 h-8 inline-flex items-center justify-center rounded-md hover:bg-ink/[0.06]'><Mark size={20}/></Link>
-                <Link to={`/questions/${course.id}${params.toString() ? `?${params}` : ''}`} className='h-8 px-2 inline-flex items-center gap-2 rounded-md text-[14px] font-medium text-ink hover:bg-ink/[0.06] min-w-0'>
+                <button type='button' onClick={()=>setDrawer(true)} aria-haspopup='dialog' className='h-8 px-2 inline-flex items-center gap-2 rounded-md text-[14px] font-medium text-ink hover:bg-ink/[0.06] min-w-0'>
                     <FiList size={15} className='text-ink-3 shrink-0'/> <span className='truncate max-w-[22vw]'>{course.name}</span>
-                </Link>
+                </button>
                 <kit.IconButton type='button' aria-label='Previous question ([)' title='Previous  [' disabled={position <= 0} onClick={()=>go(order[position - 1])}><FiChevronLeft size={17}/></kit.IconButton>
                 <kit.IconButton type='button' aria-label='Next question (])' title='Next  ]' disabled={position < 0 || position >= order.length - 1} onClick={()=>go(order[position + 1])}><FiChevronRight size={17}/></kit.IconButton>
                 <kit.IconButton type='button' aria-label='Random question' title='Random question' onClick={shuffle}><FiShuffle size={14}/></kit.IconButton>
@@ -164,13 +192,13 @@ const QuestionPage = () => {
                     {
                         question && (
                             answered ?
-                            <button type='button' onClick={retry} className='h-8 px-4 inline-flex items-center gap-2 rounded-md bg-ink/[0.06] hover:bg-ink/[0.1] text-[13px] font-medium text-ink transition-colors active:scale-[0.97]'>
+                            <button type='button' onClick={retry} className='h-8 px-4 inline-flex items-center gap-2 rounded-[5px] bg-ink/[0.08] hover:bg-ink/[0.12] text-[14px] font-medium text-ink-2 transition-colors active:scale-[0.97]'>
                                 <FiRotateCcw size={13}/> Try again
                             </button>
                             :
                             <button type='button' onClick={submit} disabled={picked === null} title={`Submit  ${isMac ? '⌘' : 'Ctrl'}↵`}
-                                className='h-8 px-5 inline-flex items-center gap-2 rounded-md bg-success text-white text-[13px] font-semibold hover:brightness-110 transition-[filter,transform,opacity] active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed'>
-                                <FiCheck size={14} strokeWidth={2.75}/> Submit
+                                className='h-8 px-4 inline-flex items-center gap-2 rounded-[5px] bg-ink/[0.08] hover:bg-ink/[0.12] text-success text-[14px] font-semibold transition-[background-color,transform,opacity] active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed'>
+                                <FiUploadCloud size={15} strokeWidth={2.25}/> Submit
                             </button>
                         )
                     }
@@ -192,6 +220,10 @@ const QuestionPage = () => {
                         <span className='w-px h-4 bg-line'/>
                         <button type='button' role='tab' aria-selected={tab === 'explanation'} className={tabClass(tab === 'explanation')} onClick={()=>setTab('explanation')}>
                             {answered ? <FiBookOpen size={14} className='text-medium'/> : <FiLock size={13}/>} Explanation
+                        </button>
+                        <span className='w-px h-4 bg-line'/>
+                        <button type='button' role='tab' aria-selected={tab === 'notes'} className={tabClass(tab === 'notes')} onClick={()=>setTab('notes')}>
+                            <FiEdit3 size={13} className='text-tag-purple'/> Notes {question && notes[question.id] && <span className='w-[6px] h-[6px] rounded-full bg-tag-purple'/>}
                         </button>
                         {
                             online && <>
@@ -225,11 +257,40 @@ const QuestionPage = () => {
                                 </div>
                                 {
                                     acceptance !== null &&
-                                    <div className='flex gap-6 pt-3 mt-2 border-t border-line text-[12px] text-ink-3'>
-                                        <span>Acceptance <b className='block text-[14px] font-medium text-ink tabular-nums'>{acceptance}%</b></span>
+                                    <div className='flex gap-8 pt-4 mt-2 border-t border-line text-[12px] text-ink-3'>
                                         <span>Answered <b className='block text-[14px] font-medium text-ink tabular-nums'>{(question.acceptance ?? question.stats)?.attempts.toLocaleString()}</b></span>
+                                        <span>Acceptance rate <b className='block text-[14px] font-medium text-ink tabular-nums'>{acceptance}%</b></span>
                                     </div>
                                 }
+                                <div className='flex flex-col border-t border-line mt-2'>
+                                    {[
+                                        { key : 'topics', icon : FiTag, label : 'Topics', body : (
+                                            <div className='flex flex-wrap gap-[6px]'>
+                                                <Link to={`/questions/${course.id}?topic=${encodeURIComponent(question.topic)}`} className='h-6 px-2 rounded-full bg-ink/[0.06] hover:bg-ink/[0.1] inline-flex items-center text-[12px] text-ink-2'>{question.topic}</Link>
+                                                {question.institution && <span className='h-6 px-2 rounded-full bg-ink/[0.06] inline-flex items-center text-[12px] text-ink-2'>{question.institution} {question.year}</span>}
+                                            </div>
+                                        ) },
+                                        { key : 'similar', icon : FiList, label : 'Similar questions', body : (
+                                            <div className='flex flex-col'>
+                                                {similar.map((item) => (
+                                                    <button key={item.id} type='button' onClick={()=>go(item)} className='flex items-center gap-3 h-9 text-left text-[14px] text-ink hover:text-accent transition-colors'>
+                                                        <span className='flex-1 min-w-0 truncate'>{(list?.indexOf(item) ?? 0) + 1}. {plainText(item.question)}</span>
+                                                        <span className={`text-[12px] font-medium ${difficultyClass[item.difficulty]}`}>{item.difficulty}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        ) },
+                                    ].map((section) => (
+                                        <div key={section.key} className='border-b border-line'>
+                                            <button type='button' aria-expanded={!!openSections[section.key]} onClick={()=>setOpenSections({ ...openSections, [section.key] : !openSections[section.key] })}
+                                                className='w-full h-11 flex items-center gap-2 text-[14px] text-ink'>
+                                                <section.icon size={14} className='text-ink-3'/> {section.label}
+                                                <FiChevronDown size={15} className={`ml-auto text-ink-3 transition-transform duration-200 ${openSections[section.key] ? 'rotate-180' : ''}`}/>
+                                            </button>
+                                            {openSections[section.key] && <div className='pb-3 animate-[fade_160ms_ease-out]'>{section.body}</div>}
+                                        </div>
+                                    ))}
+                                </div>
                             </article>
                             : tab === 'explanation' ?
                             (
@@ -246,6 +307,16 @@ const QuestionPage = () => {
                                     <span className='text-[14px] max-w-[280px]'>The explanation unlocks after you submit, so it can't nudge your answer.</span>
                                 </kit.Empty>
                             )
+                            : tab === 'notes' ?
+                            <div className='flex flex-col gap-2 h-full'>
+                                <span className='text-[12px] text-ink-3'>Private to you, kept on this device.</span>
+                                <textarea
+                                    value={notes[question.id] ?? ''}
+                                    onChange={(e)=>saveNote(e.target.value)}
+                                    placeholder='Write down the trick, the formula, or why you got it wrong…'
+                                    className='flex-1 min-h-[240px] w-full rounded-md bg-ink/[0.04] focus:bg-surface focus:ring-1 focus:ring-accent/60 p-3 text-[14px] leading-[1.6] text-ink placeholder:text-ink-4 outline-none resize-none'
+                                />
+                            </div>
                             :
                             <Thread questionID={question.id} onCount={setDiscussions}/>
                         }
@@ -347,6 +418,41 @@ const QuestionPage = () => {
                         </div>
                     </div>
                 </section>
+            </div>
+            {/* Question list drawer */}
+            <div className={`fixed inset-0 z-40 ${drawer ? '' : 'pointer-events-none'}`} aria-hidden={!drawer}>
+                <div className={`absolute inset-0 transition-opacity duration-200 ${drawer ? 'opacity-100' : 'opacity-0'}`} style={{ background : 'var(--scrim)' }} onClick={()=>setDrawer(false)}/>
+                <div role='dialog' aria-label={`${course.name} questions`}
+                    className='absolute inset-y-0 left-0 w-[540px] max-w-[92vw] bg-surface shadow-float flex flex-col transition-transform duration-300 ease-drawer'
+                    style={{ transform : drawer ? 'none' : 'translateX(-102%)' }}>
+                    <div className='h-14 shrink-0 flex items-center gap-3 px-5 border-b border-line'>
+                        <Link to={`/questions/${course.id}`} className='flex items-center gap-1 text-[18px] font-semibold text-ink hover:text-accent'>{course.name} <FiChevronRight size={17}/></Link>
+                        <span className='ml-auto text-[13px] text-ink-2 tabular-nums'>{(list ?? []).filter((item) => state.attempts[item.id]?.correct).length}/{list?.length ?? 0} Solved</span>
+                        <kit.IconButton type='button' aria-label='Close' onClick={()=>setDrawer(false)}><FiX size={17}/></kit.IconButton>
+                    </div>
+                    <div className='px-4 py-3'>
+                        <label className='relative block'>
+                            <FiSearch size={14} className='absolute left-[10px] top-1/2 -translate-y-1/2 text-ink-3'/>
+                            <input value={drawerSearch} onChange={(e)=>setDrawerSearch(e.target.value)} placeholder='Search questions' aria-label='Search questions'
+                                className='w-full h-8 rounded-md bg-ink/[0.05] focus:bg-surface focus:ring-1 focus:ring-accent/60 pl-8 pr-2 text-[13px] text-ink placeholder:text-ink-3 outline-none'/>
+                        </label>
+                    </div>
+                    <div className='flex-1 min-h-0 overflow-y-auto px-4 pb-4' data-lenis-prevent>
+                        {(list ?? []).map((item, index) => ({ item, index })).filter(({ item }) => !drawerSearch.trim() || plainText(item.question).toLowerCase().includes(drawerSearch.trim().toLowerCase()) || item.topic.toLowerCase().includes(drawerSearch.trim().toLowerCase())).map(({ item, index }, row) => {
+                            const current = item.id === questionID
+                            const mark = state.attempts[item.id]
+                            return (
+                                <button key={item.id} type='button' onClick={()=>{ setDrawer(false); go(item) }}
+                                    className={`w-full h-10 flex items-center gap-3 px-3 rounded-md text-left text-[14px] transition-colors
+                                    ${current ? 'bg-ink/[0.1] text-ink font-medium' : row % 2 ? 'hover:bg-ink/[0.07]' : 'bg-stripe hover:bg-ink/[0.07]'}`}>
+                                    <span className='w-4 shrink-0'>{mark ? (mark.correct ? <FiCheck size={14} strokeWidth={2.75} className='text-success'/> : <span className='block w-[10px] h-[10px] rounded-full border-2 border-medium'/>) : null}</span>
+                                    <span className='flex-1 min-w-0 truncate'>{index + 1}. {plainText(item.question)}</span>
+                                    <span className={`text-[12px] font-medium ${difficultyClass[item.difficulty]}`}>{item.difficulty === 'Medium' ? 'Med.' : item.difficulty}</span>
+                                </button>
+                            )
+                        })}
+                    </div>
+                </div>
             </div>
             {question && reporting && <ReportDialog question={question} open={reporting} onClose={()=>setReporting(false)} onReported={()=>setReported(true)}/>}
         </div>

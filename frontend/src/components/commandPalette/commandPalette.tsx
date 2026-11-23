@@ -96,6 +96,7 @@ const CommandPalette = ({ open, onClose } : { open : boolean, onClose : () => vo
                 run : go('/test/session', { courseID : today.id, mode : 'challenge', count : 5, minutes : 10, difficulty : 'Mixed', instantFeedback : false }) },
             { id : 'saved', group : 'Actions', label : 'Saved questions', icon : FiBookmark, run : () => go(reviewLink('saved'))() },
             { id : 'mistakes', group : 'Actions', label : 'Review mistakes', icon : FiRotateCcw, run : () => go(reviewLink('mistakes'))() },
+            { id : 'plan', group : 'Actions', label : 'Open a study plan', hint : today.name, icon : FiBookOpen, run : go(`/plan/${today.id}`) },
             { id : 'theme', group : 'Actions', label : 'Switch light / dark theme', icon : FiMoon, run : () => { toggleTheme(); onClose() } },
             ...courses.map((course) : Item => ({
                 id : `course-${course.id}`, group : 'Courses', label : course.name, hint : course.code, color : toneVar(toneOf(course.id, course.color)), run : go(`/questions/${course.id}`),

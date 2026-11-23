@@ -8,7 +8,7 @@ import { getCourse, fetchQuestions, useCatalog } from '../../data/catalog'
 import { progress, useProgress, courseProgress } from '../../store/progress'
 import { difficultyClass, difficultyShort } from '../mcqs/mcqs'
 import { DailyCalendar, SolvedCard, StatusGlyph, acceptanceOf, plainText } from './parts'
-import { FiSearch, FiBookmark, FiCheckCircle, FiClock, FiRotateCcw, FiShuffle, FiChevronDown, FiX, FiCalendar } from "react-icons/fi";
+import { FiSearch, FiBookmark, FiCheckCircle, FiClock, FiRotateCcw, FiShuffle, FiChevronDown, FiX, FiCalendar, FiBookOpen } from "react-icons/fi";
 import { useChallengeView } from '../../store/challenge'
 
 const difficulties : ('All' | Difficulty)[] = ['All', 'Easy', 'Medium', 'Hard']
@@ -136,7 +136,7 @@ const Questions = () => {
     const libraryRow = (active : boolean) => `flex items-center gap-[10px] h-9 px-2 rounded-md text-[14px] transition-colors ${active ? 'bg-ink/[0.07] text-ink font-medium' : 'text-ink-2 hover:bg-ink/[0.04] hover:text-ink'}`
 
     return (
-        <main className='w-full max-w-[1440px] mx-auto px-3 md:px-5 py-5 md:py-6 grid grid-cols-1 lg:grid-cols-[216px_minmax(0,1fr)] xl:grid-cols-[216px_minmax(0,1fr)_288px] gap-5 items-start'>
+        <main className='w-full max-w-[1440px] mx-auto px-3 md:px-5 py-5 md:py-6 grid grid-cols-1 lg:grid-cols-[216px_minmax(0,1fr)] xl:grid-cols-[216px_minmax(0,1fr)_270px] gap-6 items-start'>
 
             {/* Library rail */}
             <aside className='hidden lg:flex flex-col gap-1 sticky top-[66px]' aria-label='Library'>
@@ -151,6 +151,10 @@ const Questions = () => {
                         </NavLink>
                     )
                 })}
+                <span className='px-2 pt-4 pb-1 text-[12px] font-medium text-ink-3'>Study plans</span>
+                <NavLink to={`/plan/${course.id}`} className={libraryRow(false)}>
+                    <FiBookOpen size={15} className='text-easy'/> <span className='flex-1 truncate'>{course.name} plan</span>
+                </NavLink>
                 <span className='px-2 pt-4 pb-1 text-[12px] font-medium text-ink-3'>My lists</span>
                 <button type='button' onClick={()=>setStatus('mistakes')} className={libraryRow(status === 'mistakes')}>
                     <FiRotateCcw size={15} className='text-hard'/> <span className='flex-1 text-left'>Mistakes</span>
@@ -172,6 +176,7 @@ const Questions = () => {
                     </div>
                     <div className='flex items-center gap-2'>
                         {stats.answered > 0 && <kit.GhostButton type='button' className='!h-8' onClick={resetCourse}><FiRotateCcw size={13}/> Reset</kit.GhostButton>}
+                        <kit.SecondaryButton type='button' className='!h-8' onClick={()=>navigate(`/plan/${course.id}`)}><FiBookOpen size={13}/> Study plan</kit.SecondaryButton>
                         <kit.PrimaryButton type='button' className='!h-8' onClick={()=>navigate('/test/testconfig', { state : { courseID : course.id } })}>
                             <FiClock size={13}/> Timed test
                         </kit.PrimaryButton>
@@ -231,21 +236,13 @@ const Questions = () => {
                     </kit.Empty>
                     :
                     <div role='table' aria-label='Questions' className='flex flex-col'>
-                        <div role='row' className='hidden md:grid grid-cols-[28px_minmax(0,1fr)_140px_92px_64px_48px] gap-3 px-3 h-9 items-center text-[12px] text-ink-3'>
-                            <span role='columnheader'><span className='sr-only'>Status</span></span>
-                            <span role='columnheader'>Question</span>
-                            <span role='columnheader'>Topic</span>
-                            <span role='columnheader' className='text-right'>Acceptance</span>
-                            <span role='columnheader'>Difficulty</span>
-                            <span role='columnheader' className='text-right'>Year</span>
-                        </div>
                         {/* Today's challenge pinned on top */}
                         {
                             status === 'all' && topic === 'All' && !search &&
                             <button type='button' role='row' onClick={()=>navigate('/challenges')}
-                                className='grid grid-cols-[28px_minmax(0,1fr)_auto] md:grid-cols-[28px_minmax(0,1fr)_140px_92px_64px_48px] gap-3 px-3 h-11 items-center text-left rounded-md bg-ink/[0.035] hover:bg-ink/[0.06] transition-colors'>
+                                className='grid grid-cols-[28px_minmax(0,1fr)_auto] md:grid-cols-[28px_minmax(0,1fr)_120px_64px_52px_44px] gap-3 px-3 h-11 items-center text-left rounded-md bg-stripe hover:bg-ink/[0.07] transition-colors'>
                                 <FiCalendar size={15} className='text-accent'/>
-                                <span className='text-[14px] text-ink truncate'>Daily challenge · {challenge.course.name}</span>
+                                <span className='text-[14px] font-medium text-ink truncate'>Daily challenge · {challenge.course.name}</span>
                                 <span className='hidden md:block text-[13px] text-ink-3'>{challenge.count} questions</span>
                                 <span className='hidden md:block'/>
                                 <span className='text-[13px] text-medium font-medium'>Mixed</span>
@@ -261,18 +258,18 @@ const Questions = () => {
                                     type='button'
                                     role='row'
                                     onClick={()=>open(question)}
-                                    className={`group grid grid-cols-[28px_minmax(0,1fr)_auto] md:grid-cols-[28px_minmax(0,1fr)_140px_92px_64px_48px] gap-3 px-3 h-11 items-center text-left rounded-md transition-colors
-                                    ${index % 2 ? 'bg-ink/[0.035]' : ''} hover:bg-ink/[0.07]`}
+                                    className={`group grid grid-cols-[28px_minmax(0,1fr)_auto] md:grid-cols-[28px_minmax(0,1fr)_120px_64px_52px_44px] gap-3 px-3 h-11 items-center text-left rounded-md transition-colors
+                                    ${index % 2 ? '' : 'bg-stripe'} hover:bg-ink/[0.07]`}
                                 >
                                     <span role='cell' className='flex items-center'><StatusGlyph attempt={attempt}/></span>
                                     <span role='cell' className='flex items-center gap-2 min-w-0'>
-                                        <span className='text-[14px] text-ink truncate group-hover:text-accent transition-colors'>
+                                        <span className='text-[14px] font-medium text-ink truncate group-hover:text-accent transition-colors'>
                                             <span className='tabular-nums'>{numberOf.get(question.id)}.</span> {plainText(question.question)}
                                         </span>
                                         {state.saved[question.id] && <FiBookmark size={12} className='text-accent shrink-0' fill='currentColor' aria-label='Saved'/>}
                                     </span>
                                     <span role='cell' className='hidden md:block text-[13px] text-ink-3 truncate'>{question.topic}</span>
-                                    <span role='cell' className='hidden md:block text-right text-[13px] text-ink-2 tabular-nums'>{acceptance === null ? <span className='text-ink-4'>—</span> : `${acceptance}%`}</span>
+                                    <span role='cell' className='hidden md:block text-right text-[13px] text-ink-2 tabular-nums'>{acceptance === null ? <span className='text-ink-4'>—</span> : `${acceptance.toFixed(1)}%`}</span>
                                     <span role='cell' className={`text-[13px] font-medium ${difficultyClass[question.difficulty]}`}>{difficultyShort[question.difficulty]}</span>
                                     <span role='cell' className='hidden md:block text-right text-[13px] text-ink-3 tabular-nums'>{question.year}</span>
                                 </button>

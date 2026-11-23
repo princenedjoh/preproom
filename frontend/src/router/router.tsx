@@ -20,6 +20,7 @@ import NotFound from "../pages/notFound/notFound"
 import Today from "../pages/today/today"
 import ResetPassword from "../pages/resetPassword/resetPassword"
 import QuestionPage from "../pages/question/question"
+import Plan from "../pages/plan/plan"
 
 const authRoutes = [
     {
@@ -56,6 +57,10 @@ const pageRoutes = [
     {
         path : '/profile',
         route : Profile
+    },
+    {
+        path : '/plan/:courseID',
+        route : Plan
     },
     {
         path : '/about',
@@ -109,7 +114,7 @@ export const navRoutes = [
 ]
 
 // Which frame a route lives in: the app (sidebar), the site (marketing bar), or focus (test in progress)
-const appPaths = ['/today', '/questions', '/questions/:courseID', '/challenges', '/test/testconfig', '/test/results', '/notification', '/profile']
+const appPaths = ['/plan/:courseID', '/today', '/questions', '/questions/:courseID', '/challenges', '/test/testconfig', '/test/results', '/notification', '/profile']
 const all = [...navRoutes, ...pageRoutes]
 const appRoutes = all.filter((route) => appPaths.includes(route.path))
 const siteRoutes = all.filter((route) => !appPaths.includes(route.path) && route.path !== '/test/session')

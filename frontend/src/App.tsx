@@ -13,8 +13,8 @@ import { loadCatalog, useCatalog } from './data/catalog';
 
 // antd and MUI derive hover/active shades from real colours, so they get hex values per theme
 const hex = {
-  light : { canvas : '#f7f8fa', surface : '#ffffff', line : '#e5e5e9', ink : '#262626', ink2 : '#54545c', ink4 : '#babac1', accent : '#007aff' },
-  dark : { canvas : '#1a1a1a', surface : '#282828', line : '#3c3c3c', ink : '#ececec', ink2 : '#bebebe', ink4 : '#626262', accent : '#4a9eff' },
+  light : { canvas : '#ffffff', surface : '#ffffff', line : '#ebebeb', ink : '#1a1a1a', ink2 : '#737373', ink4 : '#c9c9c9', accent : '#007aff' },
+  dark : { canvas : '#1a1a1a', surface : '#262626', line : '#3a3a3a', ink : '#f5f5f5', ink2 : '#a3a3a3', ink4 : '#5c5c5c', accent : '#4a9eff' },
 }
 
 const antdThemeFor = (mode : 'light' | 'dark') => ({
@@ -44,7 +44,7 @@ const muiThemeFor = (mode : 'light' | 'dark') => createTheme({
     divider : hex[mode].line,
   },
   typography : {
-    fontFamily : 'Inter, ui-sans-serif, system-ui, sans-serif',
+    fontFamily : '-apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
     button : { textTransform : 'none', fontWeight : 500 },
   },
   shape : { borderRadius : 8 },

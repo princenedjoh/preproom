@@ -23,6 +23,8 @@ export const color = {
     medium : v('medium'),
     hard : v('hard'),
     success : v('success'),
+    successSolid : v('success-solid'),
+    frame : v('frame'),
     inverse : v('inverse'),
     onInverse : v('on-inverse'),
     ring : 'var(--ring)',
