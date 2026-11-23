@@ -1,6 +1,6 @@
 import styled, { css } from "styled-components";
 import { Difficulty } from "../data/sample";
-import { pressable, PrimaryButton, Tag, Tone } from "./kit";
+import { pressable, PrimaryButton, Tone } from "./kit";
 import { toneOf, toneVar } from "./tone";
 
 // Admin-only primitives layered on the shared kit. Notion's database views are
@@ -96,7 +96,22 @@ export const CountBadge = styled.span.attrs({
 
 export const difficultyTone : Record<Difficulty, Tone> = { Easy : 'green', Medium : 'orange', Hard : 'red' }
 
-export const DifficultyPill = styled(Tag).attrs<{level : Difficulty}>(({level}) => ({ tone : difficultyTone[level] }))<{level : Difficulty}>``
+// LeetCode-style difficulty: coloured text, no pill. --easy/--medium/--hard come
+// with the next token update; until then the tag colours stand in.
+const difficultyVar : Record<Difficulty, string> = {
+    Easy : 'rgb(var(--easy, var(--tag-green)))',
+    Medium : 'rgb(var(--medium, var(--tag-orange)))',
+    Hard : 'rgb(var(--hard, var(--tag-red)))',
+}
+export const difficultyShort : Record<Difficulty, string> = { Easy : 'Easy', Medium : 'Med.', Hard : 'Hard' }
+
+export const DifficultyLabel = styled.span.attrs<{level : Difficulty}>(({level}) => ({
+    className : `DifficultyLabel inline-block whitespace-nowrap text-[13px] font-medium` as string,
+    children : difficultyShort[level],
+    title : level,
+}))<{level : Difficulty}>`
+    color : ${({level}) => difficultyVar[level]};
+`
 
 // Destructive confirm (delete / remove) — only ever inside a confirmation dialog
 export const DangerButton = styled(PrimaryButton)`
@@ -125,25 +140,28 @@ export const Table = styled.table.attrs({
 })``
 
 export const Th = styled.th.attrs({
-    className : `Th text-[12px] font-medium px-4 h-[36px] whitespace-nowrap` as string
+    className : `Th text-[12px] font-medium px-4 h-[40px] whitespace-nowrap` as string
 })`
     color : ${({theme}) => theme.color.ink3};
     border-bottom : 1px solid ${({theme}) => theme.color.line};
 `
 
 export const Td = styled.td.attrs({
-    className : `Td text-[14px] px-4 py-[10px] align-middle` as string
+    className : `Td text-[14px] px-4 h-[40px] py-0 align-middle` as string
 })`
     color : ${({theme}) => theme.color.ink};
 `
 
+// Dense LeetCode-style rows: 40px, alternating stripe instead of dividers
 export const Tr = styled.tr.attrs({
     className : `Tr` as string
 })<{clickable? : boolean}>`
     cursor : ${({clickable}) => clickable ? 'pointer' : 'default'};
     transition : background ${({theme}) => theme.motion.hover} ease;
-    & + & td { border-top : 1px solid ${({theme}) => theme.color.line}; }
-    @media (hover : hover) and (pointer : fine) { &:hover { background : ${({theme}) => theme.color.hover}; } }
+    tbody > &:nth-child(even) { background : ${({theme}) => theme.color.alpha('ink', 0.025)}; }
+    @media (hover : hover) and (pointer : fine) {
+        tbody > &:hover { background : ${({clickable, theme}) => clickable ? theme.color.hover : ''}; }
+    }
 `
 
 export const Muted = styled.span.attrs({

@@ -13,7 +13,7 @@ import SegmentedControl from '../../components/ui/segmented'
 import { PrimaryButton, SecondaryButton, FilterChip, Eyebrow } from '../../styles/kit'
 import {
     Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, SearchField, Select, TableWrap, Table, Th, Td, Tr,
-    CourseDot, DifficultyPill, Muted, Mono, IconButton, DangerButton,
+    CourseDot, DifficultyLabel, Muted, Mono, IconButton, DangerButton,
 } from '../../styles/adminKit'
 import { letters } from '../addQuestion/addQuestion'
 import * as preview from '../addQuestion/addQuestion.style'
@@ -165,12 +165,12 @@ const QuestionBank = () => {
                     <thead className="sticky top-0 z-[1]">
                         <tr>
                             <Th>Question</Th><Th>Course</Th><Th className="hidden md:table-cell">Topic</Th>
-                            <Th className="hidden sm:table-cell">Difficulty</Th><Th className="text-right">Flags</Th>
+                            <Th className="hidden sm:table-cell">Difficulty</Th><Th className="hidden sm:table-cell text-right" title="Share of students whose first answer was correct">Acceptance</Th><Th className="text-right">Flags</Th>
                             <Th className="hidden lg:table-cell">Author</Th><Th className="hidden lg:table-cell">Added</Th>
                         </tr>
                     </thead>
                     <tbody>
-                        {!page ? <SkeletonRows columns={7} /> : results.map((question) => {
+                        {!page ? <SkeletonRows columns={8} /> : results.map((question) => {
                             const info = course(question.courseID)
                             const count = openFlagsFor(question)
                             return (
@@ -179,7 +179,12 @@ const QuestionBank = () => {
                                     <Td className="max-w-[360px]"><span className="line-clamp-1">{sample.plainText(question.question)}</span></Td>
                                     <Td><span className="inline-flex items-center gap-2 whitespace-nowrap">{info && <CourseDot color={info.color} />}<Mono className="!text-ink">{info?.code || info?.name || '—'}</Mono></span></Td>
                                     <Td className="hidden md:table-cell whitespace-nowrap"><Muted>{question.topic || '—'}</Muted></Td>
-                                    <Td className="hidden sm:table-cell"><DifficultyPill level={question.difficulty}>{question.difficulty}</DifficultyPill></Td>
+                                    <Td className="hidden sm:table-cell"><DifficultyLabel level={question.difficulty} /></Td>
+                                    <Td className="hidden sm:table-cell text-right tabular-nums">
+                                        {question.stats && question.stats.attempts > 0
+                                            ? <span title={`${question.stats.attempts} students answered`}>{(question.stats.correctRate * 100).toFixed(1)}%</span>
+                                            : <Muted>—</Muted>}
+                                    </Td>
                                     <Td className="text-right tabular-nums">{count > 0 ? <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-tag-red"><FiFlag size={12} />{count}</span> : <Muted>0</Muted>}</Td>
                                     <Td className="hidden lg:table-cell whitespace-nowrap"><Muted>{question.author}</Muted></Td>
                                     <Td className="hidden lg:table-cell whitespace-nowrap"><Muted>{question.addedAt || '—'}</Muted></Td>
@@ -225,7 +230,7 @@ const QuestionBank = () => {
                             <div className="flex flex-wrap items-center gap-2">
                                 {course(open.courseID) && <preview.Chip><CourseDot color={course(open.courseID)!.color} />{course(open.courseID)!.code || course(open.courseID)!.name}</preview.Chip>}
                                 {open.topic && <preview.Chip>{open.topic}</preview.Chip>}
-                                <DifficultyPill level={open.difficulty}>{open.difficulty}</DifficultyPill>
+                                <DifficultyLabel level={open.difficulty} />
                                 <Mono className="ml-auto">{open.year}</Mono>
                             </div>
                             <preview.PreviewQuestion><Interweave content={open.question} /></preview.PreviewQuestion>

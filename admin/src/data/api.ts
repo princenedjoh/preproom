@@ -50,6 +50,7 @@ const toQuestion = (item : any) : sample.Question => ({
     author : item.author ?? '—',
     addedAt : ago(item.addedAt),
     flags : item.flags ?? 0,
+    stats : item.stats && typeof item.stats.correctRate === 'number' ? { attempts : item.stats.attempts ?? 0, correctRate : item.stats.correctRate } : undefined,
 })
 
 const toFlag = (item : any) : sample.Flag => ({

@@ -22,6 +22,8 @@ export interface Question {
     addedAt : string
     flags : number
     topicID? : string
+    // First-answer stats from the API; missing until it reports them
+    stats? : { attempts : number, correctRate : number }
 }
 
 export type FlagStatus = 'open' | 'resolved' | 'dismissed'

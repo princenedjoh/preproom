@@ -46,11 +46,9 @@ export const Chip = styled.span.attrs({
     background : ${({theme}) => theme.color.subtle};
 `
 
-// Question prompts are set in the serif, like a printed exam paper
 export const PreviewQuestion = styled.div.attrs({
-    className : `PreviewQuestion text-[18px] leading-[1.5] break-words` as string
+    className : `PreviewQuestion text-[16px] leading-[1.6] break-words` as string
 })`
-    font-family : ${({theme}) => theme.font.serif};
     font-weight : 500;
     color : ${({theme}) => theme.color.ink};
     img { max-width : 100%; border-radius : 8px; margin-top : 8px; }

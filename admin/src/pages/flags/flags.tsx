@@ -8,7 +8,7 @@ import { useAdmin } from '../../context/admin'
 import { EmptyState } from '../../components/ui/ui'
 import SegmentedControl from '../../components/ui/segmented'
 import { PrimaryButton, SecondaryButton, GhostButton, Panel, Eyebrow, Kbd, Tag } from '../../styles/kit'
-import { Screen, ScreenHeader, ScreenTitle, ScreenLead, CourseDot, DifficultyPill, Muted, Mono, issueTone } from '../../styles/adminKit'
+import { Screen, ScreenHeader, ScreenTitle, ScreenLead, CourseDot, DifficultyLabel, Muted, Mono, issueTone } from '../../styles/adminKit'
 import { letters } from '../addQuestion/addQuestion'
 import * as preview from '../addQuestion/addQuestion.style'
 
@@ -156,7 +156,7 @@ const Flags = () => {
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Eyebrow>The question</Eyebrow>
                                         {question.courseCode && <preview.Chip className="ml-auto"><CourseDot color={sample.getCourse(question.courseID)?.color ?? '#888'} />{question.courseCode}</preview.Chip>}
-                                        {question.difficulty && <DifficultyPill level={question.difficulty}>{question.difficulty}</DifficultyPill>}
+                                        {question.difficulty && <DifficultyLabel level={question.difficulty} />}
                                     </div>
                                     <preview.PreviewQuestion><Interweave content={question.question} /></preview.PreviewQuestion>
                                     <div className="flex flex-col gap-2">

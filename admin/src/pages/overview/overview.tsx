@@ -5,7 +5,7 @@ import * as sample from '../../data/sample'
 import { useAdmin } from '../../context/admin'
 import * as api from '../../data/api'
 import { Eyebrow, PrimaryButton, SecondaryButton, Panel, PanelTitle, Stat, StatValue, StatLabel, ProgressTrack, ProgressFill, TextLink, Tag } from '../../styles/kit'
-import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, TableWrap, Table, Th, Td, Tr, CourseDot, DifficultyPill, Muted, Mono, issueTone } from '../../styles/adminKit'
+import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, TableWrap, Table, Th, Td, Tr, CourseDot, DifficultyLabel, Muted, Mono, issueTone } from '../../styles/adminKit'
 import { SampleNotice, SkeletonRows, EmptyState, Skeleton } from '../../components/ui/ui'
 
 const COVERAGE_TARGET = 200
@@ -158,7 +158,7 @@ const Overview = () => {
                                         <Tr key={question.id} clickable onClick={() => navigate(`/questions?open=${question.id}`)}>
                                             <Td className="max-w-[320px]"><span className="line-clamp-1">{sample.plainText(question.question)}</span></Td>
                                             <Td><span className="inline-flex items-center gap-2 whitespace-nowrap">{course && <CourseDot color={course.color} />}<Mono className="!text-ink">{course?.code ?? '—'}</Mono></span></Td>
-                                            <Td className="hidden sm:table-cell"><DifficultyPill level={question.difficulty}>{question.difficulty}</DifficultyPill></Td>
+                                            <Td className="hidden sm:table-cell"><DifficultyLabel level={question.difficulty} /></Td>
                                             <Td className="hidden md:table-cell whitespace-nowrap"><Muted>{question.addedAt || 'Just now'}</Muted></Td>
                                         </Tr>
                                     )

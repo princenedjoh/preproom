@@ -11,7 +11,7 @@ import RichField from '../../components/richField/richField'
 import { SampleNotice } from '../../components/ui/ui'
 import SegmentedControl from '../../components/ui/segmented'
 import { PrimaryButton, SecondaryButton, Panel, PanelTitle, Label, Eyebrow } from '../../styles/kit'
-import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, IconButton, DifficultyPill, CourseDot, Muted, Mono } from '../../styles/adminKit'
+import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, IconButton, DifficultyLabel, CourseDot, Muted, Mono } from '../../styles/adminKit'
 import * as s from './addQuestion.style'
 
 export const letters = 'ABCDEFGHIJ'.split('')
@@ -257,7 +257,7 @@ const AddQuestion = () => {
                         <div className="flex flex-wrap items-center gap-2">
                             {course ? <s.Chip><CourseDot color={course.color} />{course.code || course.name}</s.Chip> : <s.Chip>No course</s.Chip>}
                             {topic && <s.Chip>{topic}</s.Chip>}
-                            <DifficultyPill level={difficulty}>{difficulty}</DifficultyPill>
+                            <DifficultyLabel level={difficulty} />
                             <Mono className="ml-auto">{year}</Mono>
                         </div>
                         <s.PreviewQuestion>
@@ -300,7 +300,7 @@ const AddQuestion = () => {
                                     <div key={item.id} className="flex items-center gap-2 py-2 border-t border-line first:border-t-0 first:pt-0">
                                         <CourseDot color={courses.items.find((entry) => entry.id === item.courseID)?.color ?? '#838383'} />
                                         <span className="text-[13px] truncate flex-1">{sample.plainText(item.question)}</span>
-                                        <DifficultyPill level={item.difficulty}>{item.difficulty}</DifficultyPill>
+                                        <DifficultyLabel level={item.difficulty} />
                                     </div>
                                 ))}
                             </div>
