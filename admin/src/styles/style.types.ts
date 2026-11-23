@@ -1,17 +1,16 @@
 import "styled-components";
 
 export enum TypographySize {
-  xs = "11px",
-  xs2 = '12px',
-  sm = "13px",
-  sm2 = "15px",
-  md = "16px",
-  md2 = "18px",
-  lg = "22px",
-  lg2 = "28px",
-  xl = "35px",
-  xxl = "45px",
-  xl3 = "60px"
+  xs = "10px",
+  sm = "12px",
+  sm2 = "14px",
+  md = "15px",
+  md2 = "17px",
+  lg = "20px",
+  lg2 = "26px",
+  xl = "32px",
+  xxl = "40px",
+  xl3 = "55px"
 }
 
 export interface AppTypographyProps {
@@ -29,6 +28,7 @@ export interface AppTypographyProps {
   ellipsis? : boolean
   maxLines? : number
   lineHeight? : number
+  font? : 'display' | 'body' | 'mono'
 }
 
 export interface buttonProps {
@@ -39,6 +39,8 @@ export interface buttonProps {
 export enum TypographyBold {
   sm = "400",
   md = "500",
+  md2 = "600",
+  lg2 = "700",
   lg = "800",
 }
 

@@ -1,0 +1,187 @@
+import { useNavigate } from 'react-router-dom'
+import { FiPlus, FiFlag, FiArrowUpRight, FiCheckCircle } from 'react-icons/fi'
+import * as sample from '../../data/sample'
+import { useAdmin } from '../../context/admin'
+import useLoad from '../../hooks/useLoad'
+import { admin } from '../../components/shell/Shell'
+import { Eyebrow, DarkButton, GhostButton, Panel, PanelTitle, Stat, StatValue, StatLabel, ProgressTrack, ProgressFill, TextLink } from '../../styles/kit'
+import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, TableWrap, Table, Th, Td, Tr, CourseDot, DifficultyPill, Muted, Mono } from '../../styles/adminKit'
+import { SampleNotice, SkeletonRows, EmptyState } from '../../components/ui/ui'
+
+const COVERAGE_TARGET = 200
+
+const greeting = () => {
+    const hour = new Date().getHours()
+    return hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+}
+
+const today = new Date().toLocaleDateString(undefined, { weekday : 'long', day : 'numeric', month : 'long' })
+
+const ActivityChart = ({ values } : { values : number[] }) => {
+    const max = Math.max(...values, 1)
+    const total = values.reduce((sum, value) => sum + value, 0)
+    const thisWeek = values.slice(-7).reduce((sum, value) => sum + value, 0)
+    const lastWeek = values.slice(0, 7).reduce((sum, value) => sum + value, 0)
+    const change = lastWeek ? Math.round(((thisWeek - lastWeek) / lastWeek) * 100) : 0
+    const day = (offset : number) => {
+        const date = new Date()
+        date.setDate(date.getDate() - (values.length - 1 - offset))
+        return date.toLocaleDateString(undefined, { weekday : 'short', day : 'numeric' })
+    }
+
+    return (
+        <div className="flex flex-col gap-4 flex-1">
+            <div className="flex items-end gap-6 flex-wrap">
+                <div className="flex flex-col">
+                    <span className="font-display text-[28px] font-bold tracking-[-0.04em] text-onyx tabular-nums leading-none">{thisWeek}</span>
+                    <Muted>this week</Muted>
+                </div>
+                <span className={`text-[12px] font-semibold rounded-full px-2 py-[2px] ${change >= 0 ? 'bg-[#dcfaee] text-[#005c3a]' : 'bg-[#ffe3ec] text-[#7a0f2f]'}`}>
+                    {change >= 0 ? '+' : ''}{change}% vs last week
+                </span>
+                <Mono className="ml-auto">{total} in 14 days</Mono>
+            </div>
+            <div className="flex items-end gap-[6px] flex-1 min-h-[140px]" role="img"
+                aria-label={`Questions added per day over the last 14 days: ${values.join(', ')}`}>
+                {values.map((value, index) => (
+                    <div key={index} className="group relative flex-1 h-full flex items-end" title={`${day(index)}: ${value} questions`}>
+                        <div
+                            className={`w-full rounded-[4px] transition-[background] duration-150 ${index >= values.length - 7 ? 'bg-ink' : 'bg-cloud'} group-hover:bg-brand-blue`}
+                            style={{ height : `${Math.max(4, (value / max) * 100)}%` }}
+                        />
+                    </div>
+                ))}
+            </div>
+            <div className="flex justify-between">
+                <Mono>{day(0)}</Mono>
+                <Mono>{day(values.length - 1)}</Mono>
+            </div>
+        </div>
+    )
+}
+
+const Overview = () => {
+    const navigate = useNavigate()
+    const { flags, openFlags, added } = useAdmin()
+    const questions = useLoad(sample.fetchQuestions)
+    const courses = useLoad(sample.fetchCourses)
+
+    const recent = [...added, ...questions.items].slice(0, 6)
+    const totalQuestions = courses.items.reduce((sum, course) => sum + course.total, 0) + added.length
+    const activePeople = sample.people.filter((person) => person.status === 'Active').length
+    const queue = flags.filter((flag) => flag.status === 'open').slice(0, 4)
+    const resolvedThisWeek = flags.filter((flag) => flag.status === 'resolved').length + 41
+
+    const stats = [
+        { label : 'Questions in the bank', value : totalQuestions.toLocaleString(), note : `+${sample.weeklyActivity.slice(-7).reduce((a, b) => a + b, 0) + added.length} this week` },
+        { label : 'Courses covered', value : courses.items.length, note : `${sample.programs.length} programs` },
+        { label : 'Open flags', value : openFlags, note : `${resolvedThisWeek} resolved this week`, alert : openFlags > 0 },
+        { label : 'Active contributors', value : activePeople, note : `${sample.people.length - activePeople} invites pending` },
+    ]
+
+    return (
+        <Screen>
+            <ScreenHeader>
+                <div>
+                    <Eyebrow>{today}</Eyebrow>
+                    <ScreenTitle className="mt-1">{greeting()}, {admin.name.split(' ')[0]}</ScreenTitle>
+                    <ScreenLead>Here is what changed in the question bank and what needs your attention.</ScreenLead>
+                </div>
+                <Toolbar>
+                    <SampleNotice live={questions.live && courses.live} />
+                    <GhostButton onClick={() => navigate('/alerts/flags')}><FiFlag size={14} /> Review flags</GhostButton>
+                    <DarkButton onClick={() => navigate('/addQuestions')}><FiPlus size={14} /> Add question</DarkButton>
+                </Toolbar>
+            </ScreenHeader>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                {stats.map((stat) => (
+                    <Stat key={stat.label}>
+                        <StatLabel>{stat.label}</StatLabel>
+                        <StatValue className="tabular-nums mt-1">{stat.value}</StatValue>
+                        <span className={`text-[12px] mt-1 ${stat.alert ? 'text-[#c2184f] font-semibold' : 'text-ash'}`}>{stat.note}</span>
+                    </Stat>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                <Panel className="lg:col-span-2">
+                    <PanelTitle>Questions added</PanelTitle>
+                    <ActivityChart values={sample.weeklyActivity} />
+                </Panel>
+                <Panel>
+                    <div className="flex items-center justify-between">
+                        <PanelTitle>Flag queue</PanelTitle>
+                        <TextLink onClick={() => navigate('/alerts/flags')}>Open <FiArrowUpRight size={14} /></TextLink>
+                    </div>
+                    {queue.length === 0 ? (
+                        <EmptyState icon={FiCheckCircle} title="Queue is clear" body="No open flags right now." />
+                    ) : (
+                        <div className="flex flex-col">
+                            {queue.map((flag) => {
+                                const question = sample.getQuestion(flag.questionID)
+                                const course = sample.getCourse(question?.courseID)
+                                return (
+                                    <button key={flag.id} onClick={() => navigate(`/alerts/flags?flag=${flag.id}`)}
+                                        className="text-left flex flex-col gap-1 py-3 border-t border-bone first:border-t-0 first:pt-0 rounded-[6px] transition-colors duration-150 hover:bg-mist">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[12px] font-semibold text-[#c2184f]">{flag.issue}</span>
+                                            <Mono>· {course?.code} · {flag.raisedAt}</Mono>
+                                        </div>
+                                        <span className="text-[13px] text-ink line-clamp-2 leading-[1.45]">{question ? sample.plainText(question.question) : 'Question removed'}</span>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    )}
+                </Panel>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+                <div className="lg:col-span-2 flex flex-col gap-3">
+                    <div className="flex items-center justify-between">
+                        <PanelTitle>Recently added</PanelTitle>
+                        <TextLink onClick={() => navigate('/questions')}>Question bank <FiArrowUpRight size={14} /></TextLink>
+                    </div>
+                    <TableWrap>
+                        <Table>
+                            <thead><tr><Th>Question</Th><Th>Course</Th><Th className="hidden sm:table-cell">Difficulty</Th><Th className="hidden md:table-cell">Added</Th></tr></thead>
+                            <tbody>
+                                {questions.loading ? <SkeletonRows columns={4} rows={5} /> : recent.map((question) => {
+                                    const course = sample.getCourse(question.courseID)
+                                    return (
+                                        <Tr key={question.id} clickable onClick={() => navigate(`/questions?open=${question.id}`)}>
+                                            <Td className="max-w-[320px]"><span className="line-clamp-1">{sample.plainText(question.question)}</span></Td>
+                                            <Td><span className="inline-flex items-center gap-2 whitespace-nowrap">{course && <CourseDot color={course.color} />}<Mono className="!text-ink">{course?.code ?? '—'}</Mono></span></Td>
+                                            <Td className="hidden sm:table-cell"><DifficultyPill level={question.difficulty}>{question.difficulty}</DifficultyPill></Td>
+                                            <Td className="hidden md:table-cell whitespace-nowrap"><Muted>{question.addedAt || 'Just now'}</Muted></Td>
+                                        </Tr>
+                                    )
+                                })}
+                            </tbody>
+                        </Table>
+                    </TableWrap>
+                </div>
+                <Panel>
+                    <PanelTitle>Coverage by course</PanelTitle>
+                    <Muted className="-mt-2">Target is {COVERAGE_TARGET} questions per course.</Muted>
+                    <div className="flex flex-col gap-4">
+                        {[...courses.items].sort((a, b) => a.total - b.total).map((course) => (
+                            <div key={course.id} className="flex flex-col gap-[6px]">
+                                <div className="flex items-center justify-between gap-2 text-[13px]">
+                                    <span className="flex items-center gap-2 min-w-0"><CourseDot color={course.color} /><span className="truncate font-medium">{course.name}</span></span>
+                                    <Mono className="tabular-nums">{course.total}</Mono>
+                                </div>
+                                <ProgressTrack>
+                                    <ProgressFill value={(course.total / COVERAGE_TARGET) * 100} color={course.total < COVERAGE_TARGET / 4 ? '#f0457a' : '#202020'} />
+                                </ProgressTrack>
+                            </div>
+                        ))}
+                    </div>
+                </Panel>
+            </div>
+        </Screen>
+    )
+}
+
+export default Overview
