@@ -6,8 +6,8 @@ import { FiUserPlus, FiSearch, FiTrash2, FiRepeat, FiSend, FiUsers, FiLock } fro
 import * as sample from '../../data/sample'
 import * as api from '../../data/api'
 import { SkeletonRows, EmptyState, Dialog, PersonAvatar, SampleNotice } from '../../components/ui/ui'
-import { DarkButton, GhostButton, Label, TextInput, Panel } from '../../styles/kit'
-import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, SearchField, TableWrap, Table, Th, Td, Tr, IconButton, Muted, Mono } from '../../styles/adminKit'
+import { PrimaryButton, SecondaryButton, Label, TextInput, Panel } from '../../styles/kit'
+import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, SearchField, TableWrap, Table, Th, Td, Tr, IconButton, Muted, Mono, DangerButton } from '../../styles/adminKit'
 import useLoad from '../../hooks/useLoad'
 
 const roles : Record<string, { role : sample.Role, title : string, lead : string, can : string[] }> = {
@@ -31,7 +31,8 @@ const roles : Record<string, { role : sample.Role, title : string, lead : string
     },
 }
 
-const palette = ['#6647f0', '#0091ff', '#fd9a46', '#16c0a4', '#f0457a', '#00c07a']
+// Notion's tag hues: mid-tone enough to read on both the light and dark canvas
+const palette = ['#2383e2', '#9065b0', '#d9730d', '#448361', '#c14c8a', '#cb912f', '#d44c47', '#337ea9']
 
 const People = () => {
     const { group } = useParams()
@@ -126,7 +127,7 @@ const People = () => {
                 </div>
                 <Toolbar>
                     <SampleNotice live={people.live} />
-                    <DarkButton onClick={() => setInviting(true)}><FiUserPlus size={14} /> Invite {settings.role.toLowerCase()}</DarkButton>
+                    <PrimaryButton onClick={() => setInviting(true)}><FiUserPlus size={14} /> Invite {settings.role.toLowerCase()}</PrimaryButton>
                 </Toolbar>
             </ScreenHeader>
 
@@ -139,7 +140,7 @@ const People = () => {
                 ].map((stat) => (
                     <Panel key={stat.label} className="!gap-1 !p-4">
                         <Muted>{stat.label}</Muted>
-                        <span className="font-display text-[24px] font-bold tracking-[-0.04em] text-onyx tabular-nums leading-none">{stat.value.toLocaleString()}</span>
+                        <span className=" text-[24px] font-bold tracking-[-0.04em] text-ink tabular-nums leading-none">{stat.value.toLocaleString()}</span>
                     </Panel>
                 ))}
             </div>
@@ -177,16 +178,16 @@ const People = () => {
                                 <Td className="hidden md:table-cell">
                                     <span className="flex flex-wrap gap-1">
                                         {person.courses.length ? person.courses.map((id) => (
-                                            <span key={id} className="rounded-full border border-bone bg-mist px-2 py-[1px] text-[11px] font-semibold whitespace-nowrap">{courseCode(id)}</span>
+                                            <span key={id} className="rounded-full border border-line bg-subtle px-2 py-[1px] text-[11px] font-semibold whitespace-nowrap">{courseCode(id)}</span>
                                         )) : <Muted>None</Muted>}
                                     </span>
                                 </Td>
                                 <Td className="text-right tabular-nums hidden sm:table-cell">{person.questionsAdded}</Td>
                                 <Td className="text-right tabular-nums hidden lg:table-cell">{person.flagsResolved}</Td>
                                 <Td>
-                                    <span className={`inline-flex items-center gap-[6px] rounded-full px-2 py-[2px] text-[11px] font-semibold
-                                        ${person.status === 'Active' ? 'bg-[#dcfaee] text-[#005c3a]' : 'bg-[#fff0e3] text-[#7a3d07]'}`}>
-                                        <span className={`w-[6px] h-[6px] rounded-full ${person.status === 'Active' ? 'bg-brand-emerald' : 'bg-[#fd9a46]'}`} />
+                                    <span className={`inline-flex items-center gap-[6px] rounded-[4px] px-[6px] h-[20px] inline-flex items-center text-[12px] font-medium
+                                        ${person.status === 'Active' ? 'bg-tag-green-bg text-tag-green' : 'bg-tag-orange-bg text-tag-orange'}`}>
+                                        <span className={`w-[6px] h-[6px] rounded-full ${person.status === 'Active' ? 'bg-tag-green' : 'bg-tag-orange'}`} />
                                         {person.status}
                                     </span>
                                 </Td>
@@ -213,7 +214,7 @@ const People = () => {
                 {!people.loading && !people.error && rows.length === 0 && (
                     <div className="p-4">
                         <EmptyState icon={FiUsers} title={query ? 'Nobody matches' : `No ${settings.title.toLowerCase()} yet`}
-                            action={<GhostButton onClick={() => setInviting(true)}><FiUserPlus size={14} /> Invite {settings.role.toLowerCase()}</GhostButton>} />
+                            action={<SecondaryButton onClick={() => setInviting(true)}><FiUserPlus size={14} /> Invite {settings.role.toLowerCase()}</SecondaryButton>} />
                     </div>
                 )}
             </TableWrap>
@@ -224,8 +225,8 @@ const People = () => {
                 description="They get an email with a link to set a password. Invites expire after 7 days."
                 onClose={() => setInviting(false)}
                 footer={<>
-                    <GhostButton onClick={() => setInviting(false)}>Cancel</GhostButton>
-                    <DarkButton disabled={busy || !form.name.trim() || !validEmail} className="disabled:opacity-40" onClick={invite}><FiSend size={14} /> {busy ? 'Sending…' : 'Send invite'}</DarkButton>
+                    <SecondaryButton onClick={() => setInviting(false)}>Cancel</SecondaryButton>
+                    <PrimaryButton disabled={busy || !form.name.trim() || !validEmail} className="disabled:opacity-40" onClick={invite}><FiSend size={14} /> {busy ? 'Sending…' : 'Send invite'}</PrimaryButton>
                 </>}
             >
                 <form className="flex flex-col gap-4" onSubmit={(event) => { event.preventDefault(); invite() }}>
@@ -247,8 +248,8 @@ const People = () => {
                 description={removing?.status === 'Invited' ? 'The invite link stops working.' : 'They lose admin access straight away and become a learner. Questions they added stay in the bank.'}
                 onClose={() => setRemoving(undefined)}
                 footer={<>
-                    <GhostButton onClick={() => setRemoving(undefined)}>Cancel</GhostButton>
-                    <DarkButton className="!bg-[#c2184f]" onClick={() => removing && remove(removing)}>Remove</DarkButton>
+                    <SecondaryButton onClick={() => setRemoving(undefined)}>Cancel</SecondaryButton>
+                    <DangerButton onClick={() => removing && remove(removing)}>Remove</DangerButton>
                 </>}
              />
         </Screen>

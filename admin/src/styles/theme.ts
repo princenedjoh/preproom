@@ -1,151 +1,113 @@
 import { TypographyBold, TypographySize } from "./style.types"
 
-// Tokens follow the ClickUp-style DESIGN.md: white canvas, near-black ink for
-// primary actions, grayscale everywhere else and colour used only for status / brand moments.
+// Notion design language (ai-toolbox/design-systems/notion/DESIGN.md).
+// Every colour is a CSS variable from tokens.css, so light/dark switch without re-rendering.
+const v = (name : string, alpha? : number) => alpha === undefined ? `rgb(var(--${name}))` : `rgb(var(--${name}) / ${alpha})`
+
+export const color = {
+    canvas : v('canvas'),
+    surface : v('surface'),
+    subtle : v('subtle'),
+    line : v('line'),
+    lineStrong : v('line-strong'),
+    ink : v('ink'),
+    ink2 : v('ink-2'),
+    ink3 : v('ink-3'),
+    ink4 : v('ink-4'),
+    accent : v('accent'),
+    accentHover : v('accent-hover'),
+    accentTint : v('accent-tint'),
+    onAccent : v('on-accent'),
+    inverse : v('inverse'),
+    onInverse : v('on-inverse'),
+    ring : 'var(--ring)',
+    hover : v('ink', 0.05),
+    press : v('ink', 0.08),
+    tag : {
+        gray : v('tag-gray'), grayBg : v('tag-gray-bg'),
+        brown : v('tag-brown'), brownBg : v('tag-brown-bg'),
+        orange : v('tag-orange'), orangeBg : v('tag-orange-bg'),
+        yellow : v('tag-yellow'), yellowBg : v('tag-yellow-bg'),
+        green : v('tag-green'), greenBg : v('tag-green-bg'),
+        blue : v('tag-blue'), blueBg : v('tag-blue-bg'),
+        purple : v('tag-purple'), purpleBg : v('tag-purple-bg'),
+        pink : v('tag-pink'), pinkBg : v('tag-pink-bg'),
+        red : v('tag-red'), redBg : v('tag-red-bg'),
+    },
+    alpha : v,
+}
+
 const theme = {
+    color,
+
+    // Legacy keys, mapped onto the tokens so older components theme correctly
     colors : {
-        main : {
-            primary : '#202020',
-            secondary : '#f8f9fa'
-        },
+        main : { primary : color.ink, secondary : color.subtle },
         background : {
-            dark : {
-                black : "#090c1d",
-                primary : "#111111",
-                secondary : "#202020",
-                tetiary : '#d4d4d4'
-            },
-            light : {
-                white : '#ffffff',
-                primary : '#f8f9fa',
-                secondary : '#eeeeee',
-                tetiary : '#e9ebf0'
-            }
+            dark : { black : color.inverse, primary : color.inverse, secondary : color.inverse, tetiary : color.lineStrong },
+            light : { white : color.surface, primary : color.subtle, secondary : color.subtle, tetiary : color.subtle },
         },
         text : {
-            light : {
-                white : '#ffffff',
-                primary : '#eeeeee',
-                secondary : '#b3b3b3'
-            },
-            dark : {
-                black : "#202020",
-                primary : "#646464",
-                secondary : "#838383",
-                tetiary : '#b3b3b3'
-            }
+            light : { white : color.onInverse, primary : color.onInverse, secondary : color.ink4 },
+            dark : { black : color.ink, primary : color.ink2, secondary : color.ink3, tetiary : color.ink4 },
         },
         border : {
-            light : {
-                white : '#ffffff',
-                primary : "#e8e8e8",
-                secondary : '#d4d4d4'
-            },
-            dark : {
-                black : "#202020",
-                primary : "#2a2a2a",
-                secondary : "#646464"
-            }
+            light : { white : color.surface, primary : color.line, secondary : color.lineStrong },
+            dark : { black : color.ink, primary : color.lineStrong, secondary : color.ink3 },
         },
-        buttons : {
-            red : '#f0457a',
-            green : '#00c07a'
-        }
+        buttons : { red : color.tag.red, green : color.tag.green },
+        shades : { white : color.surface, black : color.ink },
+        red : { red3 : color.tag.red },
+        gray : { gray1 : color.ink, gray3 : color.ink2, gray5 : color.lineStrong },
     },
 
     colors2 : {
-        main : {
-            primary : "#202020"
-        },
-
+        main : { primary : color.ink },
         brand : {
-            violet : "#6647f0",
-            blue : "#0091ff",
-            mint : "#6ee7b7",
-            emerald : "#00c07a",
-            teal : "#16c0a4",
-            onyx : "#090c1d",
-            plaster : "#e9ebf0",
+            violet : color.tag.purple,
+            blue : color.accent,
+            mint : color.tag.greenBg,
+            emerald : color.tag.green,
+            teal : color.tag.green,
+            onyx : color.ink,
+            plaster : color.subtle,
         },
-
         gray : {
-            gray1 : "#202020",
-            gray2 : "#2a2a2a",
-            gray3 : "#646464",
-            gray4 : "#838383",
-            gray5 : "#d4d4d4",
-            gray6 : "#e8e8e8",
-            gray7 : "#eeeeee",
-            gray8 : "#f8f9fa",
-            gray9 : "#f8f9fa",
+            gray1 : color.ink, gray2 : color.ink, gray3 : color.ink2, gray4 : color.ink3,
+            gray5 : color.lineStrong, gray6 : color.line, gray7 : color.subtle, gray8 : color.subtle, gray9 : color.subtle,
         },
-
-        blue : {
-            blue1 : "#00335a",
-            blue2 : "#005fa8",
-            blue3 : "#0091ff",
-            blue4 : "#7cc4ff",
-            blue5 : "#cfe8ff",
-            blue6 : "#e6f3ff",
-            blue7 : "#f2f9ff",
-            blue8 : "#f8fbff",
-            blue9 : "#f8f9fa",
-        },
-
-        green : {
-            green1 : "#005c3a",
-            green2 : "#00a368",
-            green3 : "#00c07a",
-            green4 : "#6ee7b7",
-            green5 : "#dcfaee",
-        },
-
-        red : {
-            red1 : "#7a0f2f",
-            red2 : "#c2184f",
-            red3 : "#f0457a",
-            red4 : "#f9a3bd",
-            red5 : "#ffe3ec",
-        },
-
-        orange : {
-            orange1 : "#7a3d07",
-            orange2 : "#c66a12",
-            orange3 : "#fd9a46",
-            orange4 : "#ffcba6",
-            orange5 : "#fff0e3",
-        },
-
-        violet : {
-            violet1 : "#2a1a72",
-            violet2 : "#4a2fd0",
-            violet3 : "#6647f0",
-            violet4 : "#b7a8f8",
-            violet5 : "#efebfe",
-        },
-
-        shades : {
-            white : "#ffffff",
-            black : "#202020"
-        }
+        blue : { blue1 : color.accent, blue2 : color.accent, blue3 : color.accent, blue4 : color.accent, blue5 : color.accentTint, blue6 : color.accentTint, blue7 : color.accentTint, blue8 : color.accentTint, blue9 : color.subtle },
+        green : { green1 : color.tag.green, green2 : color.tag.green, green3 : color.tag.green, green4 : color.tag.green, green5 : color.tag.greenBg },
+        red : { red1 : color.tag.red, red2 : color.tag.red, red3 : color.tag.red, red4 : color.tag.red, red5 : color.tag.redBg },
+        orange : { orange1 : color.tag.orange, orange2 : color.tag.orange, orange3 : color.tag.orange, orange4 : color.tag.orange, orange5 : color.tag.orangeBg },
+        violet : { violet1 : color.tag.purple, violet2 : color.tag.purple, violet3 : color.tag.purple, violet4 : color.tag.purple, violet5 : color.tag.purpleBg },
+        shades : { white : color.surface, black : color.ink },
     },
 
+    font : {
+        sans : 'var(--font-sans)',
+        serif : 'var(--font-serif)',
+        mono : 'var(--font-mono)',
+    },
     fonts : {
-        display : `'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif`,
-        body : `'Inter', ui-sans-serif, system-ui, sans-serif`,
-        mono : `'Sometype Mono', 'JetBrains Mono', ui-monospace, monospace`,
+        display : 'var(--font-sans)',
+        body : 'var(--font-sans)',
+        serif : 'var(--font-serif)',
+        mono : 'var(--font-mono)',
     },
+
+    radius : { sm : 'var(--radius-sm)', md : 'var(--radius-md)', lg : 'var(--radius-lg)', xl : 'var(--radius-xl)', pill : '9999px' },
+    borderRadius : { sm : 'var(--radius-md)', md : 'var(--radius-lg)', lg : 'var(--radius-xl)', pill : '9999px' },
 
     gradients : {
-        rainbowConic : `conic-gradient(from 90deg, rgb(125, 91, 231) 19%, rgb(188, 63, 218) 28%, rgb(250, 36, 206) 37%, rgb(251, 73, 165) 45%, rgb(252, 109, 123) 52%, rgb(253, 132, 97) 55%, rgb(253, 154, 70) 58%, rgb(246, 135, 198) 65%, rgb(163, 160, 224) 80%, rgb(79, 185, 250) 95%, rgb(0, 145, 255) 100%)`,
-        primary : `linear-gradient(83deg, rgb(64, 221, 255) -5%, rgb(118, 18, 250) 51%, rgb(250, 18, 227) 125%)`,
-        darkFade : `linear-gradient(rgb(17, 17, 17) 24%, rgb(0, 0, 0))`,
+        darkFade : color.inverse,
     },
 
     shadows : {
-        sm : `rgba(13, 21, 48, 0.04) 0px 4px 4px 0px`,
-        subtle : `rgba(0, 0, 0, 0.1) 0px 1px 3px 0px, rgba(0, 0, 0, 0.06) 0px 1px 2px 0px`,
-        screenshot : `rgba(13, 21, 48, 0.08) 0px 40px 80px -20px, rgba(13, 21, 48, 0.06) 0px 12px 24px -8px`,
+        float : 'var(--shadow-float)',
+        sm : 'var(--shadow-press)',
+        subtle : 'var(--shadow-press)',
+        screenshot : 'var(--shadow-float)',
     },
 
     motion : {
@@ -155,7 +117,7 @@ const theme = {
         easeInOut : 'cubic-bezier(0.77, 0, 0.175, 1)',
         easeDrawer : 'cubic-bezier(0.32, 0.72, 0, 1)',
         duration : '0.45s',
-        hover : '0.15s',
+        hover : '0.12s',
         press : '0.12s',
     },
 
@@ -166,27 +128,9 @@ const theme = {
         bold: { sm: TypographyBold.sm, md: TypographyBold.md, md2: TypographyBold.md2, lg2: TypographyBold.lg2, lg: TypographyBold.lg },
       },
 
-    spacing: {
-        xs: "4px",
-        sm: "12px",
-        md: "16px",
-        lg: "28px",
-    },
+    spacing: { xs: "4px", sm: "12px", md: "16px", lg: "28px" },
 
-    borderRadius: {
-        sm: "9px",
-        md: "12px",
-        lg: "20px",
-        pill: "9999px",
-    },
-
-    breakpoints: {
-        xs: "600px",
-        sm: "800px",
-        md: "1000px",
-        lg: "1200px",
-        xl: "1400px",
-    },
+    breakpoints: { xs: "600px", sm: "800px", md: "1000px", lg: "1200px", xl: "1400px" },
 }
 
 export default theme

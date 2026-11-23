@@ -3,6 +3,7 @@ import styled, { keyframes } from 'styled-components'
 import { FiX, FiWifiOff } from 'react-icons/fi'
 import { IconType } from 'react-icons'
 import { Empty, Avatar } from '../../styles/kit'
+import { toneOf, toneVar } from '../../styles/tone'
 import { IconButton, Td, Tr } from '../../styles/adminKit'
 
 /* Skeletons */
@@ -13,11 +14,11 @@ const shimmer = keyframes`
 `
 
 export const Skeleton = styled.span.attrs({
-    className : `Skeleton block rounded-[6px]` as string
+    className : `Skeleton block rounded-[4px]` as string
 })<{width? : string, height? : number}>`
     width : ${({width}) => width ?? '100%'};
     height : ${({height}) => height ?? 12}px;
-    background : linear-gradient(90deg, #f1f2f4 25%, #e8e9ec 37%, #f1f2f4 63%);
+    background : linear-gradient(90deg, rgb(var(--ink) / .05) 25%, rgb(var(--ink) / .09) 37%, rgb(var(--ink) / .05) 63%);
     background-size : 400% 100%;
     animation : ${shimmer} 1.4s ease infinite;
     @media (prefers-reduced-motion : reduce) { animation : none; }
@@ -43,10 +44,10 @@ export const EmptyState = ({ icon : Icon, title, body, action } : {
     icon : IconType, title : string, body? : string, action? : ReactNode
 }) => (
     <Empty>
-        <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-mist border border-bone text-ink">
-            <Icon size={16} />
+        <span className="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-subtle text-ink-2">
+            <Icon size={18} />
         </span>
-        <span className="text-[15px] font-bold text-ink">{title}</span>
+        <span className="text-[15px] font-semibold text-ink">{title}</span>
         {body && <span className="text-[13px] max-w-[340px] leading-[1.5]">{body}</span>}
         {action}
     </Empty>
@@ -55,10 +56,10 @@ export const EmptyState = ({ icon : Icon, title, body, action } : {
 /* Sample data notice */
 
 const NoticePill = styled.span.attrs({
-    className : `NoticePill inline-flex items-center gap-[6px] rounded-full px-3 h-[26px] text-[12px] font-semibold whitespace-nowrap` as string
+    className : `NoticePill inline-flex items-center gap-[6px] rounded-[4px] px-2 h-[22px] text-[12px] font-medium whitespace-nowrap` as string
 })`
-    color : ${({theme}) => theme.colors2.orange.orange1};
-    background : ${({theme}) => theme.colors2.orange.orange5};
+    color : ${({theme}) => theme.color.tag.orange};
+    background : ${({theme}) => theme.color.tag.orangeBg};
 `
 
 export const SampleNotice = ({ live } : { live : boolean }) => live ? null : (
@@ -72,7 +73,7 @@ export const SampleNotice = ({ live } : { live : boolean }) => live ? null : (
 export const initials = (name : string) => name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()
 
 export const PersonAvatar = ({ name, color, size = 28 } : { name : string, color : string, size? : number }) => (
-    <Avatar color={color} size={size} ring="transparent" style={{ fontSize : size > 30 ? 12 : 10, border : 'none' }}>
+    <Avatar color={toneVar(toneOf(name, color))} size={size} style={{ fontSize : size > 30 ? 12 : 10, boxShadow : 'none' }}>
         {initials(name)}
     </Avatar>
 )
@@ -88,15 +89,15 @@ const rise = keyframes`
 const Backdrop = styled.div.attrs({
     className : `Backdrop fixed inset-0 z-[1300] flex items-end sm:items-center justify-center p-0 sm:p-6` as string
 })`
-    background : rgba(9, 12, 29, 0.32);
+    background : rgb(15 15 15 / 0.45);
     animation : ${fadeIn} 200ms cubic-bezier(0.23, 1, 0.32, 1);
 `
 
 const DialogPanel = styled.div.attrs({
-    className : `DialogPanel w-full sm:max-w-[480px] max-h-[90vh] overflow-y-auto rounded-t-[20px] sm:rounded-[16px] flex flex-col` as string
+    className : `DialogPanel w-full sm:max-w-[480px] max-h-[90vh] overflow-y-auto rounded-t-[16px] sm:rounded-[12px] flex flex-col` as string
 })`
-    background : ${({theme}) => theme.colors.background.light.white};
-    box-shadow : ${({theme}) => theme.shadows.screenshot};
+    background : ${({theme}) => theme.color.surface};
+    box-shadow : ${({theme}) => theme.shadows.float};
     animation : ${rise} 260ms cubic-bezier(0.23, 1, 0.32, 1);
     @media (prefers-reduced-motion : reduce) { animation : ${fadeIn} 160ms linear; }
 `
@@ -120,13 +121,13 @@ export const Dialog = ({ open, title, description, onClose, children, footer } :
             <DialogPanel ref={panel} role="dialog" aria-modal="true" aria-label={title}>
                 <div className="flex items-start justify-between gap-4 px-6 pt-5">
                     <div className="flex flex-col gap-1">
-                        <span className="font-display text-[18px] font-bold tracking-[-0.02em] text-ink">{title}</span>
-                        {description && <span className="text-[13px] text-muted leading-[1.5]">{description}</span>}
+                        <span className="text-[17px] font-semibold tracking-[-0.015em] text-ink">{title}</span>
+                        {description && <span className="text-[13px] text-ink-2 leading-[1.5]">{description}</span>}
                     </div>
                     <IconButton onClick={onClose} aria-label="Close"><FiX size={16} /></IconButton>
                 </div>
                 {children ? <div className="flex flex-col gap-4 px-6 py-5">{children}</div> : <div className="h-5" />}
-                {footer && <div className="flex justify-end gap-2 px-6 py-4 border-t border-bone bg-mist">{footer}</div>}
+                {footer && <div className="flex justify-end gap-2 px-6 py-4 border-t border-line">{footer}</div>}
             </DialogPanel>
         </Backdrop>
     )

@@ -10,7 +10,7 @@ import useLoad from '../../hooks/useLoad'
 import RichField from '../../components/richField/richField'
 import { SampleNotice } from '../../components/ui/ui'
 import SegmentedControl from '../../components/ui/segmented'
-import { DarkButton, GhostButton, Panel, PanelTitle, Label, Eyebrow } from '../../styles/kit'
+import { PrimaryButton, SecondaryButton, Panel, PanelTitle, Label, Eyebrow } from '../../styles/kit'
 import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, IconButton, DifficultyPill, CourseDot, Muted, Mono } from '../../styles/adminKit'
 import * as s from './addQuestion.style'
 
@@ -217,11 +217,11 @@ const AddQuestion = () => {
                             ))}
                         </div>
                         <div className="flex items-center gap-3">
-                            <GhostButton type="button" disabled={options.length >= MAX_OPTIONS} className="disabled:opacity-40"
+                            <SecondaryButton type="button" disabled={options.length >= MAX_OPTIONS} className="disabled:opacity-40"
                                 onClick={() => setOptions([...options, ''])}>
                                 <FiPlus size={14} /> Add option
-                            </GhostButton>
-                            {invalid(answer !== undefined) && <span className="text-[12px] font-semibold text-[#c2184f]">Mark the correct option</span>}
+                            </SecondaryButton>
+                            {invalid(answer !== undefined) && <span className="text-[12px] font-semibold text-tag-red">Mark the correct option</span>}
                         </div>
                     </Panel>
 
@@ -235,14 +235,14 @@ const AddQuestion = () => {
                     </Panel>
 
                     <s.SaveBar>
-                        <label className="flex items-center gap-2 text-[13px] text-muted cursor-pointer mr-auto">
+                        <label className="flex items-center gap-2 text-[13px] text-ink-2 cursor-pointer mr-auto">
                             <Switch size="small" checked={keepContext} onChange={setKeepContext} />
                             Keep course and topic for the next question
                         </label>
-                        <GhostButton type="button" onClick={() => reset(false)}><FiRotateCcw size={14} /> Clear</GhostButton>
-                        <DarkButton type="button" onClick={save} disabled={saving} className="disabled:opacity-60">
+                        <SecondaryButton type="button" onClick={() => reset(false)}><FiRotateCcw size={14} /> Clear</SecondaryButton>
+                        <PrimaryButton type="button" onClick={save} disabled={saving} className="disabled:opacity-60">
                             {saving ? 'Saving…' : 'Save question'}
-                        </DarkButton>
+                        </PrimaryButton>
                     </s.SaveBar>
                 </div>
 
@@ -261,7 +261,7 @@ const AddQuestion = () => {
                             <Mono className="ml-auto">{year}</Mono>
                         </div>
                         <s.PreviewQuestion>
-                            {question ? <Interweave content={question} /> : <span className="text-fog">Your question appears here.</span>}
+                            {question ? <Interweave content={question} /> : <span className="text-ink-4">Your question appears here.</span>}
                         </s.PreviewQuestion>
                         <div className="flex flex-col gap-2">
                             {options.map((option, index) => option && (
@@ -270,7 +270,7 @@ const AddQuestion = () => {
                                     <span className="min-w-0 break-words"><Interweave content={option} /></span>
                                 </s.PreviewOption>
                             ))}
-                            {filled.length === 0 && <span className="text-[13px] text-fog">Options appear here.</span>}
+                            {filled.length === 0 && <span className="text-[13px] text-ink-4">Options appear here.</span>}
                         </div>
                         {reveal && explanation && (
                             <s.PreviewExplanation>
@@ -284,8 +284,8 @@ const AddQuestion = () => {
                         <PanelTitle>Ready to save</PanelTitle>
                         <ul className="flex flex-col gap-2">
                             {checks.map((check) => (
-                                <li key={check.label} className={`flex items-center gap-2 text-[13px] ${check.ok ? 'text-ink' : invalid(check.ok) ? 'text-[#c2184f]' : 'text-ash'}`}>
-                                    {check.ok ? <FiCheckCircle size={15} className="text-brand-emerald" /> : <FiCircle size={15} />}
+                                <li key={check.label} className={`flex items-center gap-2 text-[13px] ${check.ok ? 'text-ink' : invalid(check.ok) ? 'text-tag-red' : 'text-ink-3'}`}>
+                                    {check.ok ? <FiCheckCircle size={15} className="text-tag-green" /> : <FiCircle size={15} />}
                                     {check.label}
                                 </li>
                             ))}
@@ -297,7 +297,7 @@ const AddQuestion = () => {
                             <PanelTitle>Added this session</PanelTitle>
                             <div className="flex flex-col">
                                 {added.slice(0, 5).map((item) => (
-                                    <div key={item.id} className="flex items-center gap-2 py-2 border-t border-bone first:border-t-0 first:pt-0">
+                                    <div key={item.id} className="flex items-center gap-2 py-2 border-t border-line first:border-t-0 first:pt-0">
                                         <CourseDot color={courses.items.find((entry) => entry.id === item.courseID)?.color ?? '#838383'} />
                                         <span className="text-[13px] truncate flex-1">{sample.plainText(item.question)}</span>
                                         <DifficultyPill level={item.difficulty}>{item.difficulty}</DifficultyPill>

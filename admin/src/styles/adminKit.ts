@@ -1,10 +1,13 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { Difficulty } from "../data/sample";
+import { pressable, PrimaryButton, Tag, Tone } from "./kit";
+import { toneOf, toneVar } from "./tone";
 
-// Admin-only primitives layered on the shared kit (kit.ts mirrors the user app).
+// Admin-only primitives layered on the shared kit. Notion's database views are
+// the reference: hairline tables, plain headers, small rectangular tags.
 
 export const Screen = styled.main.attrs({
-    className : `Screen w-full max-w-[1200px] mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-20 flex flex-col gap-6` as string
+    className : `Screen w-full max-w-[1200px] mx-auto px-4 md:px-10 pt-6 md:pt-10 pb-24 flex flex-col gap-6` as string
 })``
 
 export const ScreenHeader = styled.div.attrs({
@@ -12,91 +15,109 @@ export const ScreenHeader = styled.div.attrs({
 })``
 
 export const ScreenTitle = styled.h1.attrs({
-    className : `ScreenTitle text-[26px] md:text-[30px] leading-[1.15]` as string
+    className : `ScreenTitle text-[28px] md:text-[32px] leading-[1.15] font-bold` as string
 })`
-    font-family : ${({theme}) => theme.fonts.display};
-    font-weight : 700;
-    letter-spacing : -0.035em;
-    color : ${({theme}) => theme.colors2.brand.onyx};
+    letter-spacing : -0.025em;
+    color : ${({theme}) => theme.color.ink};
 `
 
 export const ScreenLead = styled.p.attrs({
-    className : `ScreenLead text-[14px] leading-[1.55] mt-1 max-w-[560px]` as string
+    className : `ScreenLead text-[14px] leading-[1.55] mt-[6px] max-w-[580px]` as string
 })`
-    color : ${({theme}) => theme.colors2.gray.gray3};
+    color : ${({theme}) => theme.color.ink2};
 `
 
 export const Toolbar = styled.div.attrs({
     className : `Toolbar flex flex-wrap items-center gap-2` as string
 })``
 
+const field = css`
+    height : 32px;
+    border-radius : ${({theme}) => theme.radius.md};
+    font-size : 13px;
+    color : ${({theme}) => theme.color.ink};
+    background : ${({theme}) => theme.color.surface};
+    border : 1px solid ${({theme}) => theme.color.line};
+    transition : border-color ${({theme}) => theme.motion.hover} ease, box-shadow ${({theme}) => theme.motion.hover} ease, background ${({theme}) => theme.motion.hover} ease;
+`
+
 export const SearchField = styled.label.attrs({
-    className : `SearchField flex items-center gap-2 h-[36px] rounded-full px-3 w-full sm:w-[260px]` as string
+    className : `SearchField flex items-center gap-2 px-[10px] w-full sm:w-[260px]` as string
 })`
-    color : ${({theme}) => theme.colors2.gray.gray4};
-    background : ${({theme}) => theme.colors.background.light.white};
-    border : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
-    transition : border-color ${({theme}) => theme.motion.hover} ease, box-shadow ${({theme}) => theme.motion.hover} ease;
+    ${field}
+    color : ${({theme}) => theme.color.ink3};
     &:focus-within {
-        border-color : ${({theme}) => theme.colors2.brand.blue};
-        box-shadow : 0 0 0 3px rgba(0, 145, 255, 0.12);
+        border-color : ${({theme}) => theme.color.accent};
+        box-shadow : 0 0 0 3px ${({theme}) => theme.color.ring};
     }
     input {
         width : 100%;
         outline : none;
         font-size : 13px;
         background : transparent;
-        color : ${({theme}) => theme.colors.main.primary};
+        color : ${({theme}) => theme.color.ink};
     }
-    input::placeholder { color : ${({theme}) => theme.colors2.gray.gray4}; }
+    input::placeholder { color : ${({theme}) => theme.color.ink4}; }
 `
 
+// Native select; the chevron is drawn with currentColor so it follows the theme
 export const Select = styled.select.attrs({
-    className : `Select h-[36px] rounded-full pl-3 pr-8 text-[13px] font-semibold outline-none cursor-pointer appearance-none` as string
+    className : `Select pl-[10px] pr-8 font-medium outline-none cursor-pointer appearance-none` as string
 })`
-    color : ${({theme}) => theme.colors2.gray.gray2};
-    background : ${({theme}) => theme.colors.background.light.white} url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23838383' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 12px center;
-    border : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
+    ${field}
+    color : ${({theme}) => theme.color.ink2};
+    background-image : url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat : no-repeat;
+    background-position : right 10px center;
+    &:focus-visible { border-color : ${({theme}) => theme.color.accent}; box-shadow : 0 0 0 3px ${({theme}) => theme.color.ring}; }
+    @media (hover : hover) and (pointer : fine) { &:hover { background-color : ${({theme}) => theme.color.subtle}; } }
+    option { background : ${({theme}) => theme.color.surface}; color : ${({theme}) => theme.color.ink}; }
 `
 
 export const IconButton = styled.button.attrs({
-    className : `IconButton relative inline-flex items-center justify-center w-[34px] h-[34px] rounded-full shrink-0` as string
+    className : `IconButton relative inline-flex items-center justify-center w-[30px] h-[30px] rounded-md shrink-0` as string
 })<{danger? : boolean}>`
-    color : ${({theme}) => theme.colors2.gray.gray3};
-    transition : background ${({theme}) => theme.motion.hover} ease, color ${({theme}) => theme.motion.hover} ease;
-    &:hover {
-        background : ${({danger}) => danger ? 'rgba(240, 69, 122, 0.1)' : 'rgba(0, 0, 0, 0.05)'};
-        color : ${({theme, danger}) => danger ? theme.colors2.red.red2 : theme.colors.main.primary};
+    color : ${({theme}) => theme.color.ink3};
+    ${pressable}
+    @media (hover : hover) and (pointer : fine) {
+        &:hover:not(:disabled) {
+            background : ${({theme, danger}) => danger ? theme.color.tag.redBg : theme.color.hover};
+            color : ${({theme, danger}) => danger ? theme.color.tag.red : theme.color.ink};
+        }
     }
 `
 
 export const CountBadge = styled.span.attrs({
-    className : `CountBadge inline-flex items-center justify-center rounded-full min-w-[18px] h-[18px] px-[5px] text-[10px] font-bold leading-none` as string
+    className : `CountBadge inline-flex items-center justify-center rounded-[4px] min-w-[18px] h-[18px] px-[5px] text-[11px] font-semibold leading-none tabular-nums` as string
 })<{tone? : 'ink' | 'red'}>`
-    color : ${({theme}) => theme.colors.text.light.white};
-    background : ${({theme, tone}) => tone === 'red' ? theme.colors2.red.red3 : theme.colors.main.primary};
+    color : ${({theme, tone}) => tone === 'red' ? theme.color.tag.red : theme.color.ink3};
+    background : ${({theme, tone}) => tone === 'red' ? theme.color.tag.redBg : theme.color.subtle};
 `
 
-export const DifficultyPill = styled.span.attrs({
-    className : `DifficultyPill inline-flex items-center rounded-full whitespace-nowrap text-[11px] font-semibold px-[9px] py-[2px]` as string
-})<{level : Difficulty}>`
-    color : ${({theme, level}) => ({ Easy : theme.colors2.green.green1, Medium : theme.colors2.orange.orange1, Hard : theme.colors2.red.red1 })[level]};
-    background : ${({theme, level}) => ({ Easy : theme.colors2.green.green5, Medium : theme.colors2.orange.orange5, Hard : theme.colors2.red.red5 })[level]};
+export const difficultyTone : Record<Difficulty, Tone> = { Easy : 'green', Medium : 'orange', Hard : 'red' }
+
+export const DifficultyPill = styled(Tag).attrs<{level : Difficulty}>(({level}) => ({ tone : difficultyTone[level] }))<{level : Difficulty}>``
+
+// Destructive confirm (delete / remove) — only ever inside a confirmation dialog
+export const DangerButton = styled(PrimaryButton)`
+    background : ${({theme}) => theme.color.tag.red};
+    box-shadow : none;
+    @media (hover : hover) and (pointer : fine) { &:hover:not(:disabled) { background : ${({theme}) => theme.color.tag.red}; filter : brightness(1.08); } }
 `
 
 export const CourseDot = styled.span.attrs({
-    className : `CourseDot inline-block w-2 h-2 rounded-full shrink-0` as string
+    className : `CourseDot inline-block w-2 h-2 rounded-[2px] shrink-0` as string
 })<{color : string}>`
-    background : ${({color}) => color};
+    background : ${({color}) => toneVar(toneOf(color, color))};
 `
 
-/* Tables */
+/* Tables: hairline rows on a surface, quiet headers */
 
 export const TableWrap = styled.div.attrs({
-    className : `TableWrap w-full rounded-[12px] overflow-x-auto` as string
+    className : `TableWrap w-full rounded-lg overflow-x-auto` as string
 })`
-    background : ${({theme}) => theme.colors.background.light.white};
-    border : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
+    background : ${({theme}) => theme.color.surface};
+    border : 1px solid ${({theme}) => theme.color.line};
 `
 
 export const Table = styled.table.attrs({
@@ -104,19 +125,16 @@ export const Table = styled.table.attrs({
 })``
 
 export const Th = styled.th.attrs({
-    className : `Th uppercase text-[10px] font-medium px-4 py-[10px] whitespace-nowrap` as string
+    className : `Th text-[12px] font-medium px-4 h-[36px] whitespace-nowrap` as string
 })`
-    font-family : ${({theme}) => theme.fonts.mono};
-    letter-spacing : 0.08em;
-    color : ${({theme}) => theme.colors2.gray.gray4};
-    background : ${({theme}) => theme.colors.background.light.primary};
-    border-bottom : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
+    color : ${({theme}) => theme.color.ink3};
+    border-bottom : 1px solid ${({theme}) => theme.color.line};
 `
 
 export const Td = styled.td.attrs({
-    className : `Td text-[14px] px-4 py-3 align-middle` as string
+    className : `Td text-[14px] px-4 py-[10px] align-middle` as string
 })`
-    color : ${({theme}) => theme.colors.main.primary};
+    color : ${({theme}) => theme.color.ink};
 `
 
 export const Tr = styled.tr.attrs({
@@ -124,19 +142,27 @@ export const Tr = styled.tr.attrs({
 })<{clickable? : boolean}>`
     cursor : ${({clickable}) => clickable ? 'pointer' : 'default'};
     transition : background ${({theme}) => theme.motion.hover} ease;
-    & + & td { border-top : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`}; }
-    &:hover { background : ${({theme}) => theme.colors.background.light.primary}; }
+    & + & td { border-top : 1px solid ${({theme}) => theme.color.line}; }
+    @media (hover : hover) and (pointer : fine) { &:hover { background : ${({theme}) => theme.color.hover}; } }
 `
 
 export const Muted = styled.span.attrs({
     className : `Muted text-[13px]` as string
 })`
-    color : ${({theme}) => theme.colors2.gray.gray3};
+    color : ${({theme}) => theme.color.ink3};
 `
 
 export const Mono = styled.span.attrs({
-    className : `Mono text-[12px]` as string
+    className : `Mono text-[12px] tabular-nums` as string
 })`
-    font-family : ${({theme}) => theme.fonts.mono};
-    color : ${({theme}) => theme.colors2.gray.gray3};
+    color : ${({theme}) => theme.color.ink3};
 `
+
+// Flag issue types each get one tag colour, used on Overview and Flags
+export const issueTone = (issue : string) : Tone => ({
+    'Wrong answer' : 'red',
+    'Typo' : 'gray',
+    'Unclear question' : 'orange',
+    'Duplicate' : 'purple',
+    'Missing explanation' : 'blue',
+} as Record<string, Tone>)[issue] ?? 'gray'

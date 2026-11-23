@@ -5,14 +5,14 @@ import styled from 'styled-components'
 // Quill "bubble" editor dressed as a plain input: select text to format it.
 
 const Field = styled.div.attrs({
-    className : `rich-field w-full rounded-[9px]` as string
+    className : `rich-field w-full rounded-md` as string
 })<{minHeight : number, invalid? : boolean}>`
-    background : ${({theme}) => theme.colors.background.light.white};
-    border : ${({theme, invalid}) => `1px solid ${invalid ? theme.colors2.red.red3 : theme.colors.border.light.primary}`};
+    background : ${({theme}) => theme.color.surface};
+    border : ${({theme, invalid}) => `1px solid ${invalid ? theme.color.tag.red : theme.color.lineStrong}`};
     transition : border-color 150ms ease, box-shadow 150ms ease;
     &:focus-within {
-        border-color : ${({theme}) => theme.colors2.brand.blue};
-        box-shadow : 0 0 0 3px rgba(0, 145, 255, 0.12);
+        border-color : ${({theme}) => theme.color.accent};
+        box-shadow : 0 0 0 3px ${({theme}) => theme.color.ring};
     }
     .ql-editor { min-height : ${({minHeight}) => minHeight}px; }
 `

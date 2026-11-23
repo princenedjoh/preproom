@@ -1,0 +1,101 @@
+/*
+  PrepRoom design tokens — Notion's design language (ai-toolbox/design-systems/notion/DESIGN.md).
+  Colours are raw RGB triplets so Tailwind can apply alpha: rgb(var(--ink) / 0.5).
+  Theme: <html data-theme="light|dark">, set before first paint from localStorage "preproom-theme".
+*/
+
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  /* Surfaces */
+  --canvas: 246 245 244;        /* warm paper */
+  --surface: 255 255 255;
+  --subtle: 240 239 237;        /* hover, inset fills, tracks */
+  --line: 233 231 228;          /* hairline */
+  --line-strong: 218 215 211;
+
+  /* Text — warm ink, hierarchy by step, not by hue */
+  --ink: 25 24 22;
+  --ink-2: 97 93 89;            /* graphite body */
+  --ink-3: 138 134 128;
+  --ink-4: 184 180 174;
+
+  /* The one chromatic commitment */
+  --accent: 0 117 222;
+  --accent-hover: 0 98 189;
+  --accent-tint: 230 243 254;
+  --on-accent: 255 255 255;
+
+  --inverse: 25 24 22;
+  --on-inverse: 255 255 255;
+
+  /* Notion tag palette: quiet text + wash pairs */
+  --tag-gray: 120 119 116;     --tag-gray-bg: 241 241 239;
+  --tag-brown: 159 107 83;     --tag-brown-bg: 244 238 238;
+  --tag-orange: 210 106 10;    --tag-orange-bg: 251 236 221;
+  --tag-yellow: 187 132 30;    --tag-yellow-bg: 251 243 219;
+  --tag-green: 56 125 88;      --tag-green-bg: 237 243 236;
+  --tag-blue: 41 116 162;      --tag-blue-bg: 231 243 248;
+  --tag-purple: 137 92 172;    --tag-purple-bg: 244 240 247;
+  --tag-pink: 186 68 130;      --tag-pink-bg: 249 238 243;
+  --tag-red: 205 66 61;        --tag-red-bg: 253 235 236;
+
+  --ring: rgb(0 117 222 / 0.35);
+  --scrim: rgb(15 15 15 / 0.4);
+  --shadow-float: 0 0 0 1px rgb(15 15 15 / 0.05), 0 3px 6px rgb(15 15 15 / 0.08), 0 9px 24px rgb(15 15 15 / 0.12);
+  --shadow-press: 0 1px 2px rgb(15 15 15 / 0.08);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --canvas: 25 25 25;
+  --surface: 32 32 32;
+  --subtle: 44 44 43;
+  --line: 47 47 46;
+  --line-strong: 64 64 62;
+
+  --ink: 236 235 233;
+  --ink-2: 190 187 182;
+  --ink-3: 145 143 139;
+  --ink-4: 98 97 94;
+
+  --accent: 35 131 226;
+  --accent-hover: 72 153 236;
+  --accent-tint: 29 44 61;
+  --on-accent: 255 255 255;
+
+  --inverse: 236 235 233;
+  --on-inverse: 25 25 25;
+
+  --tag-gray: 160 160 158;     --tag-gray-bg: 47 47 47;
+  --tag-brown: 186 133 111;    --tag-brown-bg: 74 50 40;
+  --tag-orange: 220 140 80;    --tag-orange-bg: 88 56 32;
+  --tag-yellow: 214 165 82;    --tag-yellow-bg: 80 63 36;
+  --tag-green: 96 172 128;     --tag-green-bg: 36 58 46;
+  --tag-blue: 82 163 218;      --tag-blue-bg: 26 54 74;
+  --tag-purple: 165 118 216;   --tag-purple-bg: 60 45 76;
+  --tag-pink: 214 98 158;      --tag-pink-bg: 78 42 60;
+  --tag-red: 232 98 92;        --tag-red-bg: 82 44 42;
+
+  --ring: rgb(35 131 226 / 0.5);
+  --scrim: rgb(0 0 0 / 0.6);
+  --shadow-float: 0 0 0 1px rgb(255 255 255 / 0.06), 0 6px 16px rgb(0 0 0 / 0.4), 0 18px 48px rgb(0 0 0 / 0.4);
+  --shadow-press: 0 1px 2px rgb(0 0 0 / 0.4);
+}
+
+:root {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-serif: 'Source Serif 4', 'Source Serif Pro', ui-serif, Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}

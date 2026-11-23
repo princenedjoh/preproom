@@ -4,8 +4,8 @@ import { FiPlus, FiFlag, FiArrowUpRight, FiCheckCircle } from 'react-icons/fi'
 import * as sample from '../../data/sample'
 import { useAdmin } from '../../context/admin'
 import * as api from '../../data/api'
-import { Eyebrow, DarkButton, GhostButton, Panel, PanelTitle, Stat, StatValue, StatLabel, ProgressTrack, ProgressFill, TextLink } from '../../styles/kit'
-import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, TableWrap, Table, Th, Td, Tr, CourseDot, DifficultyPill, Muted, Mono } from '../../styles/adminKit'
+import { Eyebrow, PrimaryButton, SecondaryButton, Panel, PanelTitle, Stat, StatValue, StatLabel, ProgressTrack, ProgressFill, TextLink, Tag } from '../../styles/kit'
+import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, TableWrap, Table, Th, Td, Tr, CourseDot, DifficultyPill, Muted, Mono, issueTone } from '../../styles/adminKit'
 import { SampleNotice, SkeletonRows, EmptyState, Skeleton } from '../../components/ui/ui'
 
 const COVERAGE_TARGET = 200
@@ -33,10 +33,10 @@ const ActivityChart = ({ values } : { values : number[] }) => {
         <div className="flex flex-col gap-4 flex-1">
             <div className="flex items-end gap-6 flex-wrap">
                 <div className="flex flex-col">
-                    <span className="font-display text-[28px] font-bold tracking-[-0.04em] text-onyx tabular-nums leading-none">{thisWeek}</span>
+                    <span className="text-[28px] font-semibold tracking-[-0.03em] text-ink tabular-nums leading-none">{thisWeek}</span>
                     <Muted>this week</Muted>
                 </div>
-                <span className={`text-[12px] font-semibold rounded-full px-2 py-[2px] ${change >= 0 ? 'bg-[#dcfaee] text-[#005c3a]' : 'bg-[#ffe3ec] text-[#7a0f2f]'}`}>
+                <span className={`text-[12px] font-medium rounded-[4px] px-[6px] h-[20px] inline-flex items-center ${change >= 0 ? 'bg-tag-green-bg text-tag-green' : 'bg-tag-red-bg text-tag-red'}`}>
                     {change >= 0 ? '+' : ''}{change}% vs last week
                 </span>
                 <Mono className="ml-auto">{total} in 14 days</Mono>
@@ -46,7 +46,7 @@ const ActivityChart = ({ values } : { values : number[] }) => {
                 {values.map((value, index) => (
                     <div key={index} className="group relative flex-1 h-full flex items-end" title={`${day(index)}: ${value} questions`}>
                         <div
-                            className={`w-full rounded-[4px] transition-[background] duration-150 ${index >= values.length - 7 ? 'bg-ink' : 'bg-cloud'} group-hover:bg-brand-blue`}
+                            className={`w-full rounded-[4px] transition-[background] duration-150 ${index >= values.length - 7 ? 'bg-accent' : 'bg-ink/10'} group-hover:bg-accent-hover`}
                             style={{ height : `${Math.max(4, (value / max) * 100)}%` }}
                         />
                     </div>
@@ -94,8 +94,8 @@ const Overview = () => {
                 </div>
                 <Toolbar>
                     {data && <SampleNotice live={data.live} />}
-                    <GhostButton onClick={() => navigate('/alerts/flags')}><FiFlag size={14} /> Review flags</GhostButton>
-                    <DarkButton onClick={() => navigate('/addQuestions')}><FiPlus size={14} /> Add question</DarkButton>
+                    <SecondaryButton onClick={() => navigate('/alerts/flags')}><FiFlag size={14} /> Review flags</SecondaryButton>
+                    <PrimaryButton onClick={() => navigate('/addQuestions')}><FiPlus size={14} /> Add question</PrimaryButton>
                 </Toolbar>
             </ScreenHeader>
 
@@ -104,7 +104,7 @@ const Overview = () => {
                     <Stat key={stat.label}>
                         <StatLabel>{stat.label}</StatLabel>
                         {loading ? <Skeleton height={34} width="40%" /> : <StatValue className="tabular-nums mt-1">{stat.value}</StatValue>}
-                        <span className={`text-[12px] mt-1 ${stat.alert ? 'text-[#c2184f] font-semibold' : 'text-ash'}`}>{stat.note}</span>
+                        <span className={`text-[12px] mt-1 ${stat.alert ? 'text-tag-red font-semibold' : 'text-ink-3'}`}>{stat.note}</span>
                     </Stat>
                 ))}
             </div>
@@ -128,9 +128,9 @@ const Overview = () => {
                                 const code = flag.question?.courseCode ?? sample.getCourse(sample.getQuestion(flag.questionID)?.courseID)?.code
                                 return (
                                     <button key={flag.id} onClick={() => navigate(`/alerts/flags?flag=${flag.id}`)}
-                                        className="text-left flex flex-col gap-1 py-3 border-t border-bone first:border-t-0 first:pt-0 rounded-[6px] transition-colors duration-150 hover:bg-mist">
+                                        className="text-left flex flex-col gap-[6px] py-3 px-2 -mx-2 border-t border-line first:border-t-0 rounded-md transition-colors duration-150 hover:bg-ink/[0.04]">
                                         <div className="flex items-center gap-x-2 flex-wrap">
-                                            <span className="text-[12px] font-semibold text-[#c2184f] whitespace-nowrap">{flag.issue}</span>
+                                            <Tag tone={issueTone(flag.issue)}>{flag.issue}</Tag>
                                             <Mono className="whitespace-nowrap">{code} · {flag.raisedAt}</Mono>
                                         </div>
                                         <span className="text-[13px] text-ink line-clamp-2 leading-[1.45]">{text ? sample.plainText(text) : 'Question removed'}</span>
@@ -178,7 +178,7 @@ const Overview = () => {
                                     <Mono className="tabular-nums">{course.total}</Mono>
                                 </div>
                                 <ProgressTrack>
-                                    <ProgressFill value={(course.total / COVERAGE_TARGET) * 100} color={course.total < COVERAGE_TARGET / 4 ? '#f0457a' : '#202020'} />
+                                    <ProgressFill value={(course.total / COVERAGE_TARGET) * 100} color={course.total < COVERAGE_TARGET / 4 ? 'rgb(var(--tag-red))' : undefined} />
                                 </ProgressTrack>
                             </div>
                         ))}

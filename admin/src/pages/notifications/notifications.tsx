@@ -6,7 +6,7 @@ import * as sample from '../../data/sample'
 import { useAdmin } from '../../context/admin'
 import { EmptyState } from '../../components/ui/ui'
 import SegmentedControl from '../../components/ui/segmented'
-import { GhostButton, IconTile, Eyebrow } from '../../styles/kit'
+import { SecondaryButton, IconTile, Eyebrow } from '../../styles/kit'
 import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, Mono } from '../../styles/adminKit'
 
 const kinds : Record<sample.AdminNotification['kind'], { icon : IconType, path : string }> = {
@@ -41,7 +41,7 @@ const Notifications = () => {
                 <Toolbar>
                     <SegmentedControl aria-label="Show" value={filter} onChange={setFilter}
                         options={[{ value : 'all', label : 'All' }, { value : 'unread', label : `Unread${unread ? ` · ${unread}` : ''}` }]} />
-                    <GhostButton disabled={!unread} className="disabled:opacity-40" onClick={() => markRead()}><FiCheck size={14} /> Mark all read</GhostButton>
+                    <SecondaryButton disabled={!unread} className="disabled:opacity-40" onClick={() => markRead()}><FiCheck size={14} /> Mark all read</SecondaryButton>
                 </Toolbar>
             </ScreenHeader>
 
@@ -50,20 +50,20 @@ const Notifications = () => {
             ) : groups.map((group) => (
                 <section key={group.title} className="flex flex-col gap-2">
                     <Eyebrow>{group.title}</Eyebrow>
-                    <div className="flex flex-col rounded-[12px] border border-bone overflow-hidden bg-white">
+                    <div className="flex flex-col rounded-[12px] border border-line overflow-hidden bg-surface">
                         {group.items.map((item) => {
                             const kind = kinds[item.kind]
                             return (
                                 <button key={item.id}
                                     onClick={() => { markRead(item.id); navigate(item.link ?? kind.path) }}
-                                    className={`text-left flex items-start gap-3 px-4 py-4 border-t border-bone first:border-t-0 transition-colors duration-150 hover:bg-mist ${item.read ? '' : 'bg-[#f2f9ff]'}`}>
+                                    className={`text-left flex items-start gap-3 px-4 py-4 border-t border-line first:border-t-0 transition-colors duration-150 hover:bg-subtle ${item.read ? '' : 'bg-accent/[0.04]'}`}>
                                     <IconTile className="shrink-0 !w-9 !h-9"><kind.icon size={15} /></IconTile>
                                     <span className="flex flex-col gap-[2px] min-w-0 flex-1">
                                         <span className="flex items-center gap-2">
                                             <span className={`text-[14px] text-ink ${item.read ? 'font-medium' : 'font-bold'}`}>{item.title}</span>
-                                            {!item.read && <span className="w-[7px] h-[7px] rounded-full bg-brand-blue shrink-0" aria-label="Unread" />}
+                                            {!item.read && <span className="w-[7px] h-[7px] rounded-full bg-accent shrink-0" aria-label="Unread" />}
                                         </span>
-                                        <span className="text-[13px] text-muted leading-[1.5]">{item.body}</span>
+                                        <span className="text-[13px] text-ink-2 leading-[1.5]">{item.body}</span>
                                     </span>
                                     <Mono className="whitespace-nowrap">{item.time}</Mono>
                                 </button>

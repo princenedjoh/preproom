@@ -6,8 +6,8 @@ import * as api from '../../data/api'
 import { useAdmin } from '../../context/admin'
 import useLoad from '../../hooks/useLoad'
 import { SampleNotice, SkeletonRows, EmptyState, Dialog } from '../../components/ui/ui'
-import { DarkButton, GhostButton, Label, TextInput } from '../../styles/kit'
-import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, SearchField, Select, TableWrap, Table, Th, Td, Tr, IconButton, Muted, Mono, CourseDot } from '../../styles/adminKit'
+import { PrimaryButton, SecondaryButton, Label, TextInput } from '../../styles/kit'
+import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, SearchField, Select, TableWrap, Table, Th, Td, Tr, IconButton, Muted, Mono, CourseDot, DangerButton } from '../../styles/adminKit'
 
 type Entity = 'schools' | 'programs' | 'courses' | 'topics'
 
@@ -22,7 +22,8 @@ const config : Record<Entity, {
     topics : { title : 'Topics', singular : 'topic', lead : 'Topics split a course into chapters so students can drill one area at a time.', parent : 'courses' },
 }
 
-const palette = ['#6647f0', '#0091ff', '#fd9a46', '#16c0a4', '#f0457a', '#00c07a']
+// Notion's tag hues: mid-tone enough to read on both the light and dark canvas
+const palette = ['#2383e2', '#9065b0', '#d9730d', '#448361', '#c14c8a', '#cb912f', '#d44c47', '#337ea9']
 
 const Catalog = ({ entity } : { entity : Entity }) => {
     const settings = config[entity]
@@ -125,7 +126,7 @@ const Catalog = ({ entity } : { entity : Entity }) => {
                 </div>
                 <Toolbar>
                     <SampleNotice live={list.live} />
-                    {canCreate && <DarkButton onClick={() => openForm()}><FiPlus size={14} /> Add {settings.singular}</DarkButton>}
+                    {canCreate && <PrimaryButton onClick={() => openForm()}><FiPlus size={14} /> Add {settings.singular}</PrimaryButton>}
                 </Toolbar>
             </ScreenHeader>
 
@@ -149,7 +150,7 @@ const Catalog = ({ entity } : { entity : Entity }) => {
                         <tr>
                             {entity === 'courses' && <Th>Code</Th>}
                             <Th>Name</Th>
-                            {settings.parent && <Th className="hidden sm:table-cell">{config[settings.parent].singular}</Th>}
+                            {settings.parent && <Th className="hidden sm:table-cell capitalize">{config[settings.parent].singular}</Th>}
                             {entity === 'courses' && <Th className="text-right">Questions</Th>}
                             {settings.child ? <Th className="text-right hidden sm:table-cell">{config[settings.child].title}</Th> : <Th className="text-right">Questions</Th>}
                             <Th className="w-[88px]"><span className="sr-only">Actions</span></Th>
@@ -178,7 +179,7 @@ const Catalog = ({ entity } : { entity : Entity }) => {
                     <div className="p-4">
                         <EmptyState icon={FiFolder}
                             title={query || parentFilter !== 'all' ? `No ${settings.title.toLowerCase()} match` : `No ${settings.title.toLowerCase()} yet`}
-                            action={canCreate ? <GhostButton onClick={() => openForm()}><FiPlus size={14} /> Add {settings.singular}</GhostButton> : undefined} />
+                            action={canCreate ? <SecondaryButton onClick={() => openForm()}><FiPlus size={14} /> Add {settings.singular}</SecondaryButton> : undefined} />
                     </div>
                 )}
             </TableWrap>
@@ -188,10 +189,10 @@ const Catalog = ({ entity } : { entity : Entity }) => {
                 title={editing === 'new' ? `Add ${settings.singular}` : `Edit ${settings.singular}`}
                 onClose={() => setEditing(undefined)}
                 footer={<>
-                    <GhostButton onClick={() => setEditing(undefined)}>Cancel</GhostButton>
-                    <DarkButton disabled={saving || !form.name.trim() || Boolean(settings.parent && !form.parentID)} className="disabled:opacity-40" onClick={save}>
+                    <SecondaryButton onClick={() => setEditing(undefined)}>Cancel</SecondaryButton>
+                    <PrimaryButton disabled={saving || !form.name.trim() || Boolean(settings.parent && !form.parentID)} className="disabled:opacity-40" onClick={save}>
                         {saving ? 'Saving…' : editing === 'new' ? `Add ${settings.singular}` : 'Save changes'}
-                    </DarkButton>
+                    </PrimaryButton>
                 </>}
             >
                 <form className="flex flex-col gap-4" onSubmit={(event) => { event.preventDefault(); save() }}>
@@ -219,8 +220,8 @@ const Catalog = ({ entity } : { entity : Entity }) => {
                     : "This can't be undone."}
                 onClose={() => setDeleting(undefined)}
                 footer={<>
-                    <GhostButton onClick={() => setDeleting(undefined)}>Cancel</GhostButton>
-                    <DarkButton className="!bg-[#c2184f]" onClick={() => deleting && remove(deleting)}>Delete</DarkButton>
+                    <SecondaryButton onClick={() => setDeleting(undefined)}>Cancel</SecondaryButton>
+                    <DangerButton onClick={() => deleting && remove(deleting)}>Delete</DangerButton>
                 </>}
              />
         </Screen>

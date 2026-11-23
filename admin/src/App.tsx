@@ -1,30 +1,44 @@
+import { useMemo } from 'react'
 import { ThemeProvider } from 'styled-components'
 import { BrowserRouter } from 'react-router-dom'
-import { ConfigProvider } from 'antd'
+import { ConfigProvider, theme as antdTheme } from 'antd'
 import Router from './router/router'
 import theme from './styles/theme'
 import { AdminProvider } from './context/admin'
+import { useTheme } from './store/theme'
 
-// antd controls (selects, switches) follow the same tokens as the kit
-const antdTheme = {
-  token : {
-    colorPrimary : theme.colors.main.primary,
-    colorLink : theme.colors2.brand.blue,
-    colorBorder : theme.colors.border.light.primary,
-    colorText : theme.colors.main.primary,
-    colorTextPlaceholder : theme.colors2.gray.gray4,
-    fontFamily : theme.fonts.body,
-    fontSize : 14,
-    borderRadius : 9,
-    controlHeight : 40,
-    controlOutline : 'rgba(0, 145, 255, 0.12)',
-  },
+// antd derives hover/active shades from real colours, so it gets hex values per theme
+// (same values as the student app's App.tsx)
+const hex = {
+  light : { surface : '#ffffff', line : '#e9e7e4', ink : '#191816', ink4 : '#b8b4ae', accent : '#0075de' },
+  dark : { surface : '#202020', line : '#2f2f2e', ink : '#ecebe9', ink4 : '#62615e', accent : '#2383e2' },
 }
 
+const antdThemeFor = (mode : 'light' | 'dark') => ({
+  algorithm : mode === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+  token : {
+    colorPrimary : hex[mode].accent,
+    colorLink : hex[mode].accent,
+    colorBorder : hex[mode].line,
+    colorText : hex[mode].ink,
+    colorTextPlaceholder : hex[mode].ink4,
+    colorBgContainer : hex[mode].surface,
+    colorBgElevated : hex[mode].surface,
+    colorBgMask : mode === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(15,15,15,0.4)',
+    borderRadius : 8,
+    borderRadiusLG : 12,
+    fontFamily : 'Inter, ui-sans-serif, system-ui, sans-serif',
+    fontSize : 14,
+    controlHeight : 36,
+  },
+})
+
 function App() {
+  const { resolved } = useTheme()
+  const antd = useMemo(() => antdThemeFor(resolved), [resolved])
   return (
     <ThemeProvider theme={theme}>
-      <ConfigProvider theme={antdTheme}>
+      <ConfigProvider theme={antd}>
         <AdminProvider>
           <BrowserRouter>
             <Router />

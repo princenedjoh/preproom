@@ -7,8 +7,8 @@ import * as sample from '../../data/sample'
 import { useAdmin } from '../../context/admin'
 import { EmptyState } from '../../components/ui/ui'
 import SegmentedControl from '../../components/ui/segmented'
-import { DarkButton, GhostButton, Panel, Eyebrow, Kbd } from '../../styles/kit'
-import { Screen, ScreenHeader, ScreenTitle, ScreenLead, CourseDot, DifficultyPill, Muted, Mono, CountBadge } from '../../styles/adminKit'
+import { PrimaryButton, SecondaryButton, GhostButton, Panel, Eyebrow, Kbd, Tag } from '../../styles/kit'
+import { Screen, ScreenHeader, ScreenTitle, ScreenLead, CourseDot, DifficultyPill, Muted, Mono, issueTone } from '../../styles/adminKit'
 import { letters } from '../addQuestion/addQuestion'
 import * as preview from '../addQuestion/addQuestion.style'
 
@@ -18,20 +18,12 @@ const tabs : { status : sample.FlagStatus, label : string }[] = [
     { status : 'dismissed', label : 'Dismissed' },
 ]
 
-const issueTone : Record<string, string> = {
-    'Wrong answer' : 'bg-[#ffe3ec] text-[#7a0f2f]',
-    'Typo' : 'bg-mercury text-muted',
-    'Unclear question' : 'bg-[#fff0e3] text-[#7a3d07]',
-    'Duplicate' : 'bg-[#efebfe] text-[#4a2fd0]',
-    'Missing explanation' : 'bg-[#e6f3ff] text-[#005fa8]',
-}
 
 const Flags = () => {
     const navigate = useNavigate()
     const [params, setParams] = useSearchParams()
     const { flags, setFlagStatus } = useAdmin()
     const [tab, setTab] = useState<sample.FlagStatus>('open')
-    const tone = (issue : string) => issueTone[issue] ?? 'bg-mercury text-muted'
 
     // The API sends a snapshot of the question with each flag; sample flags look it up
     const questionFor = (flag? : sample.Flag) => {
@@ -64,7 +56,7 @@ const Flags = () => {
         select(next && next.id !== flag.id ? next.id : undefined)
         toast.success(message, {
             closeButton : applyAnswer !== undefined ? undefined : ({ closeToast }) => (
-                <button className="text-[13px] font-bold text-brand-blue px-2" onClick={(event) => {
+                <button className="text-[13px] font-bold text-accent px-2" onClick={(event) => {
                     setFlagStatus(flag.id, flag.status).then(() => select(flag.id), () => undefined)
                     closeToast(event)
                 }}>Undo</button>
@@ -101,7 +93,7 @@ const Flags = () => {
                     <ScreenTitle>Flags</ScreenTitle>
                     <ScreenLead>Students flag questions they think are wrong or unclear. Check each one against the question and decide.</ScreenLead>
                 </div>
-                <div className="hidden md:flex items-center gap-3 text-[12px] text-ash">
+                <div className="hidden md:flex items-center gap-3 text-[12px] text-ink-3">
                     <span className="flex items-center gap-1"><Kbd>J</Kbd><Kbd>K</Kbd> move</span>
                     <span className="flex items-center gap-1"><Kbd>R</Kbd> resolve</span>
                     <span className="flex items-center gap-1"><Kbd>D</Kbd> dismiss</span>
@@ -115,7 +107,7 @@ const Flags = () => {
                 onChange={(status) => { setTab(status); select() }}
                 options={tabs.map((item) => ({
                     value : item.status,
-                    label : <span className="inline-flex items-center gap-2">{item.label}<span className="text-[11px] tabular-nums text-ash">{flags.filter((flag) => flag.status === item.status).length}</span></span>,
+                    label : <span className="inline-flex items-center gap-2">{item.label}<span className="text-[11px] tabular-nums text-ink-3">{flags.filter((flag) => flag.status === item.status).length}</span></span>,
                 }))}
             />
 
@@ -125,20 +117,21 @@ const Flags = () => {
                     body={tab === 'open' ? 'There are no open flags. New ones from students land here.' : undefined} />
             ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] gap-4 items-start">
-                    <div className="flex flex-col gap-2" role="listbox" aria-label={`${tab} flags`}>
+                    <div className="flex flex-col rounded-lg border border-line bg-surface overflow-hidden" role="listbox" aria-label={`${tab} flags`}>
                         {list.map((flag) => {
                             const item = questionFor(flag)
                             const active = flag.id === selected?.id
                             return (
                                 <button key={flag.id} role="option" aria-selected={active} onClick={() => select(flag.id)}
-                                    className={`text-left flex flex-col gap-2 p-4 rounded-[12px] border transition-[background,border-color] duration-150
-                                        ${active ? 'bg-white border-ink shadow-[0_1px_3px_rgba(0,0,0,0.1)]' : 'bg-white border-bone hover:bg-mist'}`}>
+                                    className={`relative text-left flex flex-col gap-[6px] px-4 py-3 border-t border-line first:border-t-0 transition-colors duration-150
+                                        ${active ? 'bg-accent-tint' : 'hover:bg-ink/[0.03]'}`}>
+                                    {active && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-accent" />}
                                     <span className="flex items-center gap-2">
-                                        <span className={`rounded-full px-2 py-[2px] text-[11px] font-semibold ${tone(flag.issue)}`}>{flag.issue}</span>
+                                        <Tag tone={issueTone(flag.issue)}>{flag.issue}</Tag>
                                         <Mono className="ml-auto whitespace-nowrap">{flag.raisedAt}</Mono>
                                     </span>
-                                    <span className="text-[13px] text-ink line-clamp-2 leading-[1.45]">{item ? sample.plainText(item.question) : 'Question removed'}</span>
-                                    <span className="text-[12px] text-ash">{flag.reporter} · {item?.courseCode}</span>
+                                    <span className="text-[14px] text-ink line-clamp-2 leading-[1.45]">{item ? sample.plainText(item.question) : 'Question removed'}</span>
+                                    <span className="text-[12px] text-ink-3">{flag.reporter} · {item?.courseCode}</span>
                                 </button>
                             )
                         })}
@@ -146,15 +139,15 @@ const Flags = () => {
 
                     {selected && (
                         <Panel className="!p-0 overflow-hidden lg:sticky lg:top-[80px]">
-                            <div className="flex flex-col gap-3 p-5 border-b border-bone bg-mist">
+                            <div className="flex flex-col gap-3 p-5 border-b border-line">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className={`rounded-full px-2 py-[2px] text-[11px] font-semibold ${tone(selected.issue)}`}>{selected.issue}</span>
-                                    <Muted>raised by <strong className="text-ink font-semibold">{selected.reporter}</strong> · {selected.raisedAt}</Muted>
-                                    {selected.status !== 'open' && <CountBadge tone="ink" className="!uppercase !px-2">{selected.status}</CountBadge>}
+                                    <Tag tone={issueTone(selected.issue)}>{selected.issue}</Tag>
+                                    <Muted>raised by <strong className="text-ink font-medium">{selected.reporter}</strong> · {selected.raisedAt}</Muted>
+                                    {selected.status !== 'open' && <Tag tone={selected.status === 'resolved' ? 'green' : 'gray'} className="capitalize">{selected.status}</Tag>}
                                 </div>
-                                <p className="text-[14px] leading-[1.55] text-ink">“{selected.comment}”</p>
+                                <blockquote className="text-[15px] leading-[1.55] text-ink border-l-[3px] border-ink pl-3">{selected.comment}</blockquote>
                                 {selected.suggestedAnswer !== undefined && selected.suggestedAnswer !== null && (
-                                    <Muted>Suggests <strong className="text-brand-blue">option {letters[selected.suggestedAnswer]}</strong> is correct.</Muted>
+                                    <Muted>Suggests <strong className="text-accent">option {letters[selected.suggestedAnswer]}</strong> is correct.</Muted>
                                 )}
                             </div>
 
@@ -162,7 +155,7 @@ const Flags = () => {
                                 <div className="flex flex-col gap-4 p-5">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Eyebrow>The question</Eyebrow>
-                                        {question.courseCode && <preview.Chip className="ml-auto"><CourseDot color={sample.getCourse(question.courseID)?.color ?? '#838383'} />{question.courseCode}</preview.Chip>}
+                                        {question.courseCode && <preview.Chip className="ml-auto"><CourseDot color={sample.getCourse(question.courseID)?.color ?? '#888'} />{question.courseCode}</preview.Chip>}
                                         {question.difficulty && <DifficultyPill level={question.difficulty}>{question.difficulty}</DifficultyPill>}
                                     </div>
                                     <preview.PreviewQuestion><Interweave content={question.question} /></preview.PreviewQuestion>
@@ -171,11 +164,11 @@ const Flags = () => {
                                             const suggested = selected.suggestedAnswer === index && currentAnswer !== index
                                             return (
                                                 <preview.PreviewOption key={index} correct={currentAnswer === index}
-                                                    className={suggested ? '!border-brand-blue !border-dashed' : ''}>
+                                                    className={suggested ? '!border-accent !border-dashed' : ''}>
                                                     <preview.PreviewLetter correct={currentAnswer === index}>{letters[index]}</preview.PreviewLetter>
                                                     <span className="min-w-0 break-words flex-1"><Interweave content={option} /></span>
-                                                    {currentAnswer === index && <Mono className="!text-[#005c3a]">current</Mono>}
-                                                    {suggested && <Mono className="!text-brand-blue">suggested</Mono>}
+                                                    {currentAnswer === index && <Mono className="!text-tag-green">current</Mono>}
+                                                    {suggested && <Mono className="!text-accent">suggested</Mono>}
                                                 </preview.PreviewOption>
                                             )
                                         })}
@@ -189,19 +182,19 @@ const Flags = () => {
                                 </div>
                             ) : <div className="p-5"><Muted>This question has been deleted.</Muted></div>}
 
-                            <div className="flex flex-wrap items-center gap-2 px-5 py-4 border-t border-bone">
-                                <GhostButton onClick={() => navigate(`/questions?open=${selected.questionID}`)}>Open in bank <FiArrowRight size={14} /></GhostButton>
+                            <div className="flex flex-wrap items-center gap-2 px-5 py-4 border-t border-line">
+                                <GhostButton className="-ml-2" onClick={() => navigate(`/questions?open=${selected.questionID}`)}>Open in bank <FiArrowRight size={14} /></GhostButton>
                                 <div className="flex-1" />
                                 {selected.status === 'open' ? (
                                     <>
-                                        <GhostButton onClick={() => act(selected, 'dismissed', 'Flag dismissed.')}><FiX size={14} /> Dismiss</GhostButton>
+                                        <SecondaryButton onClick={() => act(selected, 'dismissed', 'Flag dismissed.')}><FiX size={14} /> Dismiss</SecondaryButton>
                                         {selected.suggestedAnswer !== undefined && selected.suggestedAnswer !== null && selected.suggestedAnswer !== currentAnswer && (
-                                            <GhostButton onClick={() => accept(selected)}>Use option {letters[selected.suggestedAnswer]}</GhostButton>
+                                            <SecondaryButton onClick={() => accept(selected)}>Use option {letters[selected.suggestedAnswer]}</SecondaryButton>
                                         )}
-                                        <DarkButton onClick={() => act(selected, 'resolved', 'Flag resolved.')}><FiCheck size={14} /> Resolve</DarkButton>
+                                        <PrimaryButton onClick={() => act(selected, 'resolved', 'Flag resolved.')}><FiCheck size={14} /> Resolve</PrimaryButton>
                                     </>
                                 ) : (
-                                    <GhostButton onClick={() => act(selected, 'open', 'Flag reopened.')}><FiCornerUpLeft size={14} /> Reopen</GhostButton>
+                                    <SecondaryButton onClick={() => act(selected, 'open', 'Flag reopened.')}><FiCornerUpLeft size={14} /> Reopen</SecondaryButton>
                                 )}
                             </div>
                         </Panel>

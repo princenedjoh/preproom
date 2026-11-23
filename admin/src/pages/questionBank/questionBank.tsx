@@ -10,10 +10,10 @@ import { useAdmin } from '../../context/admin'
 import useLoad from '../../hooks/useLoad'
 import { SampleNotice, SkeletonRows, EmptyState, Dialog } from '../../components/ui/ui'
 import SegmentedControl from '../../components/ui/segmented'
-import { DarkButton, GhostButton, FilterChip, Eyebrow } from '../../styles/kit'
+import { PrimaryButton, SecondaryButton, FilterChip, Eyebrow } from '../../styles/kit'
 import {
     Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, SearchField, Select, TableWrap, Table, Th, Td, Tr,
-    CourseDot, DifficultyPill, Muted, Mono, IconButton,
+    CourseDot, DifficultyPill, Muted, Mono, IconButton, DangerButton,
 } from '../../styles/adminKit'
 import { letters } from '../addQuestion/addQuestion'
 import * as preview from '../addQuestion/addQuestion.style'
@@ -23,9 +23,8 @@ const slideIn = keyframes` from { transform : translateX(24px); opacity : 0; } t
 const Drawer = styled.aside.attrs({
     className : `Drawer fixed top-0 right-0 bottom-0 z-[1250] w-full sm:w-[460px] flex flex-col` as string
 })`
-    background : ${({theme}) => theme.colors.background.light.white};
-    border-left : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
-    box-shadow : ${({theme}) => theme.shadows.screenshot};
+    background : ${({theme}) => theme.color.surface};
+    box-shadow : ${({theme}) => theme.shadows.float};
     animation : ${slideIn} 280ms cubic-bezier(0.32, 0.72, 0, 1);
     @media (prefers-reduced-motion : reduce) { animation : none; }
 `
@@ -142,7 +141,7 @@ const QuestionBank = () => {
                 </div>
                 <Toolbar>
                     {page && <SampleNotice live={page.live} />}
-                    <DarkButton onClick={() => navigate('/addQuestions')}><FiPlus size={14} /> Add question</DarkButton>
+                    <PrimaryButton onClick={() => navigate('/addQuestions')}><FiPlus size={14} /> Add question</PrimaryButton>
                 </Toolbar>
             </ScreenHeader>
 
@@ -176,12 +175,12 @@ const QuestionBank = () => {
                             const count = openFlagsFor(question)
                             return (
                                 <Tr key={question.id} clickable onClick={() => setOpen(question.id)} aria-selected={question.id === openID}
-                                    className={question.id === openID ? '!bg-mist' : ''}>
+                                    className={question.id === openID ? '!bg-subtle' : ''}>
                                     <Td className="max-w-[360px]"><span className="line-clamp-1">{sample.plainText(question.question)}</span></Td>
                                     <Td><span className="inline-flex items-center gap-2 whitespace-nowrap">{info && <CourseDot color={info.color} />}<Mono className="!text-ink">{info?.code || info?.name || '—'}</Mono></span></Td>
                                     <Td className="hidden md:table-cell whitespace-nowrap"><Muted>{question.topic || '—'}</Muted></Td>
                                     <Td className="hidden sm:table-cell"><DifficultyPill level={question.difficulty}>{question.difficulty}</DifficultyPill></Td>
-                                    <Td className="text-right tabular-nums">{count > 0 ? <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-[#c2184f]"><FiFlag size={12} />{count}</span> : <Muted>0</Muted>}</Td>
+                                    <Td className="text-right tabular-nums">{count > 0 ? <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-tag-red"><FiFlag size={12} />{count}</span> : <Muted>0</Muted>}</Td>
                                     <Td className="hidden lg:table-cell whitespace-nowrap"><Muted>{question.author}</Muted></Td>
                                     <Td className="hidden lg:table-cell whitespace-nowrap"><Muted>{question.addedAt || '—'}</Muted></Td>
                                 </Tr>
@@ -197,25 +196,25 @@ const QuestionBank = () => {
                             title={filtersOn ? 'No questions match' : 'No questions yet'}
                             body={filtersOn ? 'Try a different search or clear the filters.' : 'Questions you add show up here.'}
                             action={filtersOn
-                                ? <GhostButton onClick={clearFilters}>Clear filters</GhostButton>
-                                : <DarkButton onClick={() => navigate('/addQuestions')}><FiPlus size={14} /> Add question</DarkButton>}
+                                ? <SecondaryButton onClick={clearFilters}>Clear filters</SecondaryButton>
+                                : <PrimaryButton onClick={() => navigate('/addQuestions')}><FiPlus size={14} /> Add question</PrimaryButton>}
                         />
                     </div>
                 )}
             </TableWrap>
             {page && results.length < total && (
                 <div className="flex justify-center">
-                    <GhostButton onClick={loadMore} disabled={loadingMore} className="disabled:opacity-50">
+                    <SecondaryButton onClick={loadMore} disabled={loadingMore} className="disabled:opacity-50">
                         {loadingMore ? 'Loading…' : `Load ${Math.min(api.PAGE_SIZE, total - results.length)} more`}
-                    </GhostButton>
+                    </SecondaryButton>
                 </div>
             )}
 
             {open && (
                 <>
-                    <div className="fixed inset-0 z-[1240] bg-[rgba(9,12,29,0.16)]" onClick={() => setOpen()} />
+                    <div className="fixed inset-0 z-[1240] bg-[rgb(15_15_15/0.28)]" onClick={() => setOpen()} />
                     <Drawer role="dialog" aria-label="Question details">
-                        <div className="flex items-center justify-between gap-2 h-[56px] px-5 border-b border-bone shrink-0">
+                        <div className="flex items-center justify-between gap-2 h-[56px] px-5 border-b border-line shrink-0">
                             <Mono>#{open.id}</Mono>
                             <div className="flex items-center gap-1">
                                 <IconButton danger aria-label="Delete question" title="Delete question" onClick={() => setConfirming(open)}><FiTrash2 size={15} /></IconButton>
@@ -249,12 +248,12 @@ const QuestionBank = () => {
                                 {flags.filter((flag) => flag.questionID === open.id).length === 0 ? <Muted>No one has flagged this question.</Muted> :
                                     flags.filter((flag) => flag.questionID === open.id).map((flag) => (
                                         <button key={flag.id} onClick={() => navigate(`/alerts/flags?flag=${flag.id}`)}
-                                            className="text-left flex flex-col gap-1 p-3 rounded-[10px] border border-bone transition-colors duration-150 hover:bg-mist">
+                                            className="text-left flex flex-col gap-1 p-3 rounded-[10px] border border-line transition-colors duration-150 hover:bg-subtle">
                                             <span className="flex items-center gap-2 text-[12px]">
                                                 <span className="font-semibold text-ink">{flag.issue}</span>
                                                 <Mono>· {flag.reporter} · {flag.status}</Mono>
                                             </span>
-                                            <span className="text-[13px] text-muted line-clamp-2">{flag.comment}</span>
+                                            <span className="text-[13px] text-ink-2 line-clamp-2">{flag.comment}</span>
                                         </button>
                                     ))}
                             </div>
@@ -270,8 +269,8 @@ const QuestionBank = () => {
                 description="Students will no longer see it, and its flags are closed. This can't be undone."
                 onClose={() => setConfirming(undefined)}
                 footer={<>
-                    <GhostButton onClick={() => setConfirming(undefined)}>Cancel</GhostButton>
-                    <DarkButton className="!bg-[#c2184f]" onClick={() => confirming && remove(confirming)}>Delete question</DarkButton>
+                    <SecondaryButton onClick={() => setConfirming(undefined)}>Cancel</SecondaryButton>
+                    <DangerButton onClick={() => confirming && remove(confirming)}>Delete question</DangerButton>
                 </>}
             >
                 <span className="text-[14px] text-ink line-clamp-3">{confirming && sample.plainText(confirming.question)}</span>
