@@ -24,7 +24,7 @@ const ThemeSwitch = ({ wide = false } : { wide? : boolean }) => {
                         onClick={()=>setTheme(value)}
                         className={`inline-flex items-center justify-center gap-[6px] h-7 rounded-[6px] text-[12px] font-medium transition-colors duration-100
                         ${wide ? 'flex-1' : 'w-8'}
-                        ${choice === value ? 'bg-surface text-ink shadow-press' : 'text-ink-3 hover:text-ink'}`}
+                        ${choice === value ? 'bg-raised text-ink shadow-press' : 'text-ink-3 hover:text-ink'}`}
                     >
                         <Icon size={13}/>
                         {wide && label}

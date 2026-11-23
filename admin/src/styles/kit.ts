@@ -238,7 +238,7 @@ export const SegmentedItem = styled.button.attrs({
 })<{active? : boolean}>`
     font-weight : 500;
     color : ${({active}) => active ? color.ink : color.ink3};
-    background : ${({active}) => active ? color.surface : 'transparent'};
+    background : ${({active}) => active ? color.raised : 'transparent'};
     box-shadow : ${({active}) => active ? 'var(--shadow-press)' : 'none'};
     transition : background ${({theme}) => theme.motion.hover} ease, color ${({theme}) => theme.motion.hover} ease;
     &:hover { color : ${color.ink}; }

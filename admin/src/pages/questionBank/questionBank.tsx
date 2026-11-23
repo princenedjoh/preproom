@@ -165,14 +165,14 @@ const QuestionBank = () => {
                 <Table>
                     <thead className="sticky top-0 z-[1]">
                         <tr>
-                            <Th>Question</Th><Th>Course</Th><Th className="hidden md:table-cell">Topic</Th>
+                            <Th>Question</Th><Th>Course</Th><Th className="hidden xl:table-cell">Topic</Th>
                             <Th className="hidden sm:table-cell">Difficulty</Th><Th className="hidden sm:table-cell text-right" title="Share of students whose first answer was correct" aria-sort={sort === 'acceptance' ? 'ascending' : sort === '-acceptance' ? 'descending' : 'none'}>
                                 <SortButton active={sort === 'acceptance' || sort === '-acceptance'} descending={sort === '-acceptance'} aria-label="Sort by acceptance"
                                     onClick={() => setSort(sort === 'acceptance' ? '-acceptance' : sort === '-acceptance' ? 'newest' : 'acceptance')}>
                                     Acceptance
                                 </SortButton>
                             </Th><Th className="text-right">Flags</Th>
-                            <Th className="hidden lg:table-cell">Author</Th><Th className="hidden lg:table-cell" aria-sort={sort === 'newest' ? 'descending' : sort === 'oldest' ? 'ascending' : 'none'}>
+                            <Th className="hidden xl:table-cell">Author</Th><Th className="hidden lg:table-cell" aria-sort={sort === 'newest' ? 'descending' : sort === 'oldest' ? 'ascending' : 'none'}>
                                 <SortButton active={sort === 'newest' || sort === 'oldest'} descending={sort !== 'oldest'}
                                     onClick={() => setSort(sort === 'newest' ? 'oldest' : 'newest')}>Added</SortButton>
                             </Th>
@@ -187,7 +187,7 @@ const QuestionBank = () => {
                                     className={question.id === openID ? '!bg-subtle' : ''}>
                                     <Td className="max-w-[360px]"><span className="line-clamp-1">{sample.plainText(question.question)}</span></Td>
                                     <Td><span className="inline-flex items-center gap-2 whitespace-nowrap">{info && <CourseDot color={info.color} />}<Mono className="!text-ink">{info?.code || info?.name || '—'}</Mono></span></Td>
-                                    <Td className="hidden md:table-cell whitespace-nowrap"><Muted>{question.topic || '—'}</Muted></Td>
+                                    <Td className="hidden xl:table-cell whitespace-nowrap"><Muted>{question.topic || '—'}</Muted></Td>
                                     <Td className="hidden sm:table-cell"><DifficultyLabel level={question.difficulty} /></Td>
                                     <Td className="hidden sm:table-cell text-right tabular-nums">
                                         {question.stats && question.stats.attempts > 0
@@ -195,7 +195,7 @@ const QuestionBank = () => {
                                             : <Muted>—</Muted>}
                                     </Td>
                                     <Td className="text-right tabular-nums">{count > 0 ? <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-tag-red"><FiFlag size={12} />{count}</span> : <Muted>0</Muted>}</Td>
-                                    <Td className="hidden lg:table-cell whitespace-nowrap"><Muted>{question.author}</Muted></Td>
+                                    <Td className="hidden xl:table-cell whitespace-nowrap"><Muted>{question.author}</Muted></Td>
                                     <Td className="hidden lg:table-cell whitespace-nowrap"><Muted>{question.addedAt || '—'}</Muted></Td>
                                 </Tr>
                             )

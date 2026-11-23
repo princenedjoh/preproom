@@ -21,7 +21,7 @@ interface Props<T extends string | number> {
 }
 
 const Track = styled.div.attrs({
-    className : `Segmented relative inline-flex items-center gap-1 rounded-md p-[2px] max-w-full overflow-x-auto` as string
+    className : `Segmented relative inline-flex items-center gap-[2px] rounded-md p-[3px] max-w-full overflow-x-auto` as string
 })<{full? : boolean}>`
     width : ${({full}) => full ? '100%' : 'auto'};
     background : ${({theme}) => theme.color.subtle};
@@ -30,10 +30,10 @@ const Track = styled.div.attrs({
 `
 
 const Thumb = styled.span.attrs({
-    className : `absolute left-0 top-[2px] bottom-[2px] rounded-[6px] pointer-events-none` as string
+    className : `absolute left-0 top-[3px] bottom-[3px] rounded-[6px] pointer-events-none` as string
 })<{ready : boolean}>`
-    background : ${({theme}) => theme.color.surface};
-    box-shadow : 0 0 0 1px rgb(var(--ink) / .06), 0 1px 2px rgb(0 0 0 / .08);
+    background : ${({theme}) => theme.color.raised};
+    box-shadow : var(--shadow-press);
     transition : ${({ready, theme}) => ready
         ? `transform 260ms ${theme.motion.easeOut}, width 260ms ${theme.motion.easeOut}`
         : 'none'};
@@ -41,7 +41,7 @@ const Thumb = styled.span.attrs({
 `
 
 const Item = styled.button.attrs({
-    className : `relative z-[1] rounded-[6px] px-3 h-[26px] text-[13px] whitespace-nowrap` as string
+    className : `relative z-[1] rounded-[6px] px-3 h-7 text-[13px] whitespace-nowrap` as string
 })<{active? : boolean, full? : boolean}>`
     flex : ${({full}) => full ? '1 1 0' : '0 0 auto'};
     font-weight : 500;

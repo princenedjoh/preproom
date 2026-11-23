@@ -36,8 +36,8 @@ const field = css`
     border-radius : ${({theme}) => theme.radius.md};
     font-size : 13px;
     color : ${({theme}) => theme.color.ink};
-    background : ${({theme}) => theme.color.surface};
-    border : 1px solid ${({theme}) => theme.color.line};
+    background : ${({theme}) => theme.color.alpha('ink', 0.05)};
+    border : 1px solid transparent;
     transition : border-color ${({theme}) => theme.motion.hover} ease, box-shadow ${({theme}) => theme.motion.hover} ease, background ${({theme}) => theme.motion.hover} ease;
 `
 
@@ -47,6 +47,7 @@ export const SearchField = styled.label.attrs({
     ${field}
     color : ${({theme}) => theme.color.ink3};
     &:focus-within {
+        background : ${({theme}) => theme.color.surface};
         border-color : ${({theme}) => theme.color.accent};
         box-shadow : 0 0 0 3px ${({theme}) => theme.color.ring};
     }
@@ -70,7 +71,7 @@ export const Select = styled.select.attrs({
     background-repeat : no-repeat;
     background-position : right 10px center;
     &:focus-visible { border-color : ${({theme}) => theme.color.accent}; box-shadow : 0 0 0 3px ${({theme}) => theme.color.ring}; }
-    @media (hover : hover) and (pointer : fine) { &:hover { background-color : ${({theme}) => theme.color.subtle}; } }
+    @media (hover : hover) and (pointer : fine) { &:hover { background-color : ${({theme}) => theme.color.alpha('ink', 0.08)}; } }
     option { background : ${({theme}) => theme.color.surface}; color : ${({theme}) => theme.color.ink}; }
 `
 
@@ -96,12 +97,11 @@ export const CountBadge = styled.span.attrs({
 
 export const difficultyTone : Record<Difficulty, Tone> = { Easy : 'green', Medium : 'orange', Hard : 'red' }
 
-// LeetCode-style difficulty: coloured text, no pill. --easy/--medium/--hard come
-// with the next token update; until then the tag colours stand in.
+// LeetCode-style difficulty: coloured text, no pill
 const difficultyVar : Record<Difficulty, string> = {
-    Easy : 'rgb(var(--easy, var(--tag-green)))',
-    Medium : 'rgb(var(--medium, var(--tag-orange)))',
-    Hard : 'rgb(var(--hard, var(--tag-red)))',
+    Easy : 'rgb(var(--easy))',
+    Medium : 'rgb(var(--medium))',
+    Hard : 'rgb(var(--hard))',
 }
 export const difficultyShort : Record<Difficulty, string> = { Easy : 'Easy', Medium : 'Med.', Hard : 'Hard' }
 
@@ -159,9 +159,9 @@ export const Tr = styled.tr.attrs({
 })<{clickable? : boolean}>`
     cursor : ${({clickable}) => clickable ? 'pointer' : 'default'};
     transition : background ${({theme}) => theme.motion.hover} ease;
-    tbody > &:nth-child(even) { background : ${({theme}) => theme.color.alpha('ink', 0.025)}; }
+    tbody > &:nth-child(even) { background : ${({theme}) => theme.color.alpha('ink', 0.035)}; }
     @media (hover : hover) and (pointer : fine) {
-        tbody > &:hover { background : ${({clickable, theme}) => clickable ? theme.color.hover : ''}; }
+        tbody > &:hover { background : ${({clickable, theme}) => clickable ? theme.color.alpha('ink', 0.07) : ''}; }
     }
 `
 

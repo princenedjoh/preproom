@@ -10,8 +10,8 @@ import { useTheme } from './store/theme'
 // antd derives hover/active shades from real colours, so it gets hex values per theme
 // (same values as the student app's App.tsx)
 const hex = {
-  light : { surface : '#ffffff', line : '#e9e7e4', ink : '#191816', ink4 : '#b8b4ae', accent : '#0075de' },
-  dark : { surface : '#202020', line : '#2f2f2e', ink : '#ecebe9', ink4 : '#62615e', accent : '#2383e2' },
+  light : { surface : '#ffffff', line : '#e5e5e9', ink : '#262626', ink4 : '#babac1', accent : '#007aff' },
+  dark : { surface : '#282828', line : '#3c3c3c', ink : '#ececec', ink4 : '#626262', accent : '#4a9eff' },
 }
 
 const antdThemeFor = (mode : 'light' | 'dark') => ({
