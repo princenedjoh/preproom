@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { Modal } from 'antd'
 import { Interweave } from 'interweave'
 import * as sessionStyle from './session.style'
 import * as mcqsStyle from '../../../mcqs/mcqs.style'
+import { confirm } from '../../../../components/dialog/confirm'
 import * as kit from '../../../../styles/kit'
 import { alphabets, optionFromKey } from '../../../mcqs/mcqs'
 import { Question } from '../../../../data/sample'
@@ -11,7 +11,8 @@ import { getCourse } from '../../../../data/catalog'
 import { Run, TestError, startTest, submitTest, autosave, loadResult } from '../../engine'
 import { notify } from '../../../../utils/notify'
 import { TestConfigState } from '../testConfig/testConfig'
-import { FiClock, FiFlag, FiArrowLeft, FiArrowRight, FiAlertCircle } from "react-icons/fi";
+import { FiClock, FiFlag, FiArrowLeft, FiArrowRight, FiAlertCircle, FiX, FiCheck } from "react-icons/fi";
+import CourseIcon from '../../../../components/courseIcon/courseIcon'
 
 export type { TestResultState } from '../../engine'
 
@@ -142,7 +143,7 @@ const Session = () => {
     useEffect(()=>{
         const onKey = (event : KeyboardEvent) => {
             const target = event.target
-            if(event.metaKey || event.ctrlKey || event.altKey || (target instanceof Element && target.closest('input, textarea, .ant-modal'))) return
+            if(event.metaKey || event.ctrlKey || event.altKey || (target instanceof Element && target.closest('input, textarea, .ant-modal, [role="alertdialog"]')) || document.querySelector('[role="alertdialog"]')) return
             const question = questions[current]
             if(!question) return
             const index = optionFromKey(event.key, question.options.length)
@@ -160,8 +161,8 @@ const Session = () => {
         return (
             <kit.Page>
                 <kit.PageInner className='items-center text-center pt-16 !gap-4'>
-                    <kit.IconTile className='!w-14 !h-14'><FiAlertCircle size={22}/></kit.IconTile>
-                    <kit.PageTitle className='!text-[30px]'>This test couldn't start</kit.PageTitle>
+                    <kit.IconTile tone='red' className='!w-12 !h-12'><FiAlertCircle size={20}/></kit.IconTile>
+                    <kit.PageTitle className='!text-[26px]'>This test couldn't start</kit.PageTitle>
                     <kit.Lead className='max-w-[440px]'>{problem}</kit.Lead>
                     <kit.DarkButton type='button' onClick={()=>navigate('/test/testconfig', { replace : true })}>Back to test setup</kit.DarkButton>
                 </kit.PageInner>
@@ -178,13 +179,11 @@ const Session = () => {
     const confirmSubmit = () => {
         const unanswered = questions.length - answeredCount
         if(submitting) return
-        Modal.confirm({
+        confirm({
             title : 'Submit your test?',
             content : unanswered > 0 ? `You have ${unanswered} unanswered question${unanswered > 1 ? 's' : ''}.` : 'You have answered every question.',
             okText : 'Submit',
             cancelText : 'Keep going',
-            okButtonProps : { shape : 'round' },
-            cancelButtonProps : { shape : 'round' },
             onOk : submit,
         })
     }
@@ -206,125 +205,137 @@ const Session = () => {
         return 'empty'
     }
 
+    const answeredShare = questions.length ? answeredCount / questions.length * 100 : 0
+
     return (
         <>
             <sessionStyle.Bar>
-                <div className='w-full max-w-[1200px] flex items-center justify-between gap-3'>
-                    <div className='flex items-center gap-3 min-w-0'>
-                        <span className='w-[10px] h-[10px] rounded-[3px] shrink-0' style={{ background : course.color }}/>
-                        <span className='text-[14px] font-bold text-ink truncate'>{run?.title ?? course.name}</span>
-                        <span className='hidden sm:inline text-[13px] text-ash'>{answeredCount}/{questions.length} answered</span>
+                <div className='w-full max-w-[1120px] flex items-center gap-3'>
+                    <kit.IconButton type='button' aria-label='Leave test (your answers are kept)' title='Leave · answers are kept' onClick={()=>navigate('/test/testconfig')}>
+                        <FiX size={17}/>
+                    </kit.IconButton>
+                    <div className='flex items-center gap-2 min-w-0 flex-1'>
+                        <CourseIcon course={course} size={22}/>
+                        <span className='text-[14px] font-medium text-ink truncate'>{run?.title ?? course.name}</span>
                     </div>
-                    <div className='flex items-center gap-2'>
-                        <sessionStyle.Timer low={remaining <= 60} aria-live='polite'>
-                            <FiClock size={14}/> {formatTime(remaining)}
-                        </sessionStyle.Timer>
-                        <kit.DarkButton type='button' className='!py-2 !px-5' onClick={confirmSubmit}>Submit</kit.DarkButton>
-                    </div>
+                    <span className='hidden md:inline text-[13px] text-ink-3 tabular-nums'>{current + 1} / {questions.length}</span>
+                    <sessionStyle.Timer low={remaining <= 60} aria-live={remaining <= 60 ? 'polite' : 'off'} aria-label={`Time left ${formatTime(remaining)}`}>
+                        <FiClock size={13}/> {formatTime(remaining)}
+                    </sessionStyle.Timer>
+                    <kit.SecondaryButton type='button' className='!h-8' onClick={confirmSubmit}>Submit</kit.SecondaryButton>
                 </div>
+                <span className='absolute left-0 bottom-[-1px] h-[2px] bg-accent transition-[width] duration-500 ease-out' style={{ width : `${answeredShare}%` }} aria-hidden/>
             </sessionStyle.Bar>
-            <kit.Page className='!pt-[152px]'>
-                <kit.PageInner>
-                    <kit.ProgressTrack height={4}>
-                        <kit.ProgressFill value={questions.length ? answeredCount / questions.length * 100 : 0} color='#202020'/>
-                    </kit.ProgressTrack>
+            <kit.Page className='!pt-[88px] md:!pt-[104px]'>
+                <div className='w-full max-w-[1120px]'>
                     {
                         !question ?
-                        <div className='h-[360px] rounded-[12px] bg-mist border border-bone animate-pulse'/>
+                        <div className='h-[360px] rounded-lg bg-subtle animate-pulse'/>
                         :
                         <sessionStyle.Layout>
-                            <mcqsStyle.Card className='!p-6 md:!p-8 gap-6'>
+                            <mcqsStyle.Card className='!pb-5 md:!px-10 md:!pt-9 md:!pb-7 !gap-6' key={question.id}>
                                 <div className='flex items-center justify-between'>
-                                    <kit.Eyebrow>Question {current + 1} of {questions.length}</kit.Eyebrow>
-                                    <mcqsStyle.Action 
+                                    <span className='text-[13px] text-ink-3'>Question <b className='font-medium text-ink tabular-nums'>{current + 1}</b> of {questions.length}{question.topic ? ` · ${question.topic}` : ''}</span>
+                                    <mcqsStyle.Action
                                         type='button'
                                         active={!!flags[question.id]}
+                                        className={flags[question.id] ? '!text-tag-orange' : ''}
                                         onClick={()=>setFlags({ ...flags, [question.id] : !flags[question.id] })}
+                                        aria-pressed={!!flags[question.id]}
                                     >
                                         <FiFlag size={14} fill={flags[question.id] ? 'currentColor' : 'none'}/> {flags[question.id] ? 'Flagged' : 'Flag'}
                                     </mcqsStyle.Action>
                                 </div>
-                                <mcqsStyle.Prompt className='md:!text-[20px]'>
+                                <mcqsStyle.Prompt className='md:!text-[21px]'>
                                     <Interweave content={question.question}/>
                                 </mcqsStyle.Prompt>
-                                <div className='flex flex-col gap-2'>
+                                <mcqsStyle.Options role='radiogroup' aria-label='Options'>
                                     {
                                         question.options.map((option, index) => {
                                             const selected = answers[question.id] === index
                                             const state = optionState(index)
+                                            const picked = selected && state === 'idle'
                                             return (
                                                 <mcqsStyle.Option
                                                     key={index}
                                                     type='button'
+                                                    role='radio'
+                                                    aria-checked={selected}
                                                     state={state}
-                                                    style={selected && state === 'idle' ? { borderColor : '#202020', boxShadow : 'inset 0 0 0 1px #202020' } : undefined}
+                                                    className={picked ? '!border-accent/50 !bg-accent-tint' : ''}
                                                     onClick={()=>choose(question, index)}
-                                                    aria-pressed={selected}
                                                 >
-                                                    <mcqsStyle.OptionKey state={state} style={selected && state === 'idle' ? { background : '#202020', color : '#ffffff', borderColor : '#202020' } : undefined}>{alphabets[index].toUpperCase()}</mcqsStyle.OptionKey>
-                                                    <Interweave content={option}/>
+                                                    <mcqsStyle.OptionKey state={state} className={picked ? '!bg-accent !text-on-accent' : ''}>{alphabets[index].toUpperCase()}</mcqsStyle.OptionKey>
+                                                    <span className='flex-1 min-w-0'><Interweave content={option}/></span>
+                                                    {state === 'correct' && <FiCheck className='text-tag-green shrink-0' size={16} strokeWidth={2.5}/>}
+                                                    {state === 'wrong' && <FiX className='text-tag-red shrink-0' size={16} strokeWidth={2.5}/>}
                                                 </mcqsStyle.Option>
                                             )
                                         })
                                     }
-                                </div>
+                                </mcqsStyle.Options>
                                 {
                                     config.instantFeedback && answers[question.id] !== undefined &&
-                                    <mcqsStyle.Explanation key={question.id}>
-                                        <span>
-                                            <b>{answers[question.id] === question.answer ? 'Correct. ' : 'Not quite. '}</b>
-                                            The answer is {alphabets[question.answer].toUpperCase()}.
-                                        </span>
-                                        {question.explanation && <Interweave content={question.explanation}/>}
-                                    </mcqsStyle.Explanation>
+                                    <div className='flex flex-col gap-3' key={question.id}>
+                                        <mcqsStyle.Verdict correct={answers[question.id] === question.answer}>
+                                            <b>{answers[question.id] === question.answer ? 'Correct' : 'Incorrect'}</b>
+                                            <span>Answer <strong>{alphabets[question.answer].toUpperCase()}</strong></span>
+                                        </mcqsStyle.Verdict>
+                                        {question.explanation && <mcqsStyle.Explanation><span className='label'>Explanation</span><Interweave content={question.explanation}/></mcqsStyle.Explanation>}
+                                    </div>
                                 }
-                                <div className='flex items-center justify-between pt-2'>
+                                <div className='flex items-center justify-between border-t border-line pt-4 mt-1'>
                                     <kit.GhostButton type='button' disabled={current === 0} onClick={()=>setCurrent(current - 1)}>
                                         <FiArrowLeft size={15}/> Previous
                                     </kit.GhostButton>
                                     {
                                         current < questions.length - 1 ?
-                                        <kit.DarkButton type='button' onClick={()=>setCurrent(current + 1)}>
+                                        <kit.PrimaryButton type='button' onClick={()=>setCurrent(current + 1)}>
                                             Next <FiArrowRight size={15}/>
-                                        </kit.DarkButton>
+                                        </kit.PrimaryButton>
                                         :
-                                        <kit.DarkButton type='button' onClick={confirmSubmit}>
+                                        <kit.PrimaryButton type='button' onClick={confirmSubmit}>
                                             Finish test <FiArrowRight size={15}/>
-                                        </kit.DarkButton>
+                                        </kit.PrimaryButton>
                                     }
                                 </div>
                             </mcqsStyle.Card>
-                            <kit.Panel className='lg:sticky lg:top-[152px]'>
-                                <kit.PanelTitle>Questions</kit.PanelTitle>
+                            <aside className='flex flex-col gap-4 lg:sticky lg:top-[104px]' aria-label='Question navigator'>
+                                <div className='flex items-baseline justify-between'>
+                                    <span className='text-[13px] font-medium text-ink'>Questions</span>
+                                    <span className='text-[12px] text-ink-3 tabular-nums'>{answeredCount} of {questions.length} answered</span>
+                                </div>
                                 <sessionStyle.NavGrid>
                                     {
                                         questions.map((item, index) => (
-                                            <sessionStyle.NavCell 
+                                            <sessionStyle.NavCell
                                                 key={item.id}
                                                 type='button'
                                                 state={navState(index)}
+                                                answered={answers[item.id] !== undefined}
+                                                flagged={!!flags[item.id]}
                                                 onClick={()=>setCurrent(index)}
-                                                aria-label={`Question ${index + 1}`}
+                                                aria-label={`Question ${index + 1}${answers[item.id] !== undefined ? ', answered' : ''}${flags[item.id] ? ', flagged' : ''}`}
+                                                aria-current={index === current ? 'step' : undefined}
                                             >
                                                 {index + 1}
                                             </sessionStyle.NavCell>
                                         ))
                                     }
                                 </sessionStyle.NavGrid>
-                                <div className='hidden lg:flex flex-col gap-2 pt-1 text-[12px] text-ash'>
+                                <div className='flex flex-wrap gap-x-4 gap-y-2'>
+                                    <sessionStyle.Legend><sessionStyle.Swatch kind='answered'/>Answered</sessionStyle.Legend>
+                                    <sessionStyle.Legend><sessionStyle.Swatch kind='flagged'/>Flagged</sessionStyle.Legend>
+                                </div>
+                                <div className='hidden lg:flex flex-col gap-2 pt-3 border-t border-line text-[12px] text-ink-3'>
                                     <span className='flex items-center justify-between'>Answer <span className='flex gap-1'><kit.Kbd>1</kit.Kbd><kit.Kbd>{question.options.length}</kit.Kbd></span></span>
                                     <span className='flex items-center justify-between'>Previous / next <span className='flex gap-1'><kit.Kbd>←</kit.Kbd><kit.Kbd>→</kit.Kbd></span></span>
                                     <span className='flex items-center justify-between'>Flag <kit.Kbd>F</kit.Kbd></span>
                                 </div>
-                                <div className='flex flex-wrap gap-x-4 gap-y-2'>
-                                    <sessionStyle.Legend><sessionStyle.Swatch kind='answered'/>Answered</sessionStyle.Legend>
-                                    <sessionStyle.Legend><sessionStyle.Swatch kind='flagged'/>Flagged</sessionStyle.Legend>
-                                    <sessionStyle.Legend><sessionStyle.Swatch kind='current'/>Current</sessionStyle.Legend>
-                                </div>
-                            </kit.Panel>
+                            </aside>
                         </sessionStyle.Layout>
                     }
-                </kit.PageInner>
+                </div>
             </kit.Page>
         </>
     )

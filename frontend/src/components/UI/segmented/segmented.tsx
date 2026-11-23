@@ -21,20 +21,19 @@ interface Props<T extends string | number> {
 }
 
 const Track = styled.div.attrs({
-    className : `Segmented relative inline-flex items-center gap-1 rounded-full p-1 max-w-full overflow-x-auto` as string
+    className : `Segmented relative inline-flex items-center gap-[2px] rounded-md p-[3px] max-w-full overflow-x-auto` as string
 })<{full? : boolean}>`
     width : ${({full}) => full ? '100%' : 'auto'};
-    background : ${({theme}) => theme.colors.background.light.primary};
-    border : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
+    background : ${({theme}) => theme.color.subtle};
     scrollbar-width : none;
     &::-webkit-scrollbar { display : none; }
 `
 
 const Thumb = styled.span.attrs({
-    className : `absolute left-0 top-1 bottom-1 rounded-full pointer-events-none` as string
+    className : `absolute left-0 top-[3px] bottom-[3px] rounded-[6px] pointer-events-none` as string
 })<{ready : boolean}>`
-    background : ${({theme}) => theme.colors.background.light.white};
-    box-shadow : ${({theme}) => theme.shadows.subtle};
+    background : ${({theme}) => theme.color.raised};
+    box-shadow : var(--shadow-press);
     transition : ${({ready, theme}) => ready
         ? `transform 260ms ${theme.motion.easeOut}, width 260ms ${theme.motion.easeOut}`
         : 'none'};
@@ -42,14 +41,14 @@ const Thumb = styled.span.attrs({
 `
 
 const Item = styled.button.attrs({
-    className : `relative z-[1] rounded-full px-4 py-[6px] text-[13px] whitespace-nowrap` as string
+    className : `relative z-[1] rounded-[6px] px-3 h-7 text-[13px] whitespace-nowrap` as string
 })<{active? : boolean, full? : boolean}>`
     flex : ${({full}) => full ? '1 1 0' : '0 0 auto'};
-    font-weight : 600;
-    color : ${({theme, active}) => active ? theme.colors.main.primary : theme.colors2.gray.gray3};
+    font-weight : 500;
+    color : ${({theme, active}) => active ? theme.color.ink : theme.color.ink3};
     ${pressable}
     @media (hover : hover) and (pointer : fine) {
-        &:hover { color : ${({theme}) => theme.colors.main.primary}; }
+        &:hover { color : ${({theme}) => theme.color.ink}; }
     }
 `
 

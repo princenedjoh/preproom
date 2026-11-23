@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Switch, Modal } from 'antd'
+import { Switch } from 'antd'
+import { confirm } from '../../components/dialog/confirm'
 import * as kit from '../../styles/kit'
 import SegmentedControl from '../../components/UI/segmented/segmented'
 import TestHistory from '../../components/testHistory/testHistory'
@@ -44,13 +45,12 @@ const Profile = () => {
     }
 
     const clearData = () => {
-        Modal.confirm({
+        confirm({
             title : 'Clear your progress?',
             content : 'This removes your answers, saved questions, test history and streak from this device. It cannot be undone.',
             okText : 'Clear everything',
             cancelText : 'Cancel',
-            okButtonProps : { shape : 'round', danger : true },
-            cancelButtonProps : { shape : 'round' },
+            danger : true,
             onOk : () => {
                 progress.reset()
                 setForm(getProgress().profile)

@@ -5,13 +5,15 @@ import { useProgress, summarize, courseProgress, weakTopics } from '../../store/
 import { useChallengeView } from '../../store/challenge'
 import { startChallenge as beginChallenge } from '../pod/pod'
 import TestHistory from '../../components/testHistory/testHistory'
-import { HiFire, HiTrophy } from 'react-icons/hi2'
-import { FiArrowRight, FiBookmark, FiRotateCcw, FiTarget, FiCheck } from 'react-icons/fi'
+import CourseIcon from '../../components/courseIcon/courseIcon'
+import { FiArrowRight, FiBookmark, FiRotateCcw, FiCheck, FiClock, FiZap } from 'react-icons/fi'
 
 const greeting = () => {
     const hour = new Date().getHours()
     return hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
 }
+
+const accuracyTone = (value : number) : kit.Tone => value >= 70 ? 'green' : value >= 50 ? 'orange' : 'red'
 
 // Home for a returning student: pick up where you left off, today's challenge, what to fix next
 const Today = () => {
@@ -33,141 +35,167 @@ const Today = () => {
     const challenge = useChallengeView()
     const done = challenge.result
     const todayCourse = challenge.course
-    const streakCount = challenge.synced ? challenge.streak.current : stats.streak
+    const streak = challenge.streak
     const startChallenge = () => beginChallenge(navigate, todayCourse.id)
-
     const mistakesCourse = mistakes.length ? mistakes[0][1].courseID : null
 
-    return (
-        <kit.Page band>
-            <kit.PageInner>
-                <div className='flex flex-col gap-2'>
-                    <kit.Eyebrow>{new Date().toLocaleDateString(undefined, { weekday : 'long', month : 'long', day : 'numeric' })}</kit.Eyebrow>
-                    <kit.PageTitle>{greeting()}{firstName ? `, ${firstName}` : ''}.</kit.PageTitle>
-                    <kit.Body>
-                        {
-                            !attempts.length ? 'Pick a course to start. Every answer you give is saved here.'
-                            : stats.activeToday ? `You've practised today. ${stats.streak > 1 ? `That's ${stats.streak} days in a row.` : 'Keep going.'}`
-                            : stats.streak > 0 ? `Answer one question today to keep your ${stats.streak}-day streak.`
-                            : 'Welcome back. Pick up where you left off.'
-                        }
-                    </kit.Body>
-                </div>
+    const openSaved = () => {
+        const first = Object.entries(state.saved).sort((a, b) => b[1] - a[1])[0]
+        const course = first && getQuestion(first[0])?.courseID
+        navigate(`/questions/${course ?? courses[0].id}?status=saved`)
+    }
 
-                <div className='grid grid-cols-1 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] gap-4'>
+    const subline = !attempts.length ? 'Pick a course and answer your first question. Everything you do is saved here.'
+        : stats.activeToday ? `You've practised today${stats.streak > 1 ? `, ${stats.streak} days in a row` : ''}. Nice.`
+        : stats.streak > 0 ? `Answer one question today to keep your ${stats.streak}-day streak.`
+        : 'Welcome back. Pick up where you left off.'
+
+    return (
+        <kit.Page>
+            <kit.PageInner>
+                <header className='flex flex-col gap-2 pt-2'>
+                    <kit.Eyebrow>{new Date().toLocaleDateString(undefined, { weekday : 'long', month : 'long', day : 'numeric' })}</kit.Eyebrow>
+                    <kit.PageTitle>{greeting()}{firstName ? `, ${firstName}` : ''}</kit.PageTitle>
+                    <kit.Body>{subline}</kit.Body>
+                </header>
+
+                <div className='grid grid-cols-1 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] gap-4'>
                     {
                         lastCourse && last ?
-                        <div className='rounded-[20px] p-7 md:p-9 flex flex-col gap-6 justify-between min-h-[240px]' style={{ background : 'linear-gradient(rgb(17, 17, 17) 24%, rgb(0, 0, 0))' }}>
+                        <section className='rounded-lg bg-surface border border-line p-6 flex flex-col gap-6 justify-between' aria-label='Continue'>
+                            <div className='flex items-start gap-4'>
+                                <CourseIcon course={lastCourse} size={44}/>
+                                <div className='flex flex-col gap-1 min-w-0'>
+                                    <kit.Eyebrow>Continue · {lastCourse.code}</kit.Eyebrow>
+                                    <h2 className='text-[22px] font-semibold tracking-[-0.02em] text-ink leading-tight truncate'>{lastCourse.name}</h2>
+                                </div>
+                            </div>
                             <div className='flex flex-col gap-3'>
-                                <kit.Eyebrow light>Continue · {lastCourse.code}</kit.Eyebrow>
-                                <kit.Heading light className='!text-[32px] md:!text-[40px]'>{lastCourse.name}</kit.Heading>
-                                <span className='text-[14px] text-fog tabular-nums'>{last.answered} of {lastCourse.questions} answered · {last.accuracy}% right</span>
-                            </div>
-                            <div className='flex flex-col gap-5'>
-                                <div className='h-[6px] w-full rounded-full bg-white/10 overflow-hidden'>
-                                    <kit.ProgressFill value={last.percent} color={lastCourse.color}/>
+                                <div className='flex items-baseline justify-between text-[13px] tabular-nums'>
+                                    <span className='text-ink-2'><b className='font-semibold text-ink'>{last.answered}</b> of {lastCourse.questions} answered</span>
+                                    <span className='text-ink-3'>{last.accuracy}% right</span>
                                 </div>
-                                <div className='flex flex-wrap gap-3'>
-                                    <kit.LightButton type='button' onClick={()=>navigate(`/questions/${lastCourse.id}${last.percent < 100 ? '?status=unanswered' : ''}`)}>
-                                        {last.percent < 100 ? 'Continue practising' : 'Review the course'} <FiArrowRight size={16}/>
-                                    </kit.LightButton>
-                                    <button
-                                        type='button'
-                                        onClick={()=>navigate('/test/testconfig', { state : { courseID : lastCourse.id } })}
-                                        className='rounded-full px-5 py-3 text-[14px] font-bold text-white border border-white/15 hover:bg-white/[0.06] active:scale-[0.97] transition-[background-color,transform] duration-150'
-                                    >
-                                        Timed test
-                                    </button>
-                                </div>
+                                <kit.ProgressTrack height={4}><kit.ProgressFill value={last.percent}/></kit.ProgressTrack>
                             </div>
-                        </div>
+                            <div className='flex flex-wrap gap-2'>
+                                <kit.PrimaryButton type='button' onClick={()=>navigate(`/questions/${lastCourse.id}${last.percent < 100 ? '?status=unanswered' : ''}`)}>
+                                    {last.percent < 100 ? 'Continue practising' : 'Review the course'} <FiArrowRight size={15}/>
+                                </kit.PrimaryButton>
+                                <kit.SecondaryButton type='button' onClick={()=>navigate('/test/testconfig', { state : { courseID : lastCourse.id } })}>
+                                    <FiClock size={14}/> Timed test
+                                </kit.SecondaryButton>
+                            </div>
+                        </section>
                         :
-                        <kit.Panel className='!p-7 min-h-[240px]'>
+                        <section className='rounded-lg bg-surface border border-line p-5 flex flex-col gap-3' aria-label='Start with a course'>
                             <kit.PanelTitle>Start with a course</kit.PanelTitle>
-                            <div className='grid grid-cols-1 sm:grid-cols-2 gap-2'>
+                            <div className='grid grid-cols-1 sm:grid-cols-2 gap-1'>
                                 {
                                     courses.map((course) => (
                                         <button
                                             key={course.id}
                                             type='button'
                                             onClick={()=>navigate(`/questions/${course.id}`)}
-                                            className='group flex items-center gap-3 rounded-[12px] border border-bone px-4 py-3 text-left hover:border-cloud hover:bg-mist active:scale-[0.98] transition-[background-color,border-color,transform] duration-150'
+                                            className='group flex items-center gap-3 rounded-md px-2 py-2 text-left hover:bg-ink/[0.04] active:scale-[0.98] transition-[background-color,transform] duration-100'
                                         >
-                                            <span className='w-[10px] h-[10px] rounded-[3px] shrink-0' style={{ background : course.color }}/>
+                                            <CourseIcon course={course} size={32}/>
                                             <span className='flex flex-col flex-1 min-w-0'>
-                                                <span className='text-[14px] font-semibold text-ink truncate'>{course.name}</span>
-                                                <span className='text-[12px] text-ash'>{course.code} · {course.questions} questions</span>
+                                                <span className='text-[14px] font-medium text-ink truncate'>{course.name}</span>
+                                                <span className='text-[12px] text-ink-3'>{course.code} · {course.questions} questions</span>
                                             </span>
-                                            <FiArrowRight size={14} className='text-ash group-hover:translate-x-[2px] transition-transform'/>
+                                            <FiArrowRight size={14} className='text-ink-4 group-hover:text-ink-2 group-hover:translate-x-[2px] transition-transform'/>
                                         </button>
                                     ))
                                 }
                             </div>
-                        </kit.Panel>
+                        </section>
                     }
 
-                    <kit.Panel className='!p-7 justify-between'>
-                        <div className='flex items-center justify-between'>
-                            <kit.PanelTitle><HiTrophy size={15}/> Daily challenge</kit.PanelTitle>
-                            <span className='inline-flex items-center gap-1 text-[13px] font-semibold text-ink'>
-                                <HiFire size={15} className={streakCount ? 'text-[#fd9a46]' : 'text-fog'}/> {streakCount}
-                            </span>
+                    <section className='rounded-lg bg-surface border border-line p-6 flex flex-col gap-5 justify-between' aria-label='Daily challenge'>
+                        <div className='flex items-center justify-between gap-3'>
+                            <kit.PanelTitle><FiZap size={14}/> Daily challenge</kit.PanelTitle>
+                            {
+                                done ? <kit.Tag tone='green'><FiCheck size={12}/> Done</kit.Tag>
+                                : <span className='text-[12px] text-ink-3'>{challenge.count} questions · {challenge.minutes} min</span>
+                            }
                         </div>
                         {
                             done ?
-                            <div className='flex flex-col gap-2'>
-                                <span className='inline-flex items-center gap-2 text-[13px] font-semibold text-brand-emerald'><FiCheck size={14}/> Done for today</span>
-                                <span className='font-display font-bold text-[40px] leading-none tracking-[-0.04em] text-onyx tabular-nums'>{done.score}/{done.total}</span>
-                                <span className='text-[13px] text-muted'>{done.rank ? `Ranked #${done.rank} today. ` : ''}A new set lands at midnight.</span>
+                            <div className='flex flex-col gap-1'>
+                                <span className='text-[40px] font-semibold leading-none tracking-[-0.04em] text-ink tabular-nums'>{done.score}<span className='text-ink-4'>/{done.total}</span></span>
+                                <span className='text-[13px] text-ink-2'>{done.rank ? `Ranked #${done.rank} today. ` : ''}A new set lands at midnight.</span>
                             </div>
                             :
-                            <div className='flex flex-col gap-2'>
-                                <span className='text-[13px] text-ash'>{todayCourse.code} · {challenge.count} questions · {challenge.minutes} min</span>
-                                <span className='font-display font-bold text-[24px] leading-[1.2] tracking-[-0.03em] text-onyx'>{todayCourse.name}</span>
-                                <span className='text-[13px] text-muted'>Same five for everyone today. Ranked on the weekly board.</span>
+                            <div className='flex items-center gap-3'>
+                                <CourseIcon course={todayCourse} size={36}/>
+                                <div className='flex flex-col min-w-0'>
+                                    <span className='text-[17px] font-semibold tracking-[-0.015em] text-ink truncate'>{todayCourse.name}</span>
+                                    <span className='text-[13px] text-ink-3'>Same five for everyone today</span>
+                                </div>
                             </div>
                         }
+
+                        <div className='flex flex-col gap-2'>
+                            <div className='flex items-center justify-between text-[12px]'>
+                                <span className='text-ink-2'><b className='font-semibold text-ink tabular-nums'>{streak.current}</b>-day streak</span>
+                                <span className='text-ink-3'>Best {Math.max(streak.best, streak.current)}</span>
+                            </div>
+                            <div className='grid grid-cols-7 gap-1' role='list' aria-label='This week'>
+                                {streak.week.map((day) => (
+                                    <div key={day.label} role='listitem' className='flex flex-col items-center gap-1' aria-label={`${day.label}: ${day.active ? 'practised' : day.future ? 'upcoming' : day.today ? 'today' : 'missed'}`}>
+                                        <span className={`w-full h-[6px] rounded-full ${day.active ? 'bg-tag-yellow' : day.today ? 'bg-tag-yellow/30' : 'bg-subtle'}`}/>
+                                        <span className={`text-[10px] ${day.today ? 'text-ink font-semibold' : 'text-ink-4'}`}>{day.label[0]}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
                         {
                             done ?
-                            <kit.GhostButton type='button' className='self-start' onClick={()=>navigate('/challenges')}>See leaderboard <FiArrowRight size={14}/></kit.GhostButton>
+                            <kit.SecondaryButton type='button' className='self-start' onClick={()=>navigate('/challenges')}>See the leaderboard <FiArrowRight size={14}/></kit.SecondaryButton>
                             :
-                            <kit.DarkButton type='button' className='self-start' disabled={!challenge.ready} onClick={startChallenge}>{challenge.status === 'in_progress' ? 'Resume' : 'Start'} challenge <FiArrowRight size={14}/></kit.DarkButton>
+                            <kit.PrimaryButton type='button' className='self-start' disabled={!challenge.ready} onClick={startChallenge}>{challenge.status === 'in_progress' ? 'Resume' : 'Start'} challenge <FiArrowRight size={14}/></kit.PrimaryButton>
                         }
-                    </kit.Panel>
+                    </section>
                 </div>
 
-                <div className='grid grid-cols-2 md:grid-cols-4 gap-3'>
-                    <kit.Stat><kit.StatValue>{stats.solved}</kit.StatValue><kit.StatLabel>Answered</kit.StatLabel></kit.Stat>
-                    <kit.Stat><kit.StatValue>{stats.solved ? `${stats.accuracy}%` : '–'}</kit.StatValue><kit.StatLabel>Accuracy</kit.StatLabel></kit.Stat>
-                    <kit.Stat><kit.StatValue>{stats.tests}</kit.StatValue><kit.StatLabel>Tests taken</kit.StatLabel></kit.Stat>
-                    <kit.Stat><kit.StatValue>{stats.best}</kit.StatValue><kit.StatLabel>Best streak</kit.StatLabel></kit.Stat>
-                </div>
+                <section className='grid grid-cols-2 md:grid-cols-4 rounded-lg bg-surface border border-line overflow-hidden' aria-label='Your numbers'>
+                    {[
+                        { label : 'Questions answered', value : stats.solved },
+                        { label : 'Accuracy', value : stats.solved ? `${stats.accuracy}%` : '—' },
+                        { label : 'Tests taken', value : stats.tests },
+                        { label : 'Best streak', value : `${stats.best}d` },
+                    ].map((item, index) => (
+                        <div key={item.label} className={`flex flex-col gap-2 p-5 ${index % 2 ? 'border-l border-line' : ''} ${index > 1 ? 'border-t md:border-t-0 border-line' : ''} ${index === 2 ? 'md:border-l' : ''}`}>
+                            <kit.StatLabel>{item.label}</kit.StatLabel>
+                            <kit.StatValue>{item.value}</kit.StatValue>
+                        </div>
+                    ))}
+                </section>
 
                 <div className='grid grid-cols-1 lg:grid-cols-3 gap-4 items-start'>
-                    <kit.Panel className='!p-6'>
-                        <kit.PanelTitle><FiTarget size={15}/> Focus areas</kit.PanelTitle>
+                    <kit.Panel>
+                        <kit.PanelTitle>Focus areas</kit.PanelTitle>
                         {
                             weak.length === 0 ?
-                            <span className='text-[14px] text-muted leading-[1.5]'>
-                                {attempts.length ? 'Nothing to fix yet. Every topic you have tried is at 100%.' : 'Topics you find hard will show up here once you start answering.'}
+                            <span className='text-[14px] text-ink-3 leading-[1.5]'>
+                                {attempts.length ? 'Nothing to fix yet. Every topic you have tried is solid.' : 'Topics you find hard show up here once you start answering.'}
                             </span>
                             :
-                            <div className='flex flex-col gap-4'>
+                            <div className='flex flex-col -mx-2'>
                                 {
                                     weak.map((item) => (
                                         <button
                                             key={`${item.courseID}:${item.topic}`}
                                             type='button'
                                             onClick={()=>navigate(`/questions/${item.courseID}?topic=${encodeURIComponent(item.topic)}`)}
-                                            className='flex flex-col gap-2 text-left group'
+                                            className='flex items-center gap-3 text-left rounded-md px-2 py-2 hover:bg-ink/[0.04] transition-colors'
                                         >
-                                            <span className='flex items-center justify-between text-[14px] w-full'>
-                                                <span className='font-semibold text-ink group-hover:underline underline-offset-2'>{item.topic}</span>
-                                                <span className='text-ash text-[12px] tabular-nums'>{item.correct}/{item.total} · {getCourse(item.courseID).code}</span>
+                                            <span className='flex flex-col flex-1 min-w-0'>
+                                                <span className='text-[14px] text-ink truncate'>{item.topic}</span>
+                                                <span className='text-[12px] text-ink-3 tabular-nums'>{getCourse(item.courseID).code} · {item.correct} of {item.total} right</span>
                                             </span>
-                                            <kit.ProgressTrack>
-                                                <kit.ProgressFill value={item.accuracy} color={item.accuracy >= 70 ? '#00c07a' : item.accuracy >= 50 ? '#0091ff' : '#f0457a'}/>
-                                            </kit.ProgressTrack>
+                                            <kit.Tag tone={accuracyTone(item.accuracy)} className='tabular-nums'>{item.accuracy}%</kit.Tag>
                                         </button>
                                     ))
                                 }
@@ -175,44 +203,36 @@ const Today = () => {
                         }
                     </kit.Panel>
 
-                    <kit.Panel className='!p-6'>
+                    <kit.Panel>
                         <kit.PanelTitle>Review</kit.PanelTitle>
-                        <button
-                            type='button'
-                            disabled={!mistakesCourse}
-                            onClick={()=>mistakesCourse && navigate(`/questions/${mistakesCourse}?status=mistakes`)}
-                            className='flex items-center gap-3 rounded-[12px] border border-bone px-4 py-4 text-left enabled:hover:bg-mist enabled:active:scale-[0.98] transition-[background-color,transform] duration-150 disabled:opacity-60'
-                        >
-                            <kit.IconTile><FiRotateCcw size={16}/></kit.IconTile>
-                            <span className='flex flex-col flex-1'>
-                                <span className='text-[14px] font-semibold text-ink'>Mistakes</span>
-                                <span className='text-[12px] text-ash'>{mistakes.length ? `${mistakes.length} to try again${mistakesCourse ? ` · latest in ${getCourse(mistakesCourse).code}` : ''}` : 'None yet'}</span>
-                            </span>
-                            {mistakes.length > 0 && <FiArrowRight size={14} className='text-ash'/>}
-                        </button>
-                        <button
-                            type='button'
-                            disabled={!savedCount}
-                            onClick={()=>{
-                                const first = Object.entries(state.saved).sort((a, b) => b[1] - a[1])[0]
-                                const course = first && getQuestion(first[0])?.courseID
-                                navigate(`/questions/${course ?? courses[0].id}?status=saved`)
-                            }}
-                            className='flex items-center gap-3 rounded-[12px] border border-bone px-4 py-4 text-left enabled:hover:bg-mist enabled:active:scale-[0.98] transition-[background-color,transform] duration-150 disabled:opacity-60'
-                        >
-                            <kit.IconTile><FiBookmark size={16}/></kit.IconTile>
-                            <span className='flex flex-col flex-1'>
-                                <span className='text-[14px] font-semibold text-ink'>Saved questions</span>
-                                <span className='text-[12px] text-ash'>{savedCount ? `${savedCount} saved for revision` : 'Press Save on a question to keep it'}</span>
-                            </span>
-                            {savedCount > 0 && <FiArrowRight size={14} className='text-ash'/>}
-                        </button>
+                        <div className='flex flex-col -mx-2'>
+                            {[
+                                { icon : FiRotateCcw, label : 'Mistakes', note : mistakes.length ? `${mistakes.length} to try again${mistakesCourse ? ` · latest in ${getCourse(mistakesCourse).code}` : ''}` : 'Nothing to redo yet', count : mistakes.length,
+                                    run : () => mistakesCourse && navigate(`/questions/${mistakesCourse}?status=mistakes`), tone : 'red' as const },
+                                { icon : FiBookmark, label : 'Saved', note : savedCount ? 'Kept for revision' : 'Press S on a question to keep it', count : savedCount, run : openSaved, tone : 'blue' as const },
+                            ].map((item) => (
+                                <button
+                                    key={item.label}
+                                    type='button'
+                                    disabled={!item.count}
+                                    onClick={item.run}
+                                    className='flex items-center gap-3 rounded-md px-2 py-2 text-left enabled:hover:bg-ink/[0.04] transition-colors disabled:cursor-default'
+                                >
+                                    <kit.IconTile tone={item.count ? item.tone : undefined}><item.icon size={15}/></kit.IconTile>
+                                    <span className='flex flex-col flex-1 min-w-0'>
+                                        <span className='text-[14px] text-ink'>{item.label}</span>
+                                        <span className='text-[12px] text-ink-3 truncate'>{item.note}</span>
+                                    </span>
+                                    {item.count > 0 && <span className='text-[13px] text-ink-2 tabular-nums'>{item.count}</span>}
+                                </button>
+                            ))}
+                        </div>
                     </kit.Panel>
 
-                    <kit.Panel className='!p-6'>
+                    <kit.Panel>
                         <div className='flex items-center justify-between'>
                             <kit.PanelTitle>Recent tests</kit.PanelTitle>
-                            {state.tests.length > 3 && <kit.TextLink type='button' onClick={()=>navigate('/test/testconfig')}>All <FiArrowRight size={13}/></kit.TextLink>}
+                            {state.tests.length > 3 && <kit.TextLink type='button' className='!text-[13px]' onClick={()=>navigate('/test/testconfig')}>All tests <FiArrowRight size={13}/></kit.TextLink>}
                         </div>
                         <TestHistory compact limit={3}/>
                     </kit.Panel>
@@ -220,9 +240,12 @@ const Today = () => {
 
                 {
                     attempts.length > 0 &&
-                    <div className='flex flex-col gap-3'>
-                        <kit.Title>Your courses</kit.Title>
-                        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3'>
+                    <section className='flex flex-col gap-3' aria-label='Your courses'>
+                        <kit.Title>Courses</kit.Title>
+                        <div className='rounded-lg bg-surface border border-line overflow-hidden'>
+                            <div className='hidden md:grid grid-cols-[minmax(0,1fr)_200px_110px_90px] gap-4 px-4 h-9 items-center border-b border-line text-[12px] text-ink-3'>
+                                <span>Course</span><span>Progress</span><span className='text-right'>Answered</span><span className='text-right'>Accuracy</span>
+                            </div>
                             {
                                 courses.map((course) => {
                                     const value = courseProgress(state, course.id, course.questions)
@@ -231,21 +254,22 @@ const Today = () => {
                                             key={course.id}
                                             type='button'
                                             onClick={()=>navigate(`/questions/${course.id}`)}
-                                            className='flex flex-col gap-3 rounded-[12px] bg-white border border-bone p-4 text-left hover:border-cloud active:scale-[0.98] transition-[border-color,transform] duration-150'
+                                            className='w-full grid grid-cols-[minmax(0,1fr)_auto] md:grid-cols-[minmax(0,1fr)_200px_110px_90px] gap-4 px-4 py-3 items-center text-left border-b border-line last:border-0 hover:bg-ink/[0.03] transition-colors'
                                         >
-                                            <span className='flex items-center gap-2'>
-                                                <span className='w-[8px] h-[8px] rounded-[3px]' style={{ background : course.color }}/>
-                                                <span className='font-mono text-[11px] uppercase tracking-[0.08em] text-ash'>{course.code}</span>
+                                            <span className='flex items-center gap-3 min-w-0'>
+                                                <CourseIcon course={course} size={24}/>
+                                                <span className='text-[14px] text-ink truncate'>{course.name}</span>
+                                                <span className='hidden sm:inline text-[12px] text-ink-3 shrink-0'>{course.code}</span>
                                             </span>
-                                            <span className='text-[15px] font-bold text-ink leading-[1.25]'>{course.name}</span>
-                                            <kit.ProgressTrack height={4}><kit.ProgressFill value={value.percent} color={course.color}/></kit.ProgressTrack>
-                                            <span className='text-[12px] text-ash tabular-nums'>{value.answered}/{course.questions} answered</span>
+                                            <span className='hidden md:block'><kit.ProgressTrack height={4}><kit.ProgressFill value={value.percent}/></kit.ProgressTrack></span>
+                                            <span className='text-[13px] text-ink-2 tabular-nums text-right'>{value.answered}/{course.questions}</span>
+                                            <span className='hidden md:block text-right'>{value.answered ? <kit.Tag tone={accuracyTone(value.accuracy)} className='tabular-nums'>{value.accuracy}%</kit.Tag> : <span className='text-ink-4 text-[13px]'>—</span>}</span>
                                         </button>
                                     )
                                 })
                             }
                         </div>
-                    </div>
+                    </section>
                 }
             </kit.PageInner>
         </kit.Page>

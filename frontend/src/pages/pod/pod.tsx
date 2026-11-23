@@ -4,8 +4,10 @@ import * as kit from '../../styles/kit'
 import { useChallengeView } from '../../store/challenge'
 import { loadResult } from '../test/engine'
 import { TestConfigState } from '../test/pages/testConfig/testConfig'
-import { HiFire, HiTrophy } from "react-icons/hi2";
-import { FiArrowRight, FiClock, FiCheck } from "react-icons/fi";
+import { FiArrowRight, FiClock, FiCheck, FiZap, FiAward } from "react-icons/fi";
+import CourseIcon from '../../components/courseIcon/courseIcon'
+import { useProgress, dayKey } from '../../store/progress'
+import { toneOf, toneVar } from '../../styles/tone'
 
 const untilMidnight = () => {
     const midnight = new Date()
@@ -25,6 +27,7 @@ const Pod = () => {
 
     const navigate = useNavigate()
     const view = useChallengeView()
+    const state = useProgress()
     const [countdown, setCountdown] = useState(untilMidnight)
     const done = view.result
 
@@ -47,148 +50,184 @@ const Pod = () => {
         : streak.current >= streak.best ? 'Your best streak yet'
         : `${streak.best - streak.current} more day${streak.best - streak.current === 1 ? '' : 's'} to beat your best`
 
+    // This month as a small calendar: practised days filled, today outlined (LeetCode-style)
+    const now = new Date()
+    const first = new Date(now.getFullYear(), now.getMonth(), 1)
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+    const lead = (first.getDay() + 6) % 7
+    const activeDays = new Set(state.activeDays)
+    const key = (day : number) => dayKey(new Date(now.getFullYear(), now.getMonth(), day))
+    const pinned = view.board.find((person) => person.you)
+    const top = view.board.slice(0, 10)
+
     return (
         <kit.Page>
-            <kit.PageInner>
-                <div className='flex flex-col gap-2'>
-                    <kit.Eyebrow>Daily challenge</kit.Eyebrow>
-                    <kit.PageTitle>Five questions. Every day.</kit.PageTitle>
-                    <kit.Body>A fresh set lands at midnight. Everyone gets the same five, ranked by score.</kit.Body>
-                </div>
+            <kit.PageInner className='gap-8'>
+                <header className='flex flex-col gap-2 pt-2'>
+                    <kit.PageTitle>Daily challenge</kit.PageTitle>
+                    <kit.Body>Five questions, the same for everyone, new at midnight. Ranked by score, then time.</kit.Body>
+                </header>
 
-                <div className='grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start'>
+                <div className='grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start'>
                     <div className='flex flex-col gap-6 min-w-0'>
-                        <div
-                            className='rounded-[20px] p-8 md:p-10 flex flex-col gap-6'
-                            style={{ background : 'linear-gradient(rgb(17, 17, 17) 24%, rgb(0, 0, 0))' }}
-                            aria-busy={!view.ready}
-                        >
+                        <section className='rounded-lg border border-line p-6 flex flex-col gap-6' aria-busy={!view.ready} aria-label="Today's challenge">
                             <div className='flex flex-wrap items-center justify-between gap-3'>
-                                <kit.Eyebrow light>Today · {view.course.code}</kit.Eyebrow>
-                                <span className='inline-flex items-center gap-2 text-[13px] text-fog'>
-                                    <FiClock size={13}/> {done ? `Next set in ${countdown}` : `${view.minutes} minutes`}
+                                <span className='inline-flex items-center gap-2 text-[13px] text-ink-3'>
+                                    {now.toLocaleDateString(undefined, { weekday : 'long', day : 'numeric', month : 'long' })}
+                                </span>
+                                <span className='inline-flex items-center gap-[6px] text-[13px] text-ink-3 tabular-nums'>
+                                    <FiClock size={13}/> {done ? `Next set in ${countdown}` : `${countdown} left today`}
                                 </span>
                             </div>
-                            <div className='flex flex-col gap-3 max-w-[560px]'>
-                                <kit.Heading light className='!text-[34px] md:!text-[44px]'>
-                                    {done ? `You scored ${done.score}/${done.total}.` : view.title}
-                                </kit.Heading>
-                                <kit.Lead light>
-                                    {
-                                        done ? (done.rank ? `You're ranked #${done.rank} today. Come back tomorrow for a new set.` : 'Come back tomorrow for a new set.')
-                                        : view.status === 'in_progress' ? 'You started this one. Pick up where you left off before the clock runs out.'
-                                        : `${view.count} mixed-difficulty questions from recent past papers. Ranked by score, then time.`
-                                    }
-                                </kit.Lead>
+                            <div className='flex items-start gap-4'>
+                                <CourseIcon course={view.course} size={48}/>
+                                <div className='flex flex-col gap-1 min-w-0'>
+                                    <span className='text-[13px] text-ink-3'>{view.course.code} · {view.count} questions · {view.minutes} min</span>
+                                    <h2 className='text-[24px] md:text-[28px] font-semibold tracking-[-0.03em] leading-tight text-ink'>
+                                        {done ? <>You scored <span className='tabular-nums'>{done.score}/{done.total}</span></> : view.title.replace(/\.$/, '')}
+                                    </h2>
+                                    <span className='text-[14px] text-ink-2'>
+                                        {
+                                            done ? (done.rank ? `Ranked #${done.rank} today. Come back tomorrow for a new set.` : 'Come back tomorrow for a new set.')
+                                            : view.status === 'in_progress' ? 'You started this one. Finish before the clock runs out.'
+                                            : 'Mixed difficulty, from recent past papers.'
+                                        }
+                                    </span>
+                                </div>
                             </div>
                             <div className='flex flex-wrap items-center gap-4'>
                                 {
                                     done ?
-                                    <kit.LightButton type='button' onClick={openResult}>
-                                        {done.testID ? 'See your answers' : done.missed ? 'Review what you missed' : `Practise more ${view.course.name}`} <FiArrowRight size={16}/>
-                                    </kit.LightButton>
+                                    <kit.SecondaryButton type='button' onClick={openResult}>
+                                        {done.testID ? 'See your answers' : done.missed ? 'Review what you missed' : `Practise ${view.course.name}`} <FiArrowRight size={14}/>
+                                    </kit.SecondaryButton>
                                     :
-                                    <kit.LightButton type='button' disabled={!view.ready} onClick={()=>startChallenge(navigate, view.course.id)}>
-                                        {view.status === 'in_progress' ? 'Resume challenge' : 'Start challenge'} <FiArrowRight size={16}/>
-                                    </kit.LightButton>
+                                    <kit.PrimaryButton type='button' disabled={!view.ready} onClick={()=>startChallenge(navigate, view.course.id)}>
+                                        {view.status === 'in_progress' ? 'Resume challenge' : 'Start challenge'} <FiArrowRight size={14}/>
+                                    </kit.PrimaryButton>
                                 }
                                 {
                                     view.recentPlayers.length > 0 &&
                                     <div className='flex items-center'>
                                         {view.recentPlayers.slice(0, 4).map((person, index) => (
-                                            <kit.Avatar key={`${person.initials}${index}`} color={person.color} size={28} ring='#111111'>{person.initials}</kit.Avatar>
+                                            <kit.Avatar key={`${person.initials}${index}`} color={toneVar(toneOf(person.initials, person.color))} size={24}>{person.initials}</kit.Avatar>
                                         ))}
-                                        <span className='ml-3 text-[13px] text-fog'>
+                                        <span className='ml-3 text-[13px] text-ink-3'>
                                             {view.players ? `${view.players.toLocaleString()} played today` : 'Same five for everyone'}
                                         </span>
                                     </div>
                                 }
                             </div>
-                        </div>
+                        </section>
 
-                        <kit.Panel className='!p-6'>
-                            <div className='flex flex-wrap items-center justify-between gap-3'>
-                                <kit.PanelTitle>
-                                    <HiFire size={16} className={streak.current ? '!text-[#fd9a46]' : ''}/>
-                                    {streak.current}-day streak
-                                </kit.PanelTitle>
-                                <span className='text-[13px] text-muted'>{streakNote}</span>
+                        <section className='rounded-lg border border-line p-6 flex flex-col gap-5' aria-label='Streak'>
+                            <div className='flex flex-wrap items-baseline justify-between gap-3'>
+                                <div className='flex items-baseline gap-2'>
+                                    <span className='text-[28px] font-semibold tracking-[-0.03em] text-ink tabular-nums leading-none'>{streak.current}</span>
+                                    <span className='text-[14px] text-ink-2'>day streak</span>
+                                </div>
+                                <span className='text-[13px] text-ink-3'>{streakNote} · Best {Math.max(streak.best, streak.current)}</span>
                             </div>
-                            <div className='grid grid-cols-7 gap-2'>
-                                {
-                                    streak.week.map((day) => (
-                                        <div key={day.label} className='flex flex-col items-center gap-2'>
-                                            <span
-                                                className={`w-full max-w-[56px] aspect-square rounded-[12px] flex items-center justify-center
-                                                ${day.active ? 'bg-ink text-white' : day.today ? 'border-2 border-dashed border-ink text-ink' : day.future ? 'bg-white border border-bone text-fog' : 'bg-mist border border-bone text-fog'}`}
-                                                aria-label={`${day.label}: ${day.active ? 'practised' : day.today ? 'today' : day.future ? 'upcoming' : 'missed'}`}
-                                            >
-                                                {day.active ? <FiCheck size={18}/> : day.today ? <HiFire size={18}/> : null}
-                                            </span>
-                                            <span className={`text-[12px] ${day.today ? 'font-bold text-ink' : 'text-ash'}`}>{day.label}</span>
-                                        </div>
-                                    ))
-                                }
+                            <div className='grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto] gap-6 items-start'>
+                                <div className='flex flex-col gap-2'>
+                                    <span className='text-[12px] font-medium text-ink-3'>This week</span>
+                                    <div className='grid grid-cols-7 gap-[6px]'>
+                                        {streak.week.map((day) => (
+                                            <div key={day.label} className='flex flex-col items-center gap-[6px]'>
+                                                <span
+                                                    className={`w-full max-w-[44px] aspect-square rounded-md flex items-center justify-center
+                                                    ${day.active ? 'bg-tag-yellow-bg text-tag-yellow' : day.today ? 'border border-dashed border-tag-yellow/60 text-tag-yellow' : 'bg-subtle text-ink-4'}`}
+                                                    aria-label={`${day.label}: ${day.active ? 'practised' : day.today ? 'today' : day.future ? 'upcoming' : 'missed'}`}
+                                                >
+                                                    {day.active ? <FiCheck size={15} strokeWidth={2.5}/> : day.today ? <FiZap size={14}/> : null}
+                                                </span>
+                                                <span className={`text-[11px] ${day.today ? 'font-semibold text-ink' : 'text-ink-3'}`}>{day.label}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className='flex flex-col gap-2' aria-label={now.toLocaleDateString(undefined, { month : 'long', year : 'numeric' })}>
+                                    <span className='text-[12px] font-medium text-ink-3'>{now.toLocaleDateString(undefined, { month : 'long' })}</span>
+                                    <div className='grid grid-cols-7 gap-[3px]'>
+                                        {Array.from({ length : lead }).map((_, index) => <span key={`lead${index}`} className='w-[22px] h-[22px]'/>)}
+                                        {Array.from({ length : daysInMonth }).map((_, index) => {
+                                            const day = index + 1
+                                            const isToday = day === now.getDate()
+                                            const active = activeDays.has(key(day))
+                                            return (
+                                                <span key={day} title={key(day)}
+                                                    className={`w-[22px] h-[22px] rounded-[5px] inline-flex items-center justify-center text-[10px] tabular-nums
+                                                    ${active ? 'bg-tag-yellow text-white font-semibold' : day > now.getDate() ? 'text-ink-4' : 'text-ink-2'}
+                                                    ${isToday ? 'ring-1 ring-ink ring-offset-1 ring-offset-surface' : ''}`}>
+                                                    {day}
+                                                </span>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
                             </div>
-                        </kit.Panel>
+                        </section>
 
-                        <div className='flex flex-col gap-3'>
-                            <kit.Title>Your recent challenges</kit.Title>
+                        <section className='flex flex-col gap-3' aria-label='Your recent challenges'>
+                            <kit.Title>Recent</kit.Title>
                             {
                                 view.recent.length === 0 ?
                                 <kit.Empty className='!py-10'>
-                                    <HiTrophy size={20}/>
-                                    <span className='text-[15px] font-semibold text-ink'>No challenges yet</span>
+                                    <FiAward size={18}/>
+                                    <span className='text-[15px] font-medium text-ink'>No challenges yet</span>
                                     <span className='text-[14px]'>Today's set takes about ten minutes.</span>
                                 </kit.Empty>
                                 :
-                                <div className='grid grid-cols-1 sm:grid-cols-2 gap-3'>
-                                    {
-                                        view.recent.map((item) => (
-                                            <kit.Card key={item.key} className='!p-5 !gap-2'>
-                                                <div className='flex items-center justify-between'>
-                                                    <span className='text-[12px] text-ash'>{item.when}</span>
-                                                    <kit.StatusPill status={item.score === item.total ? 'done' : item.score >= item.total * 0.6 ? 'progress' : 'review'}>{item.score}/{item.total}</kit.StatusPill>
-                                                </div>
-                                                <span className='text-[15px] font-bold text-ink'>{item.course}</span>
-                                                <span className='text-[13px] text-muted'>{item.note}</span>
-                                            </kit.Card>
-                                        ))
-                                    }
+                                <div className='rounded-lg border border-line overflow-hidden'>
+                                    {view.recent.map((item) => (
+                                        <div key={item.key} className='flex items-center gap-4 px-4 py-3 border-b border-line last:border-0 text-[14px]'>
+                                            <span className='w-[88px] shrink-0 text-ink-3'>{item.when}</span>
+                                            <span className='flex-1 min-w-0 truncate text-ink'>{item.course}</span>
+                                            <span className='hidden sm:block text-[13px] text-ink-3'>{item.note}</span>
+                                            <kit.Tag tone={item.score === item.total ? 'green' : item.score >= item.total * 0.6 ? 'orange' : 'red'} className='tabular-nums'>{item.score}/{item.total}</kit.Tag>
+                                        </div>
+                                    ))}
                                 </div>
                             }
-                        </div>
+                        </section>
                     </div>
 
-                    <kit.Panel className='lg:sticky lg:top-[88px]'>
-                        <kit.PanelTitle><HiTrophy size={15}/> This week's leaderboard</kit.PanelTitle>
+                    <section className='rounded-lg border border-line lg:sticky lg:top-6 overflow-hidden' aria-label="This week's leaderboard">
+                        <div className='flex items-center justify-between px-4 h-12 border-b border-line'>
+                            <span className='text-[14px] font-medium text-ink'>This week</span>
+                            <span className='text-[12px] text-ink-3'>Points</span>
+                        </div>
                         {
                             view.board.length === 0 ?
-                            <span className='text-[14px] text-muted leading-[1.5]'>No one has played this week yet. Finish today's challenge to take the top spot.</span>
+                            <p className='px-4 py-6 text-[14px] text-ink-3 leading-[1.5]'>No one has played this week yet. Finish today's challenge to take the top spot.</p>
                             :
-                            <div className='flex flex-col'>
+                            <ol className='flex flex-col py-1'>
+                                {top.map((person) => (
+                                    <li key={person.key} className={`flex items-center gap-3 px-4 h-11 ${person.you ? 'bg-accent-tint' : ''}`}>
+                                        <span className={`w-5 text-[12px] tabular-nums ${person.rank <= 3 ? 'text-ink font-semibold' : 'text-ink-3'}`}>{person.rank}</span>
+                                        <kit.Avatar color={toneVar(toneOf(person.name, person.color))} size={24}>{person.initials}</kit.Avatar>
+                                        <span className='flex-1 min-w-0 flex flex-col leading-tight'>
+                                            <span className={`text-[14px] truncate ${person.you ? 'font-medium text-accent' : 'text-ink'}`}>{person.name}</span>
+                                            {person.school && <span className='text-[11px] text-ink-3 truncate'>{person.school}</span>}
+                                        </span>
+                                        <span className='text-[13px] font-medium text-ink tabular-nums'>{person.score.toLocaleString()}</span>
+                                    </li>
+                                ))}
                                 {
-                                    view.board.map((person) => (
-                                        <div
-                                            key={person.key}
-                                            className={`flex items-center gap-3 py-3 ${person.you ? 'rounded-[9px] bg-mist px-3 -mx-3 my-1' : 'border-b border-mercury last:border-0'}`}
-                                        >
-                                            <span className='font-mono text-[12px] text-ash w-[18px] tabular-nums'>{person.rank}</span>
-                                            <kit.Avatar color={person.color} size={32} ring='transparent'>{person.initials}</kit.Avatar>
-                                            <div className='flex flex-col flex-1 min-w-0'>
-                                                <span className='text-[14px] font-semibold text-ink truncate'>{person.name}</span>
-                                                {person.school && <span className='text-[12px] text-ash'>{person.school}</span>}
-                                            </div>
-                                            <span className='text-[14px] font-bold text-ink tabular-nums'>{person.score}</span>
-                                        </div>
-                                    ))
+                                    pinned && !top.includes(pinned) &&
+                                    <li className='flex items-center gap-3 px-4 h-11 bg-accent-tint border-t border-line'>
+                                        <span className='w-5 text-[12px] text-ink-3 tabular-nums'>{pinned.rank}</span>
+                                        <kit.Avatar color={toneVar(toneOf(pinned.name, pinned.color))} size={24}>{pinned.initials}</kit.Avatar>
+                                        <span className='flex-1 text-[14px] font-medium text-accent'>You</span>
+                                        <span className='text-[13px] font-medium text-ink tabular-nums'>{pinned.score.toLocaleString()}</span>
+                                    </li>
                                 }
-                            </div>
+                            </ol>
                         }
-                        <span className='text-[12px] leading-[1.5] text-ash'>
+                        <p className='px-4 py-3 border-t border-line text-[12px] leading-[1.5] text-ink-3'>
                             {view.you.rank === 1 ? "You're top of the board this week. " : view.you.rank ? `You're #${view.you.rank}. ` : ''}{view.scoring}
-                        </span>
-                    </kit.Panel>
+                        </p>
+                    </section>
                 </div>
             </kit.PageInner>
         </kit.Page>

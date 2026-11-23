@@ -7,10 +7,8 @@ import { Difficulty, Question } from '../../../../data/sample'
 import { getCourse, useCatalog, fetchQuestions, fetchPapers } from '../../../../data/catalog'
 import TestHistory from '../../../../components/testHistory/testHistory'
 import SegmentedControl from '../../../../components/UI/segmented/segmented'
-import { RiCheckboxMultipleFill } from "react-icons/ri";
-import { GiPapers } from "react-icons/gi";
-import { HiTrophy } from "react-icons/hi2";
-import { FiArrowRight, FiClock } from "react-icons/fi";
+import CourseIcon from '../../../../components/courseIcon/courseIcon'
+import { FiArrowRight, FiFlag, FiLayers, FiFileText, FiZap, FiAlertCircle } from "react-icons/fi";
 
 export interface TestConfigState {
     courseID : string
@@ -23,10 +21,12 @@ export interface TestConfigState {
 }
 
 const modes = [
-    { id : 'mcqs', icon : RiCheckboxMultipleFill, title : 'Practice test', text : 'A random mix of questions from the topics you pick.' },
-    { id : 'paper', icon : GiPapers, title : 'Past paper', text : 'Sit a full paper exactly as it was set.' },
-    { id : 'challenge', icon : HiTrophy, title : 'Challenge', text : 'Short, hard and ranked against other students.' },
+    { id : 'mcqs', icon : FiLayers, tone : 'blue', title : 'Practice test', text : 'A fresh mix at the difficulty you choose.' },
+    { id : 'paper', icon : FiFileText, tone : 'brown', title : 'Past paper', text : 'Sit a whole paper exactly as it was set.' },
+    { id : 'challenge', icon : FiZap, tone : 'yellow', title : 'Challenge', text : 'Five questions, ranked against everyone.' },
 ]
+
+const perQuestion = (seconds : number) => seconds < 90 ? `${Math.round(seconds)}s` : `${Math.floor(seconds / 60)}m${Math.round(seconds % 60) ? ` ${Math.round(seconds % 60)}s` : ''}`
 
 const counts = [5, 10, 20, 30]
 const durations = [10, 20, 30, 45]
@@ -87,119 +87,125 @@ const TestConfig = () => {
     return (
         <kit.Page>
             <kit.PageInner className='gap-10'>
-                <div className='flex flex-col gap-2'>
-                    <kit.Eyebrow>Test</kit.Eyebrow>
-                    <kit.PageTitle>Set up a test</kit.PageTitle>
+                <header className='flex flex-col gap-2 pt-2'>
+                    <kit.PageTitle>Tests</kit.PageTitle>
                     <kit.Body>Pick a course and the rules. The clock starts when you press Start.</kit.Body>
-                </div>
+                </header>
 
                 <testConfigStyle.Layout>
-                    <div className='flex flex-col gap-8 min-w-0'>
-                        <div className='grid grid-cols-1 sm:grid-cols-3 gap-3'>
+                    <div className='flex flex-col gap-6 min-w-0'>
+                        <div className='grid grid-cols-1 sm:grid-cols-3 gap-2' role='radiogroup' aria-label='Kind of test'>
                             {
                                 modes.map((mode) => (
-                                    <testConfigStyle.Mode 
+                                    <testConfigStyle.Mode
                                         key={mode.id}
                                         type='button'
+                                        role='radio'
                                         active={config.mode === mode.id}
                                         onClick={()=>chooseMode(mode.id)}
-                                        aria-pressed={config.mode === mode.id}
+                                        aria-checked={config.mode === mode.id}
                                     >
-                                        <kit.IconTile><mode.icon size={17}/></kit.IconTile>
-                                        <span className='text-[15px] font-bold text-ink pt-1'>{mode.title}</span>
-                                        <span className='text-[13px] leading-[1.5] text-muted'>{mode.text}</span>
+                                        <kit.IconTile tone={mode.tone as kit.Tone} className='!w-8 !h-8'><mode.icon size={15}/></kit.IconTile>
+                                        <span className='text-[14px] font-medium text-ink pt-1'>{mode.title}</span>
+                                        <span className='text-[13px] leading-[1.45] text-ink-3'>{mode.text}</span>
                                     </testConfigStyle.Mode>
                                 ))
                             }
                         </div>
 
-                        <testConfigStyle.Field>
-                            <testConfigStyle.FieldLabel>Course</testConfigStyle.FieldLabel>
-                            <div className='flex flex-wrap gap-2'>
-                                {
-                                    courses.map((item) => (
-                                        <kit.FilterChip key={item.id} type='button' active={config.courseID === item.id} onClick={()=>update({ courseID : item.id })}>
-                                            <span className='w-[8px] h-[8px] rounded-[3px]' style={{ background : item.color }}/>
-                                            {item.name}
-                                        </kit.FilterChip>
-                                    ))
-                                }
-                            </div>
-                        </testConfigStyle.Field>
-
-                        <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                        <div className='flex flex-col rounded-lg border border-line px-4'>
+                            <testConfigStyle.Field>
+                                <testConfigStyle.FieldLabel>Course</testConfigStyle.FieldLabel>
+                                <div className='flex flex-wrap gap-[6px]'>
+                                    {
+                                        courses.map((item) => (
+                                            <kit.FilterChip key={item.id} type='button' className='!pl-[5px]' active={config.courseID === item.id} aria-pressed={config.courseID === item.id} onClick={()=>update({ courseID : item.id })}>
+                                                <CourseIcon course={item} size={20}/>
+                                                {item.name}
+                                            </kit.FilterChip>
+                                        ))
+                                    }
+                                </div>
+                            </testConfigStyle.Field>
                             {
                                 isPaper ?
                                 <testConfigStyle.Field>
                                     <testConfigStyle.FieldLabel>Paper</testConfigStyle.FieldLabel>
-                                    <SegmentedControl aria-label='Paper year' value={year} onChange={(value)=>update({ year : value })} options={years}/>
+                                    <div><SegmentedControl aria-label='Paper year' value={year} onChange={(value)=>update({ year : value })} options={years}/></div>
                                 </testConfigStyle.Field>
                                 :
                                 <testConfigStyle.Field>
                                     <testConfigStyle.FieldLabel>Questions</testConfigStyle.FieldLabel>
                                     {
-                                        isChallenge ? <span className='text-[14px] text-muted h-[38px] flex items-center'>5 questions, fixed for challenges</span>
-                                        : <SegmentedControl aria-label='Questions' value={config.count} onChange={(count)=>update({ count })} options={counts}/>
+                                        isChallenge ? <span className='text-[14px] text-ink-2'>5, fixed for challenges</span>
+                                        : <div><SegmentedControl aria-label='Questions' value={config.count} onChange={(count)=>update({ count })} options={counts}/></div>
                                     }
                                 </testConfigStyle.Field>
                             }
                             <testConfigStyle.Field>
                                 <testConfigStyle.FieldLabel>Time limit</testConfigStyle.FieldLabel>
                                 {
-                                    isChallenge ? <span className='text-[14px] text-muted h-[38px] flex items-center'>10 minutes</span>
-                                    : <SegmentedControl aria-label='Time limit' value={config.minutes} onChange={(minutes)=>update({ minutes })} options={durations.map((minutes) => ({ value : minutes, label : `${minutes} min` }))}/>
+                                    isChallenge ? <span className='text-[14px] text-ink-2'>10 minutes</span>
+                                    : <div><SegmentedControl aria-label='Time limit' value={config.minutes} onChange={(minutes)=>update({ minutes })} options={durations.map((minutes) => ({ value : minutes, label : `${minutes} min` }))}/></div>
                                 }
                             </testConfigStyle.Field>
                             {
                                 !isPaper && !isChallenge &&
                                 <testConfigStyle.Field>
                                     <testConfigStyle.FieldLabel>Difficulty</testConfigStyle.FieldLabel>
-                                    <SegmentedControl aria-label='Difficulty' value={config.difficulty} onChange={(difficulty)=>update({ difficulty })} options={difficulties}/>
+                                    <div><SegmentedControl aria-label='Difficulty' value={config.difficulty} onChange={(difficulty)=>update({ difficulty })} options={difficulties}/></div>
                                 </testConfigStyle.Field>
                             }
                             <testConfigStyle.Field>
                                 <testConfigStyle.FieldLabel>Feedback</testConfigStyle.FieldLabel>
-                                <label className='flex items-center gap-3 text-[14px] text-muted h-[38px]'>
-                                    <Switch size='small' checked={config.instantFeedback} onChange={(instantFeedback)=>update({ instantFeedback })}/>
-                                    Show if each answer is right as I go
+                                <label className='flex items-center gap-3 text-[14px] text-ink-2 cursor-pointer'>
+                                    <Switch size='small' checked={config.instantFeedback} disabled={isChallenge} onChange={(instantFeedback)=>update({ instantFeedback })}/>
+                                    Show whether each answer is right as I go
                                 </label>
                             </testConfigStyle.Field>
                         </div>
                     </div>
 
                     <testConfigStyle.Summary>
-                        <div className='flex flex-col gap-1'>
-                            <kit.Eyebrow>Summary</kit.Eyebrow>
-                            <kit.Title>{course.name}</kit.Title>
+                        <div className='flex items-center gap-3'>
+                            <CourseIcon course={course} size={36}/>
+                            <div className='flex flex-col min-w-0'>
+                                <span className='text-[15px] font-medium text-ink truncate'>{course.name}</span>
+                                <span className='text-[12px] text-ink-3'>{modes.find((mode) => mode.id === config.mode)?.title}{isPaper && year ? ` · ${year}` : ''}</span>
+                            </div>
                         </div>
-                        <div className='flex flex-col gap-3'>
-                            <testConfigStyle.SummaryRow>Mode <b>{modes.find((mode) => mode.id === config.mode)?.title}</b></testConfigStyle.SummaryRow>
-                            {isPaper && <testConfigStyle.SummaryRow>Paper <b>{year}</b></testConfigStyle.SummaryRow>}
-                            <testConfigStyle.SummaryRow>Questions <b className='tabular-nums'>{inCourse ? asked : '–'}</b></testConfigStyle.SummaryRow>
-                            <testConfigStyle.SummaryRow>Time limit <b>{config.minutes} minutes</b></testConfigStyle.SummaryRow>
-                            {!isPaper && <testConfigStyle.SummaryRow>Difficulty <b>{config.difficulty}</b></testConfigStyle.SummaryRow>}
-                            {
-                                inCourse && !isPaper && asked < config.count &&
-                                <span className='text-[12px] leading-[1.5] text-[#b5651d] bg-[#fff6ec] rounded-[8px] px-3 py-2'>
-                                    Only {asked} {config.difficulty === 'Mixed' ? '' : `${config.difficulty.toLowerCase()} `}question{asked === 1 ? ' is' : 's are'} available for {course.name}, so the test will use {asked === 1 ? 'it' : 'all of them'}.
-                                </span>
-                            }
+                        <div className='grid grid-cols-3 rounded-md bg-subtle py-3'>
+                            {[
+                                { label : 'Questions', value : inCourse ? asked : '–' },
+                                { label : 'Minutes', value : config.minutes },
+                                { label : 'Per question', value : inCourse && asked ? perQuestion(config.minutes * 60 / asked) : '–' },
+                            ].map((item, index) => (
+                                <div key={item.label} className={`flex flex-col items-center gap-[2px] ${index ? 'border-l border-line' : ''}`}>
+                                    <span className='text-[20px] font-semibold tracking-[-0.03em] text-ink tabular-nums'>{item.value}</span>
+                                    <span className='text-[11px] text-ink-3'>{item.label}</span>
+                                </div>
+                            ))}
                         </div>
-                        <span className='conic-border w-full'>
-                            <kit.DarkButton type='button' className='w-full' disabled={!inCourse || available === 0} onClick={start}>
-                                Start test <FiArrowRight size={16}/>
-                            </kit.DarkButton>
-                        </span>
-                        <span className='flex items-center gap-2 text-[12px] text-ash'>
-                            <FiClock size={12}/> You can flag questions and come back to them before submitting.
+                        {
+                            inCourse && !isPaper && asked < config.count &&
+                            <span className='flex gap-2 text-[12px] leading-[1.5] text-tag-orange bg-tag-orange-bg rounded-md px-3 py-2'>
+                                <FiAlertCircle size={14} className='shrink-0 mt-[1px]'/>
+                                <span>Only {asked} {config.difficulty === 'Mixed' ? '' : `${config.difficulty.toLowerCase()} `}question{asked === 1 ? ' is' : 's are'} available for {course.name}, so the test uses {asked === 1 ? 'it' : 'all of them'}.</span>
+                            </span>
+                        }
+                        <kit.PrimaryButton type='button' className='w-full !h-10' disabled={!inCourse || available === 0} onClick={start}>
+                            Start test <FiArrowRight size={15}/>
+                        </kit.PrimaryButton>
+                        <span className='flex items-start gap-2 text-[12px] leading-[1.5] text-ink-3'>
+                            <FiFlag size={12} className='mt-[3px] shrink-0'/> Flag questions and come back to them before you submit.
                         </span>
                     </testConfigStyle.Summary>
                 </testConfigStyle.Layout>
 
-                <div className='flex flex-col gap-4'>
-                    <kit.Title>Test history</kit.Title>
+                <section className='flex flex-col gap-3'>
+                    <kit.Title>History</kit.Title>
                     <TestHistory/>
-                </div>
+                </section>
             </kit.PageInner>
         </kit.Page>
     )

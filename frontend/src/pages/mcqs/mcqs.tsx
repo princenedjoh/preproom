@@ -3,9 +3,11 @@ import { Interweave } from 'interweave'
 import * as mcqsStyle from './mcqs.style'
 import * as kit from '../../styles/kit'
 import { Question } from '../../data/sample'
-import { progress, useProgress } from '../../store/progress'
+import { progress, useProgress, relativeDay } from '../../store/progress'
+import { api } from '../../api/client'
+import { useRemote } from '../../api/useRemote'
 import { notify } from '../../utils/notify'
-import { FiBookmark, FiFlag, FiChevronDown, FiChevronUp, FiRotateCcw, FiMessageCircle } from "react-icons/fi";
+import { FiBookmark, FiFlag, FiChevronDown, FiChevronUp, FiRotateCcw, FiMessageCircle, FiCheck, FiX } from "react-icons/fi";
 import { useNavigate } from 'react-router-dom'
 import { useSession } from '../../store/session'
 import { catalogSource } from '../../data/catalog'
@@ -14,7 +16,11 @@ import Thread from '../../components/questionExtras/thread'
 
 export const alphabets = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]
 
-const difficultyStatus = { Easy : 'done', Medium : 'progress', Hard : 'review' } as const
+// Difficulty as coloured text, not a pill: it is metadata, not a status
+export const difficultyClass = { Easy : 'text-easy', Medium : 'text-medium', Hard : 'text-hard' } as const
+export const difficultyShort = { Easy : 'Easy', Medium : 'Med.', Hard : 'Hard' } as const
+
+interface Stats { attempts : number, correctRate : number, options : number[] }
 
 // 1–4 or A–D pick an option
 export const optionFromKey = (key : string, count : number) => {
@@ -54,6 +60,14 @@ const QuestionCard = ({ question, number, revealAll } : CardProps) => {
   const chosen = attempt?.choice ?? null
   const answered = chosen !== null
   const revealed = answered || showAnswer
+
+  // How everyone else answered (UWorld-style); hidden until the API provides it
+  // The API only reveals them once you've answered (pick shares would give the answer away)
+  const embedded = question.stats
+  const fetched = useRemote<Stats>(answered && signedIn && online && !embedded ? `qstats:${question.id}:${attempt?.at}` : null,
+    () => api.get(`/questions/${question.id}/stats`).then((r) => r.data)).data
+  const stats = answered ? (fetched ?? embedded) : undefined
+  const shareOf = (index : number) => stats && stats.attempts >= 5 && stats.options?.[index] !== undefined ? Math.round(stats.options[index] * 100) : null
 
   const optionState = (index : number) : mcqsStyle.OptionState => {
     if(!revealed) return 'idle'
@@ -121,60 +135,67 @@ const QuestionCard = ({ question, number, revealAll } : CardProps) => {
     >
       <mcqsStyle.Meta>
         <mcqsStyle.Number>Q{number}</mcqsStyle.Number>
-        <kit.StatusPill status={difficultyStatus[question.difficulty]}>{question.difficulty}</kit.StatusPill>
-        <span>{question.topic}</span>
-        <span>·</span>
-        <span>{question.year}</span>
-        {
-          answered &&
-          <span className={`ml-auto font-semibold ${attempt.correct ? 'text-brand-emerald' : 'text-[#f0457a]'}`}>
-            {attempt.correct ? 'Correct' : 'Missed'}
-          </span>
-        }
+        <span className='text-ink-4'>·</span>
+        <span className='text-ink-2'>{question.topic}</span>
+        <span className='text-ink-4'>·</span>
+        <span className='tabular-nums'>{question.year}</span>
+        {question.institution && <><span className='text-ink-4'>·</span><span>{question.institution}</span></>}
+        <span className={`ml-auto font-medium ${difficultyClass[question.difficulty]}`}>{question.difficulty}</span>
       </mcqsStyle.Meta>
       <mcqsStyle.Prompt>
         <Interweave content={question.question}/>
       </mcqsStyle.Prompt>
-      <mcqsStyle.Options>
+      <mcqsStyle.Options role='group' aria-label='Options'>
         {
-          question.options.map((option, index : number)=>(
-            <mcqsStyle.Option
-              key={index}
-              type='button'
-              tabIndex={revealed ? -1 : 0}
-              state={optionState(index)}
-              onClick={()=>choose(index)}
-              aria-pressed={chosen === index}
-            >
-              <mcqsStyle.OptionKey state={optionState(index)}>
-                {alphabets[index].toUpperCase()}
-              </mcqsStyle.OptionKey>
-              <Interweave content={option}/>
-            </mcqsStyle.Option>
-          ))
+          question.options.map((option, index : number)=>{
+            const state = optionState(index)
+            const share = revealed ? shareOf(index) : null
+            return (
+              <mcqsStyle.Option
+                key={index}
+                type='button'
+                tabIndex={revealed ? -1 : 0}
+                state={state}
+                onClick={()=>choose(index)}
+                aria-pressed={chosen === index}
+                aria-label={`${alphabets[index].toUpperCase()}: ${option.replace(/<[^>]+>/g, '')}${state === 'correct' ? ' (correct answer)' : state === 'wrong' ? ' (your answer, wrong)' : ''}`}
+              >
+                <mcqsStyle.OptionKey state={state}>
+                  {alphabets[index].toUpperCase()}
+                </mcqsStyle.OptionKey>
+                <span className='flex-1 min-w-0'><Interweave content={option}/></span>
+                {share !== null && <span className='text-[12px] text-ink-3 tabular-nums shrink-0'>{share}%</span>}
+                {state === 'correct' && <FiCheck className='mark text-tag-green' size={16} strokeWidth={2.5}/>}
+                {state === 'wrong' && <FiX className='mark text-tag-red' size={16} strokeWidth={2.5}/>}
+              </mcqsStyle.Option>
+            )
+          })
         }
       </mcqsStyle.Options>
       {
         revealed &&
-        <mcqsStyle.Explanation aria-live='polite'>
-          <span>
-            <b>
-              {
-                !answered ? 'Answer: '
-                  : chosen === question.answer ? 'Correct. ' : 'Not quite. '
-              }
-            </b>
-            The answer is {alphabets[question.answer].toUpperCase()}, <Interweave content={question.options[question.answer]}/>.
-          </span>
-          {question.explanation && <Interweave content={question.explanation}/>}
-        </mcqsStyle.Explanation>
+        <div className='flex flex-col gap-3' aria-live='polite'>
+          <mcqsStyle.Verdict correct={answered ? attempt.correct : null}>
+            <b>{!answered ? 'Answer shown' : attempt.correct ? 'Correct' : 'Incorrect'}</b>
+            <span>Answer <strong>{alphabets[question.answer].toUpperCase()}</strong>{answered && !attempt.correct ? <> · you picked <strong>{alphabets[chosen].toUpperCase()}</strong></> : null}</span>
+            {stats && stats.attempts >= 5 && <span><strong className='tabular-nums'>{Math.round(stats.correctRate * 100)}%</strong> of students got this right</span>}
+            {answered && attempt.at && <span className='ml-auto'>{relativeDay(attempt.at)}</span>}
+          </mcqsStyle.Verdict>
+          {
+            question.explanation &&
+            <mcqsStyle.Explanation>
+              <span className='label'>Explanation</span>
+              <Interweave content={question.explanation}/>
+            </mcqsStyle.Explanation>
+          }
+        </div>
       }
       <mcqsStyle.Footer>
-        <div className='flex items-center gap-1 -ml-3'>
+        <div className='flex items-center gap-[2px] -ml-2'>
           {
             online &&
             <mcqsStyle.Action type='button' active={discussing} onClick={()=>setDiscussing(!discussing)} aria-expanded={discussing}>
-              <FiMessageCircle size={14}/> {discussions > 0 ? discussions : ''} <span className='hidden sm:inline'>{discussions === 1 ? 'Comment' : 'Comments'}</span>
+              <FiMessageCircle size={14}/> {discussions > 0 ? <span className='tabular-nums'>{discussions}</span> : null} <span className='hidden sm:inline'>{discussions === 1 ? 'Comment' : 'Discuss'}</span>
             </mcqsStyle.Action>
           }
           <mcqsStyle.Action type='button' active={saved} onClick={toggleSave} aria-pressed={saved}>
@@ -185,7 +206,7 @@ const QuestionCard = ({ question, number, revealAll } : CardProps) => {
           </mcqsStyle.Action>
           {
             focused &&
-            <span className='hidden lg:inline-flex items-center gap-1 ml-2 text-[12px] text-ash'>
+            <span className='hidden lg:inline-flex items-center gap-1 ml-3 text-[12px] text-ink-3'>
               <kit.Kbd>1</kit.Kbd>–<kit.Kbd>{question.options.length}</kit.Kbd> answer · <kit.Kbd>S</kit.Kbd> save
               {answered && <> · <kit.Kbd>R</kit.Kbd> retry</>}
             </span>

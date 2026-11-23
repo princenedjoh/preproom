@@ -1,7 +1,9 @@
 import { Routes, Route } from "react-router-dom"
 import SignUp from "../pages/signUp/signUp"
 import Home from "../pages/home/home"
-import TopBar from "../components/top bar/topBar"
+import AppShell from "../components/shell/appShell"
+import SiteShell from "../components/shell/siteShell"
+import FocusShell from "../components/shell/focusShell"
 import About from "../pages/about/about"
 import Questions from "../pages/questions/questions"
 import Login from "../pages/login/login"
@@ -105,18 +107,27 @@ export const navRoutes = [
     },
 ]
 
+// Which frame a route lives in: the app (sidebar), the site (marketing bar), or focus (test in progress)
+const appPaths = ['/today', '/questions', '/questions/:courseID', '/challenges', '/test/testconfig', '/test/results', '/notification', '/profile']
+const all = [...navRoutes, ...pageRoutes]
+const appRoutes = all.filter((route) => appPaths.includes(route.path))
+const siteRoutes = all.filter((route) => !appPaths.includes(route.path) && route.path !== '/test/session')
+
 const Router = () => {
     return(
         <Routes>
-            <Route path={'/'} element={<TopBar />}>
-                {
-                    [...navRoutes, ...pageRoutes, ...authRoutes].map((path, index : number)=>{
-                        return(
-                            <Route key={index} path={path.path} element={<path.route />} />
-                        )
-                    })
-                }
+            <Route element={<AppShell />}>
+                {appRoutes.map((route) => <Route key={route.path} path={route.path} element={<route.route />} />)}
+            </Route>
+            <Route element={<FocusShell />}>
+                <Route path='/test/session' element={<Session />} />
+            </Route>
+            <Route element={<SiteShell />}>
+                {siteRoutes.map((route) => <Route key={route.path} path={route.path} element={<route.route />} />)}
                 <Route path='*' element={<NotFound />} />
+            </Route>
+            <Route element={<SiteShell bare />}>
+                {authRoutes.map((route) => <Route key={route.path} path={route.path} element={<route.route />} />)}
             </Route>
         </Routes>
     )

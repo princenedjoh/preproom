@@ -26,6 +26,7 @@ export interface Question {
     discussions : number
     saves : number
     institution? : string | null
+    stats? : { attempts : number, correctRate : number, options : number[] }   // from the API, once you've answered
 }
 
 export const questions : Question[] = [

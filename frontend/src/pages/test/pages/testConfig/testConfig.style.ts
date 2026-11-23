@@ -1,58 +1,60 @@
 import styled from "styled-components";
 import { pressable } from "../../../../styles/kit";
+import { color } from "../../../../styles/theme";
 
 export const Layout = styled.div.attrs({
-   className : ` Layout grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start` as string
+   className : `Layout grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start` as string
 })``
 
 export const Mode = styled.button.attrs({
-   className : ` Mode flex flex-col items-start gap-2 rounded-[12px] p-5 text-left w-full` as string
+   className : `Mode flex flex-col items-start gap-2 rounded-lg p-4 text-left w-full` as string
 })<{active? : boolean}>`
-   background : ${({theme}) => theme.colors.background.light.white};
-   border : ${({theme, active}) => `1px solid ${active ? theme.colors.main.primary : theme.colors.border.light.primary}`};
-   box-shadow : ${({theme, active}) => active ? `inset 0 0 0 1px ${theme.colors.main.primary}` : 'none'};
+   background : ${({active}) => active ? color.accentTint : color.surface};
+   border : 1px solid ${({active}) => active ? color.alpha('accent', 0.45) : color.line};
    ${pressable}
    &:active:not(:disabled) { transform : scale(0.985); }
    @media (hover : hover) and (pointer : fine) {
-      &:hover { border-color : ${({theme, active}) => active ? theme.colors.main.primary : theme.colors2.gray.gray5}; }
+      &:hover { border-color : ${({active}) => active ? color.alpha('accent', 0.6) : color.lineStrong}; }
    }
 `
 
+// Settings read as a property list: label on the left, control on the right
 export const Field = styled.div.attrs({
-   className : ` Field flex flex-col items-start gap-2` as string
-})``
+   className : `Field grid grid-cols-1 sm:grid-cols-[140px_minmax(0,1fr)] items-start sm:items-center gap-2 sm:gap-4 py-3` as string
+})`
+   & + & { border-top : 1px solid ${color.line}; }
+`
 
 export const FieldLabel = styled.span.attrs({
-   className : ` FieldLabel text-[13px] font-semibold` as string
+   className : `FieldLabel text-[14px]` as string
 })`
-   color : ${({theme}) => theme.colors.main.primary};
+   color : ${color.ink3};
 `
 
 export const Summary = styled.div.attrs({
-   className : ` Summary rounded-[12px] p-6 flex flex-col gap-5 lg:sticky lg:top-[88px]` as string
+   className : `Summary rounded-lg p-5 flex flex-col gap-5 lg:sticky lg:top-6` as string
 })`
-   background : ${({theme}) => theme.colors.background.light.primary};
-   border : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
+   background : ${color.surface};
+   border : 1px solid ${color.line};
 `
 
 export const SummaryRow = styled.div.attrs({
-   className : ` SummaryRow flex items-center justify-between text-[14px]` as string
+   className : `SummaryRow flex items-center justify-between text-[14px]` as string
 })`
-   color : ${({theme}) => theme.colors2.gray.gray3};
-   b { color : ${({theme}) => theme.colors.main.primary}; font-weight : 600; }
+   color : ${color.ink3};
+   b { color : ${color.ink}; font-weight : 500; }
 `
 
 export const Table = styled.div.attrs({
-   className : ` Table w-full rounded-[12px] overflow-hidden` as string
+   className : `Table w-full rounded-lg overflow-hidden` as string
 })`
-   border : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
+   border : 1px solid ${color.line};
 `
 
 export const TableRow = styled.div.attrs({
-   className : ` TableRow grid grid-cols-[1fr_auto] md:grid-cols-[1.6fr_1fr_0.8fr_0.8fr_auto] items-center gap-4 px-5 py-4 text-[14px]` as string
+   className : `TableRow grid grid-cols-[1fr_auto] md:grid-cols-[1.6fr_1fr_0.8fr_0.8fr_auto] items-center gap-4 px-4 py-3 text-[14px]` as string
 })<{head? : boolean}>`
-   color : ${({theme, head}) => head ? theme.colors2.gray.gray4 : theme.colors.main.primary};
-   background : ${({theme, head}) => head ? theme.colors.background.light.primary : theme.colors.background.light.white};
+   color : ${({head}) => head ? color.ink3 : color.ink};
    font-size : ${({head}) => head ? '12px' : '14px'};
-   & + & { border-top : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`}; }
+   & + & { border-top : 1px solid ${color.line}; }
 `

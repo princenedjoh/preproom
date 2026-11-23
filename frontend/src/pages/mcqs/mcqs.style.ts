@@ -1,116 +1,121 @@
 import styled, { keyframes } from "styled-components";
 import { pressable } from "../../styles/kit";
+import { color } from "../../styles/theme";
 
 const reveal = keyframes`
-    from { opacity : 0; transform : translateY(-4px); }
+    from { opacity : 0; transform : translateY(-3px); }
     to { opacity : 1; transform : translateY(0); }
 `
 
-
+// A question reads like a printed exam paper: serif prompt, lettered options in one column,
+// and the verdict shown as marks and a slim strip rather than colour-filled cards.
 export const Card = styled.article.attrs({
-    className : ` Card rounded-[12px] p-5 md:p-6 flex flex-col gap-4` as string
+    className : `Card rounded-lg px-5 pt-5 pb-3 md:px-7 md:pt-6 flex flex-col gap-5` as string
 })`
-    background : ${({theme}) => theme.colors.background.light.white};
-    border : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
-    transition : border-color ${({theme}) => theme.motion.hover} ease, box-shadow ${({theme}) => theme.motion.hover} ease;
+    background : ${color.surface};
+    border : 1px solid ${color.line};
+    transition : border-color 120ms ease, box-shadow 120ms ease;
     outline : none;
-    scroll-margin-top : 96px;
-    @media (hover : hover) and (pointer : fine) {
-        &:hover { border-color : ${({theme}) => theme.colors2.gray.gray5}; }
-    }
+    scroll-margin-top : 72px;
     &:focus-visible, &[data-focused='true'] {
-        border-color : ${({theme}) => theme.colors2.gray.gray4};
-        box-shadow : 0 0 0 4px rgba(0, 0, 0, 0.04);
+        border-color : ${color.alpha('accent', 0.45)};
+        box-shadow : 0 0 0 3px ${color.alpha('accent', 0.12)};
     }
 `
 
 export const Meta = styled.div.attrs({
-    className : ` Meta flex flex-wrap items-center gap-2 text-[12px]` as string
+    className : `Meta flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px]` as string
 })`
-    color : ${({theme}) => theme.colors2.gray.gray4};
+    color : ${color.ink3};
 `
 
 export const Number = styled.span.attrs({
-    className : ` Number text-[12px] mr-1` as string
+    className : `Number text-[12px] font-medium` as string
 })`
-    font-family : ${({theme}) => theme.fonts.mono};
-    color : ${({theme}) => theme.colors2.gray.gray4};
+    font-family : var(--font-mono);
+    color : ${color.ink3};
 `
 
 export const Prompt = styled.div.attrs({
-    className : ` Prompt text-[16px] md:text-[17px] leading-[1.5] font-semibold` as string
+    className : `Prompt text-[18px] md:text-[19px] leading-[1.55]` as string
 })`
-    letter-spacing : -0.01em;
-    color : ${({theme}) => theme.colors.main.primary};
+    font-family : var(--font-serif);
+    font-optical-sizing : auto;
+    font-weight : 450;
+    color : ${color.ink};
+    text-wrap : pretty;
+    sup, sub { line-height : 0; }
 `
 
 export const Options = styled.div.attrs({
-    className : ` Options grid grid-cols-1 sm:grid-cols-2 gap-2` as string
+    className : `Options flex flex-col gap-[6px]` as string
 })``
 
 export type OptionState = 'idle' | 'correct' | 'wrong' | 'muted'
 
 export const Option = styled.button.attrs({
-    className : ` Option flex items-center gap-3 rounded-[9px] px-3 py-[10px] text-left text-[14px]` as string
+    className : `Option group/option flex items-center gap-3 rounded-md pl-2 pr-3 min-h-[44px] py-2 text-left text-[15px] leading-[1.45]` as string
 })<{state : OptionState}>`
-    color : ${({theme, state}) => state === 'muted' ? theme.colors2.gray.gray4 : theme.colors.main.primary};
-    background : ${({theme, state}) => ({
-        idle : theme.colors.background.light.white,
-        correct : theme.colors2.green.green5,
-        wrong : theme.colors2.red.red5,
-        muted : theme.colors.background.light.primary,
-    })[state]};
-    border : ${({theme, state}) => `1px solid ${({
-        idle : theme.colors.border.light.primary,
-        correct : theme.colors2.brand.mint,
-        wrong : theme.colors2.red.red4,
-        muted : theme.colors.border.light.primary,
-    })[state]}`};
+    color : ${({state}) => state === 'muted' ? color.ink3 : color.ink};
+    background : ${({state}) => state === 'correct' ? color.alpha('tag-green-bg', 0.55) : state === 'wrong' ? color.alpha('tag-red-bg', 0.55) : 'transparent'};
+    border : 1px solid ${({state}) => state === 'correct' ? color.alpha('tag-green', 0.35) : state === 'wrong' ? color.alpha('tag-red', 0.35) : color.line};
     cursor : ${({state}) => state === 'idle' ? 'pointer' : 'default'};
     ${pressable}
-    &:active:not(:disabled) { transform : ${({state}) => state === 'idle' ? 'scale(0.98)' : 'none'}; }
+    &:active:not(:disabled) { transform : ${({state}) => state === 'idle' ? 'scale(0.99)' : 'none'}; }
     @media (hover : hover) and (pointer : fine) {
         &:hover {
-            border-color : ${({theme, state}) => state === 'idle' ? theme.colors2.gray.gray5 : undefined};
-            background : ${({theme, state}) => state === 'idle' ? theme.colors.background.light.primary : undefined};
+            background : ${({state}) => state === 'idle' ? color.hover : undefined};
+            border-color : ${({state}) => state === 'idle' ? color.lineStrong : undefined};
         }
     }
+    .mark { margin-left : auto; flex-shrink : 0; }
 `
 
 export const OptionKey = styled.span.attrs({
-    className : ` OptionKey w-[24px] h-[24px] rounded-full inline-flex items-center justify-center text-[11px] font-bold shrink-0` as string
+    className : `OptionKey w-[26px] h-[26px] rounded-[6px] inline-flex items-center justify-center text-[12px] font-medium shrink-0` as string
 })<{state : OptionState}>`
-    color : ${({theme, state}) => state === 'correct' || state === 'wrong' ? theme.colors.text.light.white : theme.colors2.gray.gray3};
-    background : ${({theme, state}) => state === 'correct' ? theme.colors2.brand.emerald
-        : state === 'wrong' ? theme.colors2.red.red3 : theme.colors.background.light.white};
-    border : ${({theme, state}) => state === 'correct' || state === 'wrong' ? 'none' : `1px solid ${theme.colors.border.light.primary}`};
-    font-family : ${({theme}) => theme.fonts.mono};
-    transition : background ${({theme}) => theme.motion.hover} ease, color ${({theme}) => theme.motion.hover} ease;
+    font-family : var(--font-mono);
+    color : ${({state}) => state === 'correct' ? color.tag.green : state === 'wrong' ? color.tag.red : color.ink3};
+    background : ${({state}) => state === 'correct' || state === 'wrong' ? color.surface : color.subtle};
+    transition : background 120ms ease, color 120ms ease;
+`
+
+export const Verdict = styled.div.attrs({
+    className : `Verdict flex flex-wrap items-center gap-x-5 gap-y-1 pl-3 py-[2px] text-[13px]` as string
+})<{correct : boolean | null}>`
+    border-left : 2px solid ${({correct}) => correct === null ? color.ink4 : correct ? color.tag.green : color.tag.red};
+    color : ${color.ink3};
+    animation : ${reveal} 200ms var(--ease-out);
+    b { font-weight : 600; color : ${({correct}) => correct === null ? color.ink : correct ? color.tag.green : color.tag.red}; font-size : 14px; }
+    strong { font-weight : 600; color : ${color.ink}; }
+    @media (prefers-reduced-motion : reduce) { animation : none; }
 `
 
 export const Explanation = styled.div.attrs({
-    className : ` Explanation rounded-[9px] p-4 flex flex-col gap-1 text-[14px] leading-[1.55]` as string
+    className : `Explanation rounded-md px-4 py-3 flex flex-col gap-1 text-[14px] leading-[1.6]` as string
 })`
-    color : ${({theme}) => theme.colors2.gray.gray3};
-    background : ${({theme}) => theme.colors.background.light.primary};
-    b { color : ${({theme}) => theme.colors.main.primary}; }
-    animation : ${reveal} 220ms ${({theme}) => theme.motion.easeOut};
+    color : ${color.ink2};
+    background : ${color.subtle};
+    animation : ${reveal} 200ms var(--ease-out);
+    .label { font-size : 12px; font-weight : 500; color : ${color.ink3}; }
     @media (prefers-reduced-motion : reduce) { animation : none; }
 `
 
 export const Footer = styled.div.attrs({
-    className : ` Footer flex flex-wrap items-center justify-between gap-2 pt-1` as string
-})``
+    className : `Footer flex flex-wrap items-center justify-between gap-2 border-t pt-2` as string
+})`
+    border-color : ${color.line};
+`
 
 export const Action = styled.button.attrs({
-    className : ` Action inline-flex items-center gap-[6px] rounded-full px-3 py-[6px] text-[13px] font-semibold` as string
+    className : `Action inline-flex items-center gap-[6px] rounded-md px-2 h-8 text-[13px] font-medium` as string
 })<{active? : boolean}>`
-    color : ${({theme, active}) => active ? theme.colors2.brand.violet : theme.colors2.gray.gray3};
+    color : ${({active}) => active ? color.accent : color.ink3};
     ${pressable}
     @media (hover : hover) and (pointer : fine) {
         &:hover:not(:disabled) {
-            color : ${({theme, active}) => active ? theme.colors2.brand.violet : theme.colors.main.primary};
-            background : rgba(0, 0, 0, 0.04);
+            color : ${({active}) => active ? color.accent : color.ink};
+            background : ${color.hover};
         }
     }
 `
