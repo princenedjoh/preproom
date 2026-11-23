@@ -16,6 +16,7 @@ import Legal from "../pages/legal/legal"
 import Contact from "../pages/contact/contact"
 import NotFound from "../pages/notFound/notFound"
 import Today from "../pages/today/today"
+import ResetPassword from "../pages/resetPassword/resetPassword"
 
 const authRoutes = [
     {
@@ -29,6 +30,10 @@ const authRoutes = [
     {
         path : '/auth/forgot',
         route : ForgotPassword
+    },
+    {
+        path : '/auth/reset',
+        route : ResetPassword
     }
 ]
 

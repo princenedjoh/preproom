@@ -1,9 +1,10 @@
 import { useNavigate } from 'react-router-dom'
 import * as kit from '../../styles/kit'
-import { courses, getCourse, getQuestion } from '../../data/sample'
-import { useProgress, summarize, courseProgress, weakTopics, challengeToday, dailyIndex } from '../../store/progress'
+import { getCourse, getQuestion, useCatalog } from '../../data/catalog'
+import { useProgress, summarize, courseProgress, weakTopics } from '../../store/progress'
+import { useChallengeView } from '../../store/challenge'
+import { startChallenge as beginChallenge } from '../pod/pod'
 import TestHistory from '../../components/testHistory/testHistory'
-import { TestConfigState } from '../test/pages/testConfig/testConfig'
 import { HiFire, HiTrophy } from 'react-icons/hi2'
 import { FiArrowRight, FiBookmark, FiRotateCcw, FiTarget, FiCheck } from 'react-icons/fi'
 
@@ -16,9 +17,10 @@ const greeting = () => {
 const Today = () => {
 
     const navigate = useNavigate()
+    const { courses } = useCatalog()
     const state = useProgress()
     const stats = summarize(state)
-    const firstName = state.profile.name.split(' ')[0]
+    const firstName = state.profile.name.trim().split(' ')[0]
 
     const attempts = Object.entries(state.attempts).sort((a, b) => b[1].at - a[1].at)
     const lastCourse = attempts.length ? getCourse(attempts[0][1].courseID) : null
@@ -28,13 +30,11 @@ const Today = () => {
     const savedCount = Object.keys(state.saved).length
     const weak = weakTopics(state).slice(0, 4)
 
-    const done = challengeToday(state)
-    const todayCourse = courses[dailyIndex(courses.length)]
-
-    const startChallenge = () => {
-        const config : TestConfigState = { courseID : todayCourse.id, mode : 'challenge', count : 5, minutes : 10, difficulty : 'Mixed', instantFeedback : false }
-        navigate('/test/session', { state : config })
-    }
+    const challenge = useChallengeView()
+    const done = challenge.result
+    const todayCourse = challenge.course
+    const streakCount = challenge.synced ? challenge.streak.current : stats.streak
+    const startChallenge = () => beginChallenge(navigate, todayCourse.id)
 
     const mistakesCourse = mistakes.length ? mistakes[0][1].courseID : null
 
@@ -43,7 +43,7 @@ const Today = () => {
             <kit.PageInner>
                 <div className='flex flex-col gap-2'>
                     <kit.Eyebrow>{new Date().toLocaleDateString(undefined, { weekday : 'long', month : 'long', day : 'numeric' })}</kit.Eyebrow>
-                    <kit.PageTitle>{greeting()}, {firstName}.</kit.PageTitle>
+                    <kit.PageTitle>{greeting()}{firstName ? `, ${firstName}` : ''}.</kit.PageTitle>
                     <kit.Body>
                         {
                             !attempts.length ? 'Pick a course to start. Every answer you give is saved here.'
@@ -110,7 +110,7 @@ const Today = () => {
                         <div className='flex items-center justify-between'>
                             <kit.PanelTitle><HiTrophy size={15}/> Daily challenge</kit.PanelTitle>
                             <span className='inline-flex items-center gap-1 text-[13px] font-semibold text-ink'>
-                                <HiFire size={15} className={stats.streak ? 'text-[#fd9a46]' : 'text-fog'}/> {stats.streak}
+                                <HiFire size={15} className={streakCount ? 'text-[#fd9a46]' : 'text-fog'}/> {streakCount}
                             </span>
                         </div>
                         {
@@ -118,11 +118,11 @@ const Today = () => {
                             <div className='flex flex-col gap-2'>
                                 <span className='inline-flex items-center gap-2 text-[13px] font-semibold text-brand-emerald'><FiCheck size={14}/> Done for today</span>
                                 <span className='font-display font-bold text-[40px] leading-none tracking-[-0.04em] text-onyx tabular-nums'>{done.score}/{done.total}</span>
-                                <span className='text-[13px] text-muted'>{done.score * 40} points this round. A new set lands at midnight.</span>
+                                <span className='text-[13px] text-muted'>{done.rank ? `Ranked #${done.rank} today. ` : ''}A new set lands at midnight.</span>
                             </div>
                             :
                             <div className='flex flex-col gap-2'>
-                                <span className='text-[13px] text-ash'>{todayCourse.code} · 5 questions · 10 min</span>
+                                <span className='text-[13px] text-ash'>{todayCourse.code} · {challenge.count} questions · {challenge.minutes} min</span>
                                 <span className='font-display font-bold text-[24px] leading-[1.2] tracking-[-0.03em] text-onyx'>{todayCourse.name}</span>
                                 <span className='text-[13px] text-muted'>Same five for everyone today. Ranked on the weekly board.</span>
                             </div>
@@ -131,7 +131,7 @@ const Today = () => {
                             done ?
                             <kit.GhostButton type='button' className='self-start' onClick={()=>navigate('/challenges')}>See leaderboard <FiArrowRight size={14}/></kit.GhostButton>
                             :
-                            <kit.DarkButton type='button' className='self-start' onClick={startChallenge}>Start challenge <FiArrowRight size={14}/></kit.DarkButton>
+                            <kit.DarkButton type='button' className='self-start' disabled={!challenge.ready} onClick={startChallenge}>{challenge.status === 'in_progress' ? 'Resume' : 'Start'} challenge <FiArrowRight size={14}/></kit.DarkButton>
                         }
                     </kit.Panel>
                 </div>

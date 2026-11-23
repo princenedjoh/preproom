@@ -5,7 +5,12 @@ import * as kit from '../../styles/kit'
 import { Question } from '../../data/sample'
 import { progress, useProgress } from '../../store/progress'
 import { notify } from '../../utils/notify'
-import { FiBookmark, FiFlag, FiChevronDown, FiChevronUp, FiRotateCcw } from "react-icons/fi";
+import { FiBookmark, FiFlag, FiChevronDown, FiChevronUp, FiRotateCcw, FiMessageCircle } from "react-icons/fi";
+import { useNavigate } from 'react-router-dom'
+import { useSession } from '../../store/session'
+import { catalogSource } from '../../data/catalog'
+import ReportDialog from '../../components/questionExtras/reportDialog'
+import Thread from '../../components/questionExtras/thread'
 
 export const alphabets = ["a","b","c","d","e","f","g","h","i","j","k","l","m","n","o","p","q","r","s","t","u","v","w","x","y","z"]
 
@@ -34,7 +39,13 @@ const QuestionCard = ({ question, number, revealAll } : CardProps) => {
 
   const [showAnswer, setShowAnswer] = useState(revealAll)
   const [reported, setReported] = useState(false)
+  const [reporting, setReporting] = useState(false)
+  const [discussing, setDiscussing] = useState(false)
+  const [discussions, setDiscussions] = useState(question.discussions)
   const [focused, setFocused] = useState(false)
+  const navigate = useNavigate()
+  const signedIn = useSession().status === 'user'
+  const online = catalogSource() === 'api'
 
   useEffect(()=>{
     setShowAnswer(revealAll)
@@ -73,8 +84,12 @@ const QuestionCard = ({ question, number, revealAll } : CardProps) => {
 
   const report = () => {
     if(reported) return
-    setReported(true)
-    notify("Thanks. We'll review this question.")
+    if(!signedIn){
+      notify('Log in to report a question')
+      navigate('/auth/login', { state : { from : window.location.pathname + window.location.search } })
+      return
+    }
+    setReporting(true)
   }
 
   const onKeyDown = (event : KeyboardEvent<HTMLElement>) => {
@@ -156,10 +171,16 @@ const QuestionCard = ({ question, number, revealAll } : CardProps) => {
       }
       <mcqsStyle.Footer>
         <div className='flex items-center gap-1 -ml-3'>
+          {
+            online &&
+            <mcqsStyle.Action type='button' active={discussing} onClick={()=>setDiscussing(!discussing)} aria-expanded={discussing}>
+              <FiMessageCircle size={14}/> {discussions > 0 ? discussions : ''} <span className='hidden sm:inline'>{discussions === 1 ? 'Comment' : 'Comments'}</span>
+            </mcqsStyle.Action>
+          }
           <mcqsStyle.Action type='button' active={saved} onClick={toggleSave} aria-pressed={saved}>
             <FiBookmark size={14} fill={saved ? 'currentColor' : 'none'}/> {saved ? 'Saved' : 'Save'}
           </mcqsStyle.Action>
-          <mcqsStyle.Action type='button' active={reported} disabled={reported} onClick={report}>
+          <mcqsStyle.Action type='button' active={reported} disabled={reported || !online} onClick={report} className='hidden sm:inline-flex'>
             <FiFlag size={14} fill={reported ? 'currentColor' : 'none'}/> {reported ? 'Reported' : 'Report'}
           </mcqsStyle.Action>
           {
@@ -182,6 +203,8 @@ const QuestionCard = ({ question, number, revealAll } : CardProps) => {
           </mcqsStyle.Action>
         }
       </mcqsStyle.Footer>
+      {discussing && <Thread questionID={question.id} onCount={setDiscussions}/>}
+      {reporting && <ReportDialog question={question} open={reporting} onClose={()=>setReporting(false)} onReported={()=>setReported(true)}/>}
     </mcqsStyle.Card>
   )
 }

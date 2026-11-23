@@ -1,5 +1,8 @@
 import { notifications as seeded, Notification } from '../data/sample'
 import { ProgressState, useProgress, relativeDay, summarize, dayKey } from './progress'
+import { api } from '../api/client'
+import { useRemote } from '../api/useRemote'
+import { useSession } from './session'
 
 export type AppNotification = Notification & { route : string }
 
@@ -41,4 +44,27 @@ export const buildNotifications = (state : ProgressState) : AppNotification[] =>
     return [...streakNote, ...fromTests, ...sample]
 }
 
-export const useNotifications = () => buildNotifications(useProgress())
+const timeOf = (time : number) => relativeDay(time) === 'Today'
+    ? new Date(time).toLocaleTimeString([], { hour : 'numeric', minute : '2-digit' })
+    : relativeDay(time)
+
+export const useNotifications = () : AppNotification[] => {
+    const state = useProgress()
+    const synced = useSession().status === 'user'
+    const remote = useRemote(synced ? 'notifications' : null, () => api.get('/notifications', { params : { limit : 50 } }).then((r) => r.data))
+    if(!synced) return buildNotifications(state)
+    return (remote.data?.items ?? []).map((item : any) => {
+        const at = new Date(item.createdAt).getTime()
+        return {
+            id : item.id,
+            kind : (['reply', 'challenge', 'streak', 'result', 'system'].includes(item.kind) ? item.kind : 'system') as Notification['kind'],
+            title : item.title,
+            body : item.body ?? '',
+            time : timeOf(at),
+            group : groupFor(at),
+            // Read locally counts straight away; the server catches up in the background
+            unread : item.unread && !state.read[item.id],
+            route : item.link ?? routes[item.kind as Notification['kind']] ?? '/today',
+        }
+    })
+}

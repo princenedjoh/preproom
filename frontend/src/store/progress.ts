@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import { profile as defaultProfile, getQuestion, courses } from '../data/sample'
+import { getQuestion, getCourse } from '../data/catalog'
 
 // The learner's own progress, kept on this device so the app works end to end
 // without the backend: answers, saved questions, finished tests, streak days,
@@ -59,12 +59,8 @@ const initial : ProgressState = {
     activeDays : [],
     read : {},
     prefs : { dailyReminder : true, replies : true, weeklyReport : false },
-    profile : {
-        name : defaultProfile.name,
-        program : defaultProfile.program,
-        school : defaultProfile.school,
-        year : defaultProfile.year,
-    },
+    // Empty until the learner fills it in or logs in
+    profile : { name : '', program : '', school : '', year : '' },
 }
 
 const load = () : ProgressState => {
@@ -145,6 +141,20 @@ export const bestStreakOf = (days : string[]) => {
     return best
 }
 
+/* Server sync: set by the session when someone is logged in */
+
+export interface RemoteSync {
+    answer(questionID : string, choice : number) : void
+    save(questionID : string, saved : boolean) : void
+    clearAttempts(courseID : string) : void
+    markRead(ids : string[] | null) : void
+    setPrefs(prefs : Partial<Prefs>) : void
+    setProfile(profile : Partial<ProfileInfo>) : void
+}
+let remote : RemoteSync | null = null
+export const setRemote = (next : RemoteSync | null) => { remote = next }
+export const isSynced = () => remote !== null
+
 /* Actions */
 
 export const progress = {
@@ -154,6 +164,7 @@ export const progress = {
             attempts : { ...state.attempts, [questionID] : { ...attempt, at : Date.now() } },
             activeDays : markActive(state.activeDays),
         })
+        remote?.answer(questionID, attempt.choice)
     },
     clearAttempt(questionID : string){
         const attempts = { ...state.attempts }
@@ -163,12 +174,15 @@ export const progress = {
     clearAttempts(courseID : string){
         const attempts = Object.fromEntries(Object.entries(state.attempts).filter(([, attempt]) => attempt.courseID !== courseID))
         commit({ ...state, attempts })
+        remote?.clearAttempts(courseID)
     },
     toggleSave(questionID : string){
         const saved = { ...state.saved }
-        if(saved[questionID]) delete saved[questionID]
-        else saved[questionID] = Date.now()
+        const next = !saved[questionID]
+        if(next) saved[questionID] = Date.now()
+        else delete saved[questionID]
         commit({ ...state, saved })
+        remote?.save(questionID, next)
     },
     // Answered test questions also count as attempts, so misses show up under Mistakes
     recordTest(run : Omit<TestRun, 'id' | 'at'>, answered : Record<string, Omit<Attempt, 'at'>> = {}){
@@ -183,12 +197,25 @@ export const progress = {
         const read = { ...state.read }
         ids.forEach((id) => { read[id] = true })
         commit({ ...state, read })
+        remote?.markRead(ids)
     },
     setPrefs(prefs : Partial<Prefs>){
         commit({ ...state, prefs : { ...state.prefs, ...prefs } })
+        remote?.setPrefs(prefs)
     },
     setProfile(profile : Partial<ProfileInfo>){
         commit({ ...state, profile : { ...state.profile, ...profile } })
+        remote?.setProfile(profile)
+    },
+    // A test graded by the server: add it to history without re-sending anything
+    addTest(run : TestRun, answered : Record<string, Omit<Attempt, 'at'>> = {}){
+        const attempts = { ...state.attempts }
+        Object.entries(answered).forEach(([questionID, attempt]) => { attempts[questionID] = { ...attempt, at : run.at } })
+        commit({ ...state, attempts, tests : [run, ...state.tests.filter((test) => test.id !== run.id)].slice(0, 100), activeDays : markActive(state.activeDays) })
+    },
+    // Replace local progress with the account's, after logging in
+    hydrate(next : Pick<ProgressState, 'attempts' | 'saved' | 'tests' | 'activeDays'> & { prefs? : Prefs, profile? : ProfileInfo }){
+        commit({ ...initial, ...next, read : state.read, prefs : next.prefs ?? state.prefs, profile : next.profile ?? state.profile })
     },
     reset(){
         commit(initial)
@@ -290,5 +317,5 @@ export const reviewLink = (kind : 'saved' | 'mistakes', current : ProgressState 
     const courseID = kind === 'saved'
         ? Object.entries(current.saved).sort((a, b) => b[1] - a[1]).map(([id]) => getQuestion(id)?.courseID).find(Boolean)
         : Object.values(current.attempts).filter((attempt) => !attempt.correct).sort((a, b) => b.at - a.at)[0]?.courseID
-    return `/questions/${courseID ?? courses[0].id}?status=${kind}`
+    return `/questions/${getCourse(courseID).id}?status=${kind}`
 }

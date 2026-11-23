@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Modal } from 'antd'
 import { Interweave } from 'interweave'
@@ -6,36 +6,30 @@ import * as sessionStyle from './session.style'
 import * as mcqsStyle from '../../../mcqs/mcqs.style'
 import * as kit from '../../../../styles/kit'
 import { alphabets, optionFromKey } from '../../../mcqs/mcqs'
-import { fetchQuestions, getCourse, Question } from '../../../../data/sample'
-import { progress, seededShuffle, dayKey } from '../../../../store/progress'
+import { Question } from '../../../../data/sample'
+import { getCourse } from '../../../../data/catalog'
+import { Run, TestError, startTest, submitTest, autosave, loadResult } from '../../engine'
+import { notify } from '../../../../utils/notify'
 import { TestConfigState } from '../testConfig/testConfig'
-import { FiClock, FiFlag, FiArrowLeft, FiArrowRight } from "react-icons/fi";
+import { FiClock, FiFlag, FiArrowLeft, FiArrowRight, FiAlertCircle } from "react-icons/fi";
 
-export interface TestResultState {
-    config : TestConfigState
-    questions : Question[]
-    answers : Record<string, number>
-    seconds : number
-    runID? : string
-}
+export type { TestResultState } from '../../engine'
 
-// An in-progress test survives a refresh: questions, answers, flags and the deadline
+// An in-progress test survives a refresh: the run (questions, deadline, server id),
+// answers, flags and position. Server tests are also autosaved remotely.
 const DRAFT_KEY = 'preproom.test.draft'
 interface Draft {
-    config : TestConfigState
-    questionIDs : string[]
-    questions : Question[]
+    run : Run
     answers : Record<string, number>
     flags : Record<string, boolean>
     current : number
-    deadline : number
 }
 // With no config (opened from the address bar or a restored tab) any unexpired draft resumes
 const readDraft = (config : TestConfigState | null) : Draft | null => {
     try {
         const draft = JSON.parse(window.sessionStorage.getItem(DRAFT_KEY) ?? 'null') as Draft | null
-        if(!draft || draft.deadline <= Date.now()) return null
-        if(config && JSON.stringify(draft.config) !== JSON.stringify(config)) return null
+        if(!draft?.run || draft.run.deadline <= Date.now()) return null
+        if(config && JSON.stringify(draft.run.config) !== JSON.stringify(config)) return null
         return draft
     } catch { return null }
 }
@@ -52,69 +46,75 @@ const Session = () => {
     const navigate = useNavigate()
     const routed = useLocation().state as TestConfigState | null
     const [draft] = useState(() => readDraft(routed))
-    const config = routed ?? draft?.config ?? null
 
-    const [questions, setQuestions] = useState<Question[]>(draft?.questions ?? [])
+    const [run, setRun] = useState<Run | null>(draft?.run ?? null)
+    const [problem, setProblem] = useState<string | null>(null)
     const [current, setCurrent] = useState(draft?.current ?? 0)
     const [answers, setAnswers] = useState<Record<string, number>>(draft?.answers ?? {})
     const [flags, setFlags] = useState<Record<string, boolean>>(draft?.flags ?? {})
-    const [deadline] = useState(() => draft?.deadline ?? Date.now() + (config?.minutes ?? 20) * 60000)
-    const [remaining, setRemaining] = useState(() => Math.max(0, Math.round((deadline - Date.now()) / 1000)))
+    const [remaining, setRemaining] = useState(() => draft ? Math.max(0, Math.round((draft.run.deadline - Date.now()) / 1000)) : (routed?.minutes ?? 20) * 60)
+    const [submitting, setSubmitting] = useState(false)
     const submitted = useRef(false)
+    const started = useRef(false)
+
+    const config = run?.config ?? routed ?? null
+    const questions = useMemo(() => run?.questions ?? [], [run])
 
     useEffect(()=>{
-        if(!config || draft) return
-        fetchQuestions(config.courseID).then((all) => {
-            const pool = config.year ? all.filter((question) => question.year === config.year)
-                : config.difficulty === 'Mixed' ? all : all.filter((question) => question.difficulty === config.difficulty)
-            const source = pool.length > 0 ? pool : all
-            const ordered = config.mode === 'challenge' ? seededShuffle(source, `challenge:${dayKey()}`)
-                : config.year ? source
-                : seededShuffle(source, `${Date.now()}`)
-            setQuestions(ordered.slice(0, config.count))
-        })
-    },[config, draft])
+        if(draft || !routed || started.current) return
+        started.current = true
+        startTest(routed)
+            .then((next) => {
+                setRun(next)
+                setAnswers(next.answers)
+                setRemaining(Math.max(0, Math.round((next.deadline - Date.now()) / 1000)))
+            })
+            .catch(async (error) => {
+                // Today's challenge already played: show that result instead
+                if(error instanceof TestError && error.problem.code === 'already_played' && error.testID){
+                    const result = await loadResult(error.testID).catch(() => null)
+                    if(result) return navigate('/test/results', { state : result, replace : true })
+                }
+                setProblem(error instanceof TestError ? error.problem.message : 'We could not start this test. Please try again.')
+            })
+    },[draft, routed, navigate])
 
     useEffect(()=>{
-        if(!config || questions.length === 0 || submitted.current) return
-        const next : Draft = { config, questionIDs : questions.map((question) => question.id), questions, answers, flags, current, deadline }
+        if(!run || submitted.current) return
+        const next : Draft = { run, answers, flags, current }
         try { window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify(next)) } catch {}
-    },[config, questions, answers, flags, current, deadline])
+    },[run, answers, flags, current])
 
-    const submit = useCallback(() => {
-        if(submitted.current || !config) return
+    // Server autosave, a moment after the last change
+    useEffect(()=>{
+        if(!run?.id || submitted.current) return
+        const id = window.setTimeout(() => autosave(run, answers), 800)
+        return () => window.clearTimeout(id)
+    },[run, answers])
+
+    const submit = useCallback(async () => {
+        if(submitted.current || !run) return
         submitted.current = true
-        clearDraft()
-        const seconds = Math.min(config.minutes * 60, Math.round((Date.now() - (deadline - config.minutes * 60000)) / 1000))
-        const score = questions.filter((question) => answers[question.id] === question.answer).length
-        const course = getCourse(config.courseID)
-        const run = progress.recordTest({
-            courseID : config.courseID,
-            mode : config.mode,
-            title : config.mode === 'challenge' ? `Daily challenge · ${course.name}`
-                : config.year ? `${course.name} · ${config.year} paper`
-                : `${course.name} · ${config.difficulty === 'Mixed' ? 'Mixed practice' : config.difficulty}`,
-            score,
-            total : questions.length,
-            seconds,
-            missed : questions.filter((question) => answers[question.id] !== question.answer).map((question) => question.id),
-        }, Object.fromEntries(questions.filter((question) => answers[question.id] !== undefined).map((question) => [question.id, {
-            choice : answers[question.id],
-            correct : answers[question.id] === question.answer,
-            courseID : question.courseID,
-            topic : question.topic,
-        }])))
-        const result : TestResultState = { config, questions, answers, seconds, runID : run.id }
-        navigate('/test/results', { state : result, replace : true })
-    },[config, deadline, questions, answers, navigate])
+        setSubmitting(true)
+        try {
+            const result = await submitTest(run, answers)
+            clearDraft()
+            navigate('/test/results', { state : result, replace : true })
+        } catch {
+            submitted.current = false
+            setSubmitting(false)
+            notify("Couldn't submit. Your answers are saved here, so try again in a moment.")
+        }
+    },[run, answers, navigate])
 
     // Timer reads the wall clock, so it stays correct when the tab is throttled in the background
     useEffect(()=>{
-        if(!config) return
-        const tick = () => setRemaining(Math.max(0, Math.round((deadline - Date.now()) / 1000)))
+        if(!run) return
+        const tick = () => setRemaining(Math.max(0, Math.round((run.deadline - Date.now()) / 1000)))
+        tick()
         const id = window.setInterval(tick, 500)
         return () => window.clearInterval(id)
-    },[config, deadline])
+    },[run])
 
     useEffect(()=>{
         if(remaining === 0 && questions.length > 0) submit()
@@ -123,13 +123,13 @@ const Session = () => {
     // Leaving mid-test asks first; the draft also restores the test on refresh
     useEffect(()=>{
         const warn = (event : BeforeUnloadEvent) => {
-            if(submitted.current) return
+            if(submitted.current || !run) return
             event.preventDefault()
             event.returnValue = ''
         }
         window.addEventListener('beforeunload', warn)
         return () => window.removeEventListener('beforeunload', warn)
-    },[])
+    },[run])
 
     const choose = useCallback((question : Question, index : number) => {
         if(!config) return
@@ -156,6 +156,19 @@ const Session = () => {
         return () => window.removeEventListener('keydown', onKey)
     },[questions, current, choose])
 
+    if(problem){
+        return (
+            <kit.Page>
+                <kit.PageInner className='items-center text-center pt-16 !gap-4'>
+                    <kit.IconTile className='!w-14 !h-14'><FiAlertCircle size={22}/></kit.IconTile>
+                    <kit.PageTitle className='!text-[30px]'>This test couldn't start</kit.PageTitle>
+                    <kit.Lead className='max-w-[440px]'>{problem}</kit.Lead>
+                    <kit.DarkButton type='button' onClick={()=>navigate('/test/testconfig', { replace : true })}>Back to test setup</kit.DarkButton>
+                </kit.PageInner>
+            </kit.Page>
+        )
+    }
+
     if(!config) return <Navigate to='/test/testconfig' replace/>
 
     const course = getCourse(config.courseID)
@@ -164,6 +177,7 @@ const Session = () => {
 
     const confirmSubmit = () => {
         const unanswered = questions.length - answeredCount
+        if(submitting) return
         Modal.confirm({
             title : 'Submit your test?',
             content : unanswered > 0 ? `You have ${unanswered} unanswered question${unanswered > 1 ? 's' : ''}.` : 'You have answered every question.',
@@ -198,7 +212,7 @@ const Session = () => {
                 <div className='w-full max-w-[1200px] flex items-center justify-between gap-3'>
                     <div className='flex items-center gap-3 min-w-0'>
                         <span className='w-[10px] h-[10px] rounded-[3px] shrink-0' style={{ background : course.color }}/>
-                        <span className='text-[14px] font-bold text-ink truncate'>{course.name}</span>
+                        <span className='text-[14px] font-bold text-ink truncate'>{run?.title ?? course.name}</span>
                         <span className='hidden sm:inline text-[13px] text-ash'>{answeredCount}/{questions.length} answered</span>
                     </div>
                     <div className='flex items-center gap-2'>

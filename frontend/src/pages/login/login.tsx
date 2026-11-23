@@ -1,14 +1,11 @@
 import { FormEvent, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import axios from 'axios'
-import Cookies from 'universal-cookie'
 import * as kit from '../../styles/kit'
-import { BASE_URL } from '../../variables/variables'
+import { toApiError } from '../../api/client'
+import { login } from '../../store/session'
 import { AuthShell, AuthSwitch, Field, FormError, Spinner, isEmail } from '../../components/auth/auth'
 import { notify } from '../../utils/notify'
 import { FiArrowRight } from 'react-icons/fi'
-
-const cookies = new Cookies()
 
 const Login = () => {
 
@@ -30,20 +27,14 @@ const Login = () => {
         if(!isEmail(email) || !password) return
         setLoading(true)
         try {
-            const response = await axios.post(`${BASE_URL}/auth/login`, { email : email.trim(), password }, { validateStatus : () => true, timeout : 8000 })
-            if(response.status === 200){
-                cookies.set('jwtToken', response.data?.accessToken, { path : '/', sameSite : 'lax' })
-                notify('Welcome back')
-                navigate(from, { replace : true })
-            }
-            else if(response.status === 401 || response.status === 404){
-                setError("That email and password don't match. Check them and try again.")
-            }
-            else {
-                setError('Something went wrong on our side. Please try again in a moment.')
-            }
-        } catch {
-            setError("We couldn't reach PrepRoom. Check your connection, or keep practising without an account.")
+            const user = await login(email.trim(), password)
+            notify(`Welcome back, ${user.firstName}`)
+            navigate(from, { replace : true })
+        } catch(failure) {
+            const problem = toApiError(failure)
+            setError(problem.code === 'invalid_credentials' ? "That email and password don't match. Check them and try again."
+                : problem.status === null ? "We couldn't reach PrepRoom. Check your connection, or keep practising without an account."
+                : problem.message)
         } finally {
             setLoading(false)
         }

@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Switch } from 'antd'
 import * as testConfigStyle from './testConfig.style'
 import * as kit from '../../../../styles/kit'
-import { courses, getCourse, questions as bank, Difficulty } from '../../../../data/sample'
+import { Difficulty, Question } from '../../../../data/sample'
+import { getCourse, useCatalog, fetchQuestions, fetchPapers } from '../../../../data/catalog'
 import TestHistory from '../../../../components/testHistory/testHistory'
 import SegmentedControl from '../../../../components/UI/segmented/segmented'
 import { RiCheckboxMultipleFill } from "react-icons/ri";
@@ -36,26 +37,40 @@ const TestConfig = () => {
     const navigate = useNavigate()
     const incoming = (useLocation().state ?? {}) as Partial<TestConfigState>
 
+    const { courses } = useCatalog()
     const [config, setConfig] = useState<TestConfigState>({
-        courseID : incoming.courseID ?? courses[0].id,
+        courseID : getCourse(incoming.courseID).id,
         mode : 'mcqs',
         count : 10,
         minutes : 20,
         difficulty : 'Mixed',
         instantFeedback : false,
     })
+    const [inCourse, setInCourse] = useState<Question[] | null>(null)
+    const [years, setYears] = useState<number[]>([])
+
+    useEffect(()=>{
+        let active = true
+        setInCourse(null)
+        Promise.all([fetchQuestions(config.courseID), fetchPapers(config.courseID)]).then(([questions, papers]) => {
+            if(!active) return
+            setInCourse(questions)
+            setYears(papers.length ? papers : Array.from(new Set(questions.map((question) => question.year))).sort((a, b) => b - a))
+        })
+        return () => { active = false }
+    },[config.courseID])
+
     const update = (patch : Partial<TestConfigState>) => setConfig((previous) => ({ ...previous, ...patch }))
     const course = getCourse(config.courseID)
-    const inCourse = bank.filter((question) => question.courseID === config.courseID)
-    const years = Array.from(new Set(inCourse.map((question) => question.year))).sort((a, b) => b - a)
     const year = config.year && years.includes(config.year) ? config.year : years[0]
     const isPaper = config.mode === 'paper'
     const isChallenge = config.mode === 'challenge'
 
     // What will actually be asked, so the summary never over-promises
-    const pool = isPaper ? inCourse.filter((question) => question.year === year)
-        : config.difficulty === 'Mixed' ? inCourse : inCourse.filter((question) => question.difficulty === config.difficulty)
-    const available = pool.length || inCourse.length
+    const loaded = inCourse ?? []
+    const pool = isPaper ? loaded.filter((question) => question.year === year)
+        : config.difficulty === 'Mixed' ? loaded : loaded.filter((question) => question.difficulty === config.difficulty)
+    const available = pool.length || loaded.length
     const asked = isPaper ? available : Math.min(config.count, available)
 
     const chooseMode = (mode : string) => {
@@ -160,18 +175,18 @@ const TestConfig = () => {
                         <div className='flex flex-col gap-3'>
                             <testConfigStyle.SummaryRow>Mode <b>{modes.find((mode) => mode.id === config.mode)?.title}</b></testConfigStyle.SummaryRow>
                             {isPaper && <testConfigStyle.SummaryRow>Paper <b>{year}</b></testConfigStyle.SummaryRow>}
-                            <testConfigStyle.SummaryRow>Questions <b className='tabular-nums'>{asked}</b></testConfigStyle.SummaryRow>
+                            <testConfigStyle.SummaryRow>Questions <b className='tabular-nums'>{inCourse ? asked : '–'}</b></testConfigStyle.SummaryRow>
                             <testConfigStyle.SummaryRow>Time limit <b>{config.minutes} minutes</b></testConfigStyle.SummaryRow>
                             {!isPaper && <testConfigStyle.SummaryRow>Difficulty <b>{config.difficulty}</b></testConfigStyle.SummaryRow>}
                             {
-                                !isPaper && asked < config.count &&
+                                inCourse && !isPaper && asked < config.count &&
                                 <span className='text-[12px] leading-[1.5] text-[#b5651d] bg-[#fff6ec] rounded-[8px] px-3 py-2'>
                                     Only {asked} {config.difficulty === 'Mixed' ? '' : `${config.difficulty.toLowerCase()} `}question{asked === 1 ? ' is' : 's are'} available for {course.name}, so the test will use {asked === 1 ? 'it' : 'all of them'}.
                                 </span>
                             }
                         </div>
                         <span className='conic-border w-full'>
-                            <kit.DarkButton type='button' className='w-full' onClick={start}>
+                            <kit.DarkButton type='button' className='w-full' disabled={!inCourse || available === 0} onClick={start}>
                                 Start test <FiArrowRight size={16}/>
                             </kit.DarkButton>
                         </span>

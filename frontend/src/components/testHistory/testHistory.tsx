@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import * as kit from '../../styles/kit'
 import * as testConfigStyle from '../../pages/test/pages/testConfig/testConfig.style'
-import { getCourse } from '../../data/sample'
+import { getCourse } from '../../data/catalog'
 import { useProgress, relativeDay } from '../../store/progress'
 import { FiClock } from 'react-icons/fi'
 

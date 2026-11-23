@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { IconType } from 'react-icons'
-import { courses, questions, getCourse } from '../../data/sample'
+import { getCourse, useCatalog, cachedQuestions } from '../../data/catalog'
 import { dailyIndex, reviewLink } from '../../store/progress'
 import { getLenis } from '../smoothScroll/smoothScroll'
 import { FiSearch, FiSun, FiBookOpen, FiClock, FiAward, FiUser, FiBell, FiBookmark, FiRotateCcw, FiHelpCircle, FiCornerDownLeft } from 'react-icons/fi'
@@ -43,6 +43,7 @@ export const useCommandPalette = () => {
 const CommandPalette = ({ open, onClose } : { open : boolean, onClose : () => void }) => {
 
     const navigate = useNavigate()
+    const { courses } = useCatalog()
     const [query, setQuery] = useState('')
     const [active, setActive] = useState(0)
     const input = useRef<HTMLInputElement>(null)
@@ -90,7 +91,7 @@ const CommandPalette = ({ open, onClose } : { open : boolean, onClose : () => vo
         const words = term.split(/\s+/)
         const matches = (text : string) => words.every((word) => text.toLowerCase().includes(word))
         const found = base.filter((item) => matches(`${item.label} ${item.hint ?? ''}`))
-        const questionHits = term.length < 2 ? [] : questions
+        const questionHits = term.length < 2 ? [] : cachedQuestions()
             .filter((question) => matches(`${question.question} ${question.topic}`))
             .slice(0, 6)
             .map((question) : Item => {
@@ -103,7 +104,7 @@ const CommandPalette = ({ open, onClose } : { open : boolean, onClose : () => vo
             })
         return [...found, ...questionHits]
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    },[query])
+    },[query, courses])
 
     useEffect(()=>{ setActive(0) },[query])
 

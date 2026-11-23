@@ -1,5 +1,3 @@
-import axios from 'axios'
-import { BASE_URL } from '../variables/variables'
 
 // Sample content used when the API is unreachable or returns nothing,
 // so every screen renders a realistic state during development.
@@ -7,7 +5,8 @@ import { BASE_URL } from '../variables/variables'
 export type Difficulty = 'Easy' | 'Medium' | 'Hard'
 
 export interface Course {
-    id : string
+    id : string          // slug, used in URLs (cs201)
+    uuid? : string       // server id when the catalog comes from the API
     code : string
     name : string
     color : string
@@ -26,6 +25,7 @@ export interface Question {
     explanation : string
     discussions : number
     saves : number
+    institution? : string | null
 }
 
 export const questions : Question[] = [
@@ -180,38 +180,6 @@ export const courses : Course[] = courseBase.map((course) => ({
     questions : questions.filter((question) => question.courseID === course.id).length,
 }))
 
-export const getQuestion = (id : string) => questions.find((question) => question.id === id)
-
-export const topics = Array.from(new Set(questions.map((question) => question.topic)))
-
-export const getCourse = (id? : string) => courses.find((course) => course.id === id) ?? courses[0]
-
-// Backend questions store the answer as option text; map them onto the UI shape
-export const fetchQuestions = async (courseID : string) : Promise<Question[]> => {
-    try {
-        const response = await axios.get(`${BASE_URL}/questions/getQuestion`, {
-            params : { coursesID : [courseID] },
-            timeout : 3000,
-        })
-        const data = response.data as any[]
-        if(!Array.isArray(data) || data.length === 0) throw new Error('empty')
-        return data.map((item, index) => ({
-            id : item._id,
-            courseID,
-            topic : 'General',
-            difficulty : 'Medium',
-            year : new Date().getFullYear(),
-            question : item.question,
-            options : item.possibleAnswers ?? [],
-            answer : Math.max(0, (item.possibleAnswers ?? []).indexOf(item.answer)),
-            explanation : item.explanation ?? '',
-            discussions : 0,
-            saves : 0,
-        }))
-    } catch {
-        return questions.filter((question) => question.courseID === courseID)
-    }
-}
 
 export interface Notification {
     id : string

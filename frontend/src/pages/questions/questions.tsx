@@ -5,9 +5,11 @@ import * as questionsStyled from './questions.styled'
 import * as kit from '../../styles/kit'
 import Mcqs from '../mcqs/mcqs'
 import SegmentedControl from '../../components/UI/segmented/segmented'
-import { courses, getCourse, fetchQuestions, Question, Difficulty } from '../../data/sample'
+import { Question, Difficulty } from '../../data/sample'
+import { getCourse, fetchQuestions, useCatalog } from '../../data/catalog'
 import { progress, useProgress, courseProgress } from '../../store/progress'
 import { FiSearch, FiSliders, FiTrendingUp, FiArrowRight, FiCommand, FiBookmark, FiCheckCircle } from "react-icons/fi";
+import { BiSolidSchool } from "react-icons/bi";
 
 const difficulties : ('All' | Difficulty)[] = ['All', 'Easy', 'Medium', 'Hard']
 const sorts = ['Newest', 'Oldest', 'Hardest'] as const
@@ -21,6 +23,7 @@ const Questions = () => {
     const navigate = useNavigate()
     const { courseID } = useParams()
     const state = useProgress()
+    const { courses } = useCatalog()
     // /questions with no course opens the one you practised most recently
     const lastCourseID = Object.values(state.attempts).sort((a, b) => b.at - a.at)[0]?.courseID
     const course = getCourse(courseID ?? lastCourseID)
@@ -34,6 +37,7 @@ const Questions = () => {
     const [topic, setTopic] = useState('All')
     const [sort, setSort] = useState<typeof sorts[number]>('Newest')
     const [revealAll, setRevealAll] = useState(false)
+    const [schools, setSchools] = useState<string[]>([])
 
     useEffect(()=>{
         let active = true
@@ -69,6 +73,9 @@ const Questions = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [data, state])
 
+    const institutions = useMemo(() => Array.from(new Set(data.map((question) => question.institution).filter(Boolean) as string[])).sort(), [data])
+    const toggleSchool = (school : string) => setSchools(schools.includes(school) ? schools.filter((item) => item !== school) : [...schools, school])
+
     const topics = useMemo(() => ['All', ...Array.from(new Set(data.map((question) => question.topic)))], [data])
 
     const visible = useMemo(() => {
@@ -77,22 +84,24 @@ const Questions = () => {
             .filter((question) => matchesStatus(question, status))
             .filter((question) => difficulty === 'All' || question.difficulty === difficulty)
             .filter((question) => topic === 'All' || question.topic === topic)
+            .filter((question) => schools.length === 0 || schools.includes(question.institution ?? ''))
             .filter((question) => !term || question.question.toLowerCase().includes(term) || question.topic.toLowerCase().includes(term))
             .sort((a, b) => sort === 'Newest' ? b.year - a.year
                 : sort === 'Oldest' ? a.year - b.year
                 : difficultyRank[b.difficulty] - difficultyRank[a.difficulty])
     // Status membership is frozen while answering so a card doesn't vanish the moment it is answered
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [data, search, difficulty, topic, sort, status])
+    }, [data, search, difficulty, topic, sort, status, schools])
 
     const stats = courseProgress(state, course.id, data.length || course.questions)
-    const filtersActive = search || difficulty !== 'All' || topic !== 'All' || status !== 'all'
+    const filtersActive = search || difficulty !== 'All' || topic !== 'All' || status !== 'all' || schools.length > 0
 
     const clearFilters = () => {
         setSearch('')
         setDifficulty('All')
         setTopic('All')
         setStatus('all')
+        setSchools([])
     }
 
     const resetCourse = () => {
@@ -250,6 +259,18 @@ const Questions = () => {
                                 <SegmentedControl aria-label='Sort by' fullWidth value={sort} onChange={setSort} options={sorts}/>
                             </div>
                         </kit.Panel>
+
+                        {
+                            institutions.length > 1 &&
+                            <kit.Panel>
+                                <kit.PanelTitle><BiSolidSchool size={15}/> Set by</kit.PanelTitle>
+                                <div className='flex flex-wrap gap-2'>
+                                    {institutions.map((school) => (
+                                        <kit.FilterChip key={school} type='button' active={schools.includes(school)} aria-pressed={schools.includes(school)} onClick={()=>toggleSchool(school)}>{school}</kit.FilterChip>
+                                    ))}
+                                </div>
+                            </kit.Panel>
+                        }
 
                         <kit.Panel className='hidden lg:flex'>
                             <kit.PanelTitle><FiCommand size={15}/> Shortcuts</kit.PanelTitle>

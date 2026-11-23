@@ -1,10 +1,9 @@
 import { FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import axios from 'axios'
 import * as kit from '../../styles/kit'
-import { BASE_URL } from '../../variables/variables'
+import { toApiError } from '../../api/client'
+import { signup } from '../../store/session'
 import { AuthShell, AuthSwitch, Field, FormError, Spinner, isEmail } from '../../components/auth/auth'
-import { progress } from '../../store/progress'
 import { notify } from '../../utils/notify'
 
 const strength = (password : string) => {
@@ -43,20 +42,12 @@ const SignUp = () => {
         setLoading(true)
         const payload = { ...form, firstName : form.firstName.trim(), lastName : form.lastName.trim(), email : form.email.trim() }
         try {
-            const response = await axios.post(`${BASE_URL}/users/add`, payload, { validateStatus : () => true, timeout : 8000 })
-            if(response.status === 200 || response.status === 201){
-                progress.setProfile({ name : `${payload.firstName} ${payload.lastName}` })
-                notify('Account created. Log in to continue.')
-                navigate('/auth/login', { state : { from : '/today' } })
-            }
-            else if(response.status === 409){
-                setError('An account with that email already exists. Try logging in instead.')
-            }
-            else {
-                setError(typeof response.data === 'string' && response.data.length < 160 ? response.data : 'We could not create your account. Please try again.')
-            }
-        } catch {
-            setError("We couldn't reach PrepRoom. Check your connection and try again.")
+            const user = await signup(payload)
+            notify(`Welcome to PrepRoom, ${user.firstName}`)
+            navigate('/today', { replace : true })
+        } catch(failure) {
+            const problem = toApiError(failure)
+            setError(problem.code === 'conflict' ? 'An account with that email already exists. Try logging in instead.' : problem.message)
         } finally {
             setLoading(false)
         }

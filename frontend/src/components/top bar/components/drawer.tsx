@@ -1,13 +1,13 @@
 import * as React from 'react';
 import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import { useNavigate } from 'react-router-dom';
-import Cookies from 'universal-cookie';
 import * as kit from '../../../styles/kit';
 import { useProgress, summarize, initialsOf, reviewLink } from '../../../store/progress';
+import { logout as endSession, useSession } from '../../../store/session';
+import { notify } from '../../../utils/notify';
 import { FiUser, FiClipboard, FiBookmark, FiBell, FiSettings, FiLogOut, FiLogIn } from "react-icons/fi";
 import { HiFire } from "react-icons/hi2";
 
-const cookie = new Cookies()
 
 interface drawerChildrenProp {
     children: React.ReactNode;
@@ -38,9 +38,12 @@ const SwipeableTemporaryDrawer = ({
     navigate(route === 'saved' ? reviewLink('saved') : route)
   }
 
-  const logout = () => {
-    cookie.remove('jwtToken', { path : '/' })
-    go('/auth/login')
+  const session = useSession()
+  const logout = async () => {
+    setOpen(false)
+    await endSession()
+    notify('Logged out')
+    navigate('/')
   }
 
   return (
@@ -60,7 +63,7 @@ const SwipeableTemporaryDrawer = ({
             <kit.Avatar color='#202020' size={44} ring='transparent' className='!text-[14px]'>{hasSession ? initialsOf(state.profile.name) : <FiUser size={18}/>}</kit.Avatar>
             <div className='flex flex-col min-w-0'>
               <span className='text-[15px] font-bold text-ink truncate'>{hasSession ? state.profile.name : 'Guest'}</span>
-              <span className='text-[13px] text-ash truncate'>{hasSession ? [state.profile.program, state.profile.school].filter(Boolean).join(' · ') : 'Progress is saved on this device'}</span>
+              <span className='text-[13px] text-ash truncate'>{hasSession ? [state.profile.program, state.profile.school].filter(Boolean).join(' · ') : session.status === 'offline' ? 'Offline · progress saved on this device' : 'Log in to sync across devices'}</span>
             </div>
           </div>
           {

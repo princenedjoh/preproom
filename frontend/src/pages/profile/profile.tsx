@@ -1,37 +1,46 @@
-import { FormEvent, useState } from 'react'
+import { FormEvent, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Switch, Modal } from 'antd'
 import * as kit from '../../styles/kit'
 import SegmentedControl from '../../components/UI/segmented/segmented'
 import TestHistory from '../../components/testHistory/testHistory'
-import { courses } from '../../data/sample'
+import { useCatalog } from '../../data/catalog'
 import { progress, getProgress, useProgress, summarize, courseProgress, initialsOf, ProfileInfo } from '../../store/progress'
 import { notify } from '../../utils/notify'
+import { logout as endSession, useSession, updateUser } from '../../store/session'
 import { FiEdit2, FiArrowRight, FiLogOut, FiTrash2 } from "react-icons/fi";
-import Cookies from 'universal-cookie'
 
-const cookie = new Cookies()
 const tabs = ['Overview', 'Settings'] as const
 
 const Profile = () => {
 
     const navigate = useNavigate()
+    const { courses } = useCatalog()
     const state = useProgress()
     const stats = summarize(state)
+    const session = useSession()
+    const signedIn = session.status === 'user'
     const [tab, setTab] = useState<typeof tabs[number]>('Overview')
     const [form, setForm] = useState<ProfileInfo>(state.profile)
     const dirty = JSON.stringify(form) !== JSON.stringify(state.profile)
+    const lastProfile = useRef(state.profile)
+    useEffect(()=>{
+        // Pick up server data after login, unless the learner is mid-edit
+        if(lastProfile.current !== state.profile && JSON.stringify(form) === JSON.stringify(lastProfile.current)) setForm(state.profile)
+        lastProfile.current = state.profile
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    },[state.profile])
 
     const save = (event : FormEvent) => {
         event.preventDefault()
         if(!form.name.trim()) return
         progress.setProfile({ ...form, name : form.name.trim() })
+        if(signedIn) updateUser({ name : form.name.trim() })
         notify('Profile saved')
     }
 
     const logout = () => {
-        cookie.remove('jwtToken', { path : '/' })
-        navigate('/auth/login')
+        endSession().then(() => { notify('Logged out'); navigate('/') })
     }
 
     const clearData = () => {
@@ -59,8 +68,8 @@ const Profile = () => {
                             {initialsOf(state.profile.name)}
                         </kit.Avatar>
                         <div className='flex flex-col gap-1 min-w-0'>
-                            <kit.PageTitle className='!text-[30px] md:!text-[36px] truncate'>{state.profile.name}</kit.PageTitle>
-                            <span className='text-[14px] text-muted'>{[state.profile.program, state.profile.school, state.profile.year].filter(Boolean).join(' · ')}</span>
+                            <kit.PageTitle className='!text-[30px] md:!text-[36px] truncate'>{state.profile.name || 'Your profile'}</kit.PageTitle>
+                            <span className='text-[14px] text-muted'>{[state.profile.program, state.profile.school, state.profile.year].filter(Boolean).join(' · ') || (signedIn ? session.user?.email : 'Add your details in Settings')}</span>
                         </div>
                     </div>
                     <SegmentedControl aria-label='Profile section' className='self-start md:self-auto' value={tab} onChange={setTab} options={tabs}/>
@@ -157,15 +166,21 @@ const Profile = () => {
                                 }
                             </kit.Panel>
                             <kit.Panel className='!p-6'>
-                                <kit.PanelTitle>Data and session</kit.PanelTitle>
-                                <span className='text-[14px] text-muted'>Your progress is stored on this device.</span>
+                                <kit.PanelTitle>{signedIn ? 'Account' : 'Data on this device'}</kit.PanelTitle>
+                                <span className='text-[14px] text-muted leading-[1.5]'>
+                                    {signedIn ? <>Signed in as <b className='text-ink'>{session.user?.email}</b>. Your progress syncs to your account.</>
+                                        : 'You are not logged in, so your progress is stored only in this browser. Log in to keep it across devices.'}
+                                </span>
                                 <div className='flex flex-wrap gap-2'>
-                                    <kit.GhostButton type='button' onClick={logout}>
-                                        <FiLogOut size={14}/> Log out
-                                    </kit.GhostButton>
-                                    <kit.GhostButton type='button' className='!text-[#d9365f]' onClick={clearData}>
-                                        <FiTrash2 size={14}/> Clear my data
-                                    </kit.GhostButton>
+                                    {
+                                        signedIn ?
+                                        <kit.GhostButton type='button' onClick={logout}><FiLogOut size={14}/> Log out</kit.GhostButton>
+                                        :
+                                        <>
+                                            <kit.DarkButton type='button' onClick={()=>navigate('/auth/login', { state : { from : '/profile' } })}>Log in</kit.DarkButton>
+                                            <kit.GhostButton type='button' className='!text-[#d9365f]' onClick={clearData}><FiTrash2 size={14}/> Clear my data</kit.GhostButton>
+                                        </>
+                                    }
                                 </div>
                             </kit.Panel>
                         </div>

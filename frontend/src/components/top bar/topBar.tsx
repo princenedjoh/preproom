@@ -5,7 +5,6 @@ import { Outlet } from 'react-router'
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Badge } from 'antd';
 import { FaBell } from 'react-icons/fa'
-import Cookies from "universal-cookie"
 import { ToastContainer } from 'react-toastify'
 import { AppTypography, ClickableTab } from '../../styles/global'
 import { TypographySize } from '../../styles/style.types'
@@ -21,11 +20,11 @@ import SwipeableTemporaryDrawer from './components/drawer'
 import CommandPalette, { useCommandPalette } from '../commandPalette/commandPalette'
 import { getLenis } from '../smoothScroll/smoothScroll'
 import { useNotifications } from '../../store/notifications'
-import { useProgress, summarize } from '../../store/progress'
+import { useProgress, summarize, progress } from '../../store/progress'
+import { useSession } from '../../store/session'
 import "react-toastify/dist/ReactToastify.css"
 import "../reactToastify/toastifyCustomStyles.css"
 
-const cookie = new Cookies()
 
 const programs = [
     'Computer Science', 'Computer Engineering', 'Electrical Engineering', 'Mechanical Engineering',
@@ -52,13 +51,15 @@ const TopBar = () => {
     const navigate = useNavigate()
     const location = useLocation().pathname
     const currentTab = location.split('/')[1].toLowerCase()
-    const hasSession = !!cookie.get("jwtToken")
+    const session = useSession()
+    const hasSession = session.status === 'user'
     const unread = useNotifications().filter((item) => item.unread).length
     const progressState = useProgress()
     const { streak } = summarize(progressState)
 
     const [searchValue, setSearchValue] = useState('')
-    const [program, setProgram] = useState(progressState.profile.program.replace(/^(BSc|BA|BEng|MSc)\s+/, ''))
+    // The programme lives on the profile, so it follows you across devices when logged in
+    const program = progressState.profile.program.replace(/^(BSc|BA|BEng|MSc|BEd)\s+/, '')
     const [courseVisibility, setCourseVisibility] = useState(false)
     const [menuOpen, setMenuOpen] = useState(false)
     const [paletteOpen, setPaletteOpen] = useCommandPalette()
@@ -76,7 +77,7 @@ const TopBar = () => {
 
     const handleChangeCourse = (name : string) => {
         setCourseVisibility(false)
-        setProgram(name)
+        if(name !== program) progress.setProfile({ program : `BSc ${name}` })
     }
 
     const filteredPrograms = programs.filter((item) => item.toLowerCase().includes(searchValue.trim().toLowerCase()))
@@ -119,7 +120,7 @@ const TopBar = () => {
                             onDelete={()=>setCourseVisibility(!courseVisibility)}
                             label={
                             <AppTypography textColor={theme.colors2.gray.gray2}>
-                                {program}
+                                {program || 'Choose programme'}
                             </AppTypography>
                             } 
                         />
@@ -189,7 +190,7 @@ const TopBar = () => {
                         </ClickableTab>
                     </SwipeableTemporaryDrawer>
                     {
-                        !hasSession &&
+                        (session.status === 'guest' || session.status === 'offline') &&
                         <div className='hidden md:flex items-center gap-2 ml-[6px]'>
                             <topBarStyle.AuthButton type='button' onClick={()=>navigate('/auth/login')}>
                                 Log in

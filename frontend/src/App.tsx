@@ -7,6 +7,9 @@ import { ToastContainer, toast } from 'react-toastify';
 import { ConfigProvider } from 'antd';
 import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import SmoothScroll from './components/smoothScroll/smoothScroll';
+import { useEffect } from 'react';
+import { boot, useSession } from './store/session';
+import { loadCatalog, useCatalog } from './data/catalog';
 
 const antdTheme = {
   token : {
@@ -45,6 +48,15 @@ const muiTheme = createTheme({
 })
 
 function App() {
+
+  // Re-render the tree when the catalog or session resolves
+  useCatalog()
+  useSession()
+  useEffect(()=>{
+    loadCatalog()
+    boot()
+  },[])
+
   return (
     <div className="App">
       <header className="App-header">

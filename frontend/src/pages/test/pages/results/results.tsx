@@ -4,9 +4,10 @@ import { Interweave } from 'interweave'
 import * as kit from '../../../../styles/kit'
 import * as mcqsStyle from '../../../mcqs/mcqs.style'
 import { alphabets } from '../../../mcqs/mcqs'
-import { getCourse } from '../../../../data/sample'
+import { getCourse } from '../../../../data/catalog'
 import { TestResultState } from '../session/session'
 import { FiRotateCcw, FiArrowRight, FiCheck, FiX, FiMinus } from "react-icons/fi";
+import { HiTrophy } from "react-icons/hi2";
 
 // The score counts up once on arrival: a rare, earned moment, so it can take a little longer
 const CountUp = ({ to } : { to : number }) => {
@@ -57,15 +58,22 @@ const Results = () => {
             <kit.PageInner className='gap-10'>
                 <div className='grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8 items-end'>
                     <div className='flex flex-col gap-3'>
-                        <kit.Eyebrow>{course.code} · Test results</kit.Eyebrow>
+                        <kit.Eyebrow>{course.code} · {result.title ?? 'Test results'}</kit.Eyebrow>
                         <span className='font-display font-extrabold text-[80px] md:text-[112px] leading-[0.95] tracking-[-0.05em] text-onyx tabular-nums'>
                             <CountUp to={percent}/><span className='text-fog'>%</span>
                         </span>
                         <kit.PageTitle className='!text-[28px] md:!text-[34px]'>{verdict}</kit.PageTitle>
                         <div className='flex flex-wrap gap-3 pt-2'>
-                            <kit.DarkButton type='button' onClick={()=>navigate('/test/session', { state : config })}>
-                                <FiRotateCcw size={15}/> Retake test
-                            </kit.DarkButton>
+                            {
+                                config.mode === 'challenge' ?
+                                <kit.DarkButton type='button' onClick={()=>navigate('/challenges')}>
+                                    <HiTrophy size={15}/> {result.rank ? `Ranked #${result.rank} · Leaderboard` : 'See leaderboard'}
+                                </kit.DarkButton>
+                                :
+                                <kit.DarkButton type='button' onClick={()=>navigate('/test/session', { state : config })}>
+                                    <FiRotateCcw size={15}/> Retake test
+                                </kit.DarkButton>
+                            }
                             {
                                 correct < questions.length ?
                                 <kit.GhostButton type='button' onClick={()=>navigate(`/questions/${course.id}?status=mistakes`)}>
