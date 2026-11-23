@@ -61,21 +61,21 @@
 :root[data-theme='dark'] {
   color-scheme: dark;
 
-  --canvas: 26 26 26;
-  --surface: 38 38 38;
-  --subtle: 51 51 51;
-  --raised: 58 58 58;
-  --line: 58 58 58;
-  --line-strong: 74 74 74;
+  --canvas: 11 11 13;
+  --surface: 20 20 23;
+  --subtle: 30 30 34;
+  --raised: 42 42 47;
+  --line: 38 38 43;
+  --line-strong: 56 56 63;
 
-  --ink: 245 245 245;
-  --ink-2: 163 163 163;
-  --ink-3: 118 118 118;
-  --ink-4: 92 92 92;
+  --ink: 243 243 245;
+  --ink-2: 166 166 176;
+  --ink-3: 116 116 126;
+  --ink-4: 76 76 85;
 
   --accent: 74 158 255;
   --accent-hover: 110 178 255;
-  --accent-tint: 30 46 68;
+  --accent-tint: 22 38 62;
   --on-accent: 255 255 255;
 
   --inverse: 245 245 245;
@@ -96,8 +96,11 @@
   --hard: 248 97 92;
   --success: 40 194 68;
   --success-solid: 44 187 93;
-  --frame: 15 15 15;
-  --stripe: rgb(255 255 255 / 0.06);
+  --frame: 7 7 9;
+  --stripe: rgb(255 255 255 / 0.035);
+  /* Premium surfaces: a hairline of light on the top edge, soft depth below */
+  --edge: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  --card: inset 0 1px 0 rgb(255 255 255 / 0.05), 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
 
   --ring: rgb(74 158 255 / 0.5);
   --scrim: rgb(0 0 0 / 0.6);

@@ -8,9 +8,10 @@ import { getCourse, fetchQuestions, useCatalog } from '../../data/catalog'
 import { progress, useProgress, courseProgress } from '../../store/progress'
 import { difficultyClass, difficultyShort } from '../mcqs/mcqs'
 import { DailyCalendar, SolvedCard, StatusGlyph, acceptanceOf, plainText } from './parts'
-import { FiSearch, FiBookmark, FiCheckCircle, FiClock, FiRotateCcw, FiShuffle, FiChevronDown, FiX, FiCalendar, FiBookOpen } from "react-icons/fi";
+import { FiSearch, FiBookmark, FiCheckCircle, FiClock, FiRotateCcw, FiShuffle, FiChevronDown, FiX, FiCalendar, FiBookOpen, FiPlay } from "react-icons/fi";
 import { useChallengeView } from '../../store/challenge'
 import { useStudy, orderCourses } from '../../store/study'
+import { Surface, Ring } from '../../components/premium/premium'
 
 const difficulties : ('All' | Difficulty)[] = ['All', 'Easy', 'Medium', 'Hard']
 const sorts = ['Default', 'Newest', 'Oldest', 'Hardest', 'Acceptance'] as const
@@ -139,7 +140,7 @@ const Questions = () => {
     const libraryRow = (active : boolean) => `flex items-center gap-[10px] h-9 px-2 rounded-md text-[14px] transition-colors ${active ? 'bg-ink/[0.07] text-ink font-medium' : 'text-ink-2 hover:bg-ink/[0.04] hover:text-ink'}`
 
     return (
-        <main className='w-full max-w-[1440px] mx-auto px-3 md:px-5 py-5 md:py-6 grid grid-cols-1 lg:grid-cols-[216px_minmax(0,1fr)] xl:grid-cols-[216px_minmax(0,1fr)_270px] gap-6 items-start'>
+        <main className='w-full max-w-[1440px] mx-auto px-3 md:px-6 py-6 md:py-8 grid grid-cols-1 lg:grid-cols-[216px_minmax(0,1fr)] xl:grid-cols-[216px_minmax(0,1fr)_270px] gap-6 items-start'>
 
             {/* Library rail */}
             <aside className='hidden lg:flex flex-col gap-1 sticky top-[66px]' aria-label='Library'>
@@ -171,32 +172,51 @@ const Questions = () => {
 
             {/* The list */}
             <section className='flex flex-col gap-4 min-w-0' aria-label={`${course.name} questions`}>
-                <div className='flex flex-wrap items-center gap-3'>
-                    <CourseIcon course={course} size={36}/>
-                    <div className='flex flex-col min-w-0 flex-1'>
-                        <h1 className='text-[20px] font-semibold tracking-[-0.02em] text-ink leading-tight truncate'>{course.name}</h1>
-                        <span className='text-[12px] text-ink-3'>{course.code} · {data.length || course.questions} past questions{stats.answered ? ` · ${stats.accuracy}% right` : ''}</span>
+                {/* Course hero: identity, progress and topic mastery at a glance */}
+                <Surface className='overflow-hidden p-5 md:p-6 flex flex-col gap-5'>
+                    <div className='relative flex flex-wrap items-center gap-5'>
+                        <CourseIcon course={course} size={56}/>
+                        <div className='flex flex-col gap-1 min-w-0 flex-1'>
+                            <span className='text-[12px] font-medium text-ink-3 uppercase tracking-[0.08em]'>{course.code} · Past questions</span>
+                            <h1 className='text-[28px] font-semibold tracking-[-0.03em] text-ink leading-tight truncate'>{course.name}</h1>
+                        </div>
+                        <div className='flex items-center gap-5'>
+                            <Ring value={data.length ? solved / data.length : 0} size={60} stroke={5}>
+                                <span className='text-[15px] font-semibold text-ink tabular-nums'>{solved}</span>
+                                <span className='text-[10px] text-ink-3 mt-[2px]'>/ {data.length || course.questions}</span>
+                            </Ring>
+                            <div className='hidden sm:flex flex-col gap-1'>
+                                <span className='text-[12px] text-ink-3'>Accuracy</span>
+                                <span className='text-[22px] font-semibold text-ink tabular-nums leading-none'>{stats.answered ? `${stats.accuracy}%` : '—'}</span>
+                            </div>
+                        </div>
                     </div>
-                    <div className='flex items-center gap-2'>
-                        {stats.answered > 0 && <kit.GhostButton type='button' className='!h-8' onClick={resetCourse}><FiRotateCcw size={13}/> Reset</kit.GhostButton>}
-                        <kit.SecondaryButton type='button' className='!h-8' onClick={()=>navigate(`/plan/${course.id}`)}><FiBookOpen size={13}/> Study plan</kit.SecondaryButton>
-                        <kit.PrimaryButton type='button' className='!h-8' onClick={()=>navigate('/test/testconfig', { state : { courseID : course.id } })}>
-                            <FiClock size={13}/> Timed test
-                        </kit.PrimaryButton>
+                    {
+                        topics.length > 0 &&
+                        <div className='relative grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-x-5 gap-y-3'>
+                            {topics.slice(0, 10).map(([name, count]) => {
+                                const right = data.filter((question) => question.topic === name && state.attempts[question.id]?.correct).length
+                                return (
+                                    <button key={name} type='button' aria-pressed={topic === name} onClick={()=>setTopic(topic === name ? 'All' : name)} className={`flex flex-col gap-[6px] text-left group rounded-md -m-[6px] p-[6px] transition-colors ${topic === name ? 'bg-white/[0.06]' : 'hover:bg-white/[0.03]'}`}>
+                                        <span className='flex items-baseline justify-between gap-2 text-[12px]'>
+                                            <span className={`truncate ${topic === name ? 'text-ink font-medium' : 'text-ink-2 group-hover:text-ink'}`}>{name}</span>
+                                            <span className='text-ink-4 tabular-nums'>{right}/{count}</span>
+                                        </span>
+                                        <span className='h-[3px] rounded-full bg-white/[0.07] overflow-hidden'>
+                                            <span className='block h-full rounded-full bg-success transition-[width] duration-700 ease-out' style={{ width : `${right / count * 100}%` }}/>
+                                        </span>
+                                    </button>
+                                )
+                            })}
+                        </div>
+                    }
+                    <div className='relative flex flex-wrap items-center gap-2'>
+                        <kit.PrimaryButton type='button' onClick={shuffle} disabled={!visible.length}><FiPlay size={12} fill='currentColor'/> Practise next</kit.PrimaryButton>
+                        <kit.SecondaryButton type='button' onClick={()=>navigate('/test/testconfig', { state : { courseID : course.id } })}><FiClock size={13}/> Timed test</kit.SecondaryButton>
+                        <kit.SecondaryButton type='button' onClick={()=>navigate(`/plan/${course.id}`)}><FiBookOpen size={13}/> Study plan</kit.SecondaryButton>
+                        {stats.answered > 0 && <kit.GhostButton type='button' className='ml-auto' onClick={resetCourse}><FiRotateCcw size={13}/> Reset</kit.GhostButton>}
                     </div>
-                </div>
-
-                {/* Topics, with counts */}
-                <div className='flex flex-wrap items-center gap-x-1 gap-y-1'>
-                    {[['All', data.length] as [string, number], ...topics].map(([name, count]) => (
-                        <button key={name} type='button' onClick={()=>setTopic(name)} aria-pressed={topic === name}
-                            className={`h-7 px-[10px] rounded-full text-[13px] inline-flex items-center gap-[6px] transition-colors
-                            ${topic === name ? 'bg-ink text-surface' : 'text-ink-2 hover:bg-ink/[0.06]'}`}>
-                            {name === 'All' ? 'All topics' : name}
-                            <span className={`text-[11px] tabular-nums ${topic === name ? 'opacity-70' : 'text-ink-4'}`}>{count}</span>
-                        </button>
-                    ))}
-                </div>
+                </Surface>
 
                 {/* Toolbar */}
                 <div className='flex flex-wrap items-center gap-2'>

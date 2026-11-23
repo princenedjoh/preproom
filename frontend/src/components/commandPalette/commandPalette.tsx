@@ -5,9 +5,8 @@ import { IconType } from 'react-icons'
 import { getCourse, useCatalog, cachedQuestions } from '../../data/catalog'
 import { dailyIndex, reviewLink } from '../../store/progress'
 import { getLenis } from '../smoothScroll/smoothScroll'
-import { toggleTheme } from '../../store/theme'
 import { toneOf, toneVar } from '../../styles/tone'
-import { FiMoon, FiSearch, FiSun, FiBookOpen, FiClock, FiAward, FiUser, FiBell, FiBookmark, FiRotateCcw, FiHelpCircle, FiCornerDownLeft } from 'react-icons/fi'
+import { FiSearch, FiSun, FiBookOpen, FiClock, FiAward, FiUser, FiBell, FiBookmark, FiRotateCcw, FiHelpCircle, FiCornerDownLeft } from 'react-icons/fi'
 
 interface Item {
     id : string
@@ -97,7 +96,6 @@ const CommandPalette = ({ open, onClose } : { open : boolean, onClose : () => vo
             { id : 'saved', group : 'Actions', label : 'Saved questions', icon : FiBookmark, run : () => go(reviewLink('saved'))() },
             { id : 'mistakes', group : 'Actions', label : 'Review mistakes', icon : FiRotateCcw, run : () => go(reviewLink('mistakes'))() },
             { id : 'plan', group : 'Actions', label : 'Open a study plan', hint : today.name, icon : FiBookOpen, run : go(`/plan/${today.id}`) },
-            { id : 'theme', group : 'Actions', label : 'Switch light / dark theme', icon : FiMoon, run : () => { toggleTheme(); onClose() } },
             ...courses.map((course) : Item => ({
                 id : `course-${course.id}`, group : 'Courses', label : course.name, hint : course.code, color : toneVar(toneOf(course.id, course.color)), run : go(`/questions/${course.id}`),
             })),

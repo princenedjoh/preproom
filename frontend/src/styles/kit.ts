@@ -162,6 +162,7 @@ export const Card = styled.div.attrs({
 })`
     background : ${color.surface};
     border : 1px solid ${color.line};
+    box-shadow : var(--card);
 `
 
 export const IconTile = styled.span.attrs({
@@ -218,6 +219,7 @@ export const Panel = styled.div.attrs({
 })`
     background : ${color.surface};
     border : 1px solid ${color.line};
+    box-shadow : var(--card);
 `
 
 export const PanelTitle = styled.div.attrs({
@@ -276,6 +278,7 @@ export const Stat = styled.div.attrs({
 })`
     background : ${color.surface};
     border : 1px solid ${color.line};
+    box-shadow : var(--card);
 `
 
 export const StatValue = styled.span.attrs({

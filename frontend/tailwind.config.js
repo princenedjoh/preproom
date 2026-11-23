@@ -72,6 +72,8 @@ module.exports = {
         boxShadow : {
           float : 'var(--shadow-float)',
           press : 'var(--shadow-press)',
+          edge : 'var(--edge)',
+          card : 'var(--card)',
         },
         maxWidth : {
           page : '1200px',

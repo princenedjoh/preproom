@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate, Link } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
-import { FiMenu, FiX, FiMoon, FiSun, FiArrowRight } from 'react-icons/fi'
+import { FiMenu, FiX, FiArrowRight } from 'react-icons/fi'
 import { Wordmark } from '../brand/logo'
 import SmoothScroll, { getLenis } from '../smoothScroll/smoothScroll'
 import { useSession } from '../../store/session'
-import { toggleTheme, useTheme } from '../../store/theme'
 import * as kit from '../../styles/kit'
 import "react-toastify/dist/ReactToastify.css"
 import "../reactToastify/toastifyCustomStyles.css"
@@ -21,7 +20,6 @@ const SiteShell = ({ bare = false } : { bare? : boolean }) => {
     const navigate = useNavigate()
     const { pathname } = useLocation()
     const session = useSession()
-    const { resolved } = useTheme()
     const [open, setOpen] = useState(false)
     const [scrolled, setScrolled] = useState(false)
     const signedIn = session.status === 'user'
@@ -58,9 +56,6 @@ const SiteShell = ({ bare = false } : { bare? : boolean }) => {
                         </nav>
                     }
                     <div className='ml-auto flex items-center gap-1'>
-                        <kit.IconButton type='button' onClick={toggleTheme} aria-label={resolved === 'dark' ? 'Use light theme' : 'Use dark theme'} title='Theme'>
-                            {resolved === 'dark' ? <FiSun size={16}/> : <FiMoon size={16}/>}
-                        </kit.IconButton>
                         {
                             signedIn ?
                             <kit.PrimaryButton type='button' className='ml-1' onClick={()=>navigate('/today')}>Open PrepRoom <FiArrowRight size={15}/></kit.PrimaryButton>

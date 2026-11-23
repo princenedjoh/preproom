@@ -9,7 +9,9 @@ import TestHistory from '../../../../components/testHistory/testHistory'
 import SegmentedControl from '../../../../components/UI/segmented/segmented'
 import CourseIcon from '../../../../components/courseIcon/courseIcon'
 import { useStudy, orderCourses, getStudy } from '../../../../store/study'
-import { FiArrowRight, FiFlag, FiLayers, FiFileText, FiZap, FiAlertCircle } from "react-icons/fi";
+import { PageHero } from '../../../../components/premium/premium'
+import { useProgress } from '../../../../store/progress'
+import { FiArrowRight, FiFlag, FiLayers, FiFileText, FiZap, FiAlertCircle, FiClock } from "react-icons/fi";
 
 export interface TestConfigState {
     courseID : string
@@ -39,6 +41,7 @@ const TestConfig = () => {
     const incoming = (useLocation().state ?? {}) as Partial<TestConfigState>
 
     const catalog = useCatalog()
+    const state = useProgress()
     const courses = orderCourses(catalog.courses, useStudy().courses)
     const [config, setConfig] = useState<TestConfigState>({
         courseID : getCourse(incoming.courseID ?? getStudy().courses[0]).id,
@@ -87,16 +90,31 @@ const TestConfig = () => {
     }
 
     return (
-        <kit.Page>
-            <kit.PageInner className='gap-10'>
-                <header className='flex flex-col gap-2 pt-2'>
-                    <kit.PageTitle>Tests</kit.PageTitle>
-                    <kit.Body>Pick a course and the rules. The clock starts when you press Start.</kit.Body>
-                </header>
+        <main className='w-full max-w-[1200px] mx-auto px-4 md:px-6 pt-10 md:pt-14 pb-24 flex flex-col gap-10'>
+                <PageHero
+                    tone='accent'
+                    eyebrow={<><FiClock size={13}/> Exam conditions</>}
+                    title='Tests'
+                    sub='Pick a course and the rules. The clock starts when you press Start, and you can flag questions to come back to.'
+                    right={
+                        <div className='flex items-center gap-px rounded-xl overflow-hidden border border-line bg-line shadow-card shrink-0'>
+                            {[
+                                ['Taken', String(state.tests.length)],
+                                ['Average', state.tests.length ? `${Math.round(state.tests.reduce((sum, run) => sum + (run.total ? run.score / run.total : 0), 0) / state.tests.length * 100)}%` : '—'],
+                                ['Best', state.tests.length ? `${Math.max(...state.tests.map((run) => run.total ? Math.round(run.score / run.total * 100) : 0))}%` : '—'],
+                            ].map(([label, value]) => (
+                                <div key={label} className='bg-surface px-5 py-3 flex flex-col gap-1 min-w-[96px]'>
+                                    <span className='text-[12px] text-ink-3'>{label}</span>
+                                    <span className='text-[22px] font-semibold tracking-[-0.03em] text-ink tabular-nums leading-none'>{value}</span>
+                                </div>
+                            ))}
+                        </div>
+                    }
+                />
 
                 <testConfigStyle.Layout>
                     <div className='flex flex-col gap-6 min-w-0'>
-                        <div className='grid grid-cols-1 sm:grid-cols-3 gap-2' role='radiogroup' aria-label='Kind of test'>
+                        <div className='grid grid-cols-1 sm:grid-cols-3 gap-3' role='radiogroup' aria-label='Kind of test'>
                             {
                                 modes.map((mode) => (
                                     <testConfigStyle.Mode
@@ -107,15 +125,15 @@ const TestConfig = () => {
                                         onClick={()=>chooseMode(mode.id)}
                                         aria-checked={config.mode === mode.id}
                                     >
-                                        <kit.IconTile tone={mode.tone as kit.Tone} className='!w-8 !h-8'><mode.icon size={15}/></kit.IconTile>
-                                        <span className='text-[14px] font-medium text-ink pt-1'>{mode.title}</span>
-                                        <span className='text-[13px] leading-[1.45] text-ink-3'>{mode.text}</span>
+                                        <kit.IconTile tone={mode.tone as kit.Tone} className='relative !w-11 !h-11 !rounded-lg'><mode.icon size={19}/></kit.IconTile>
+                                        <span className='relative text-[16px] font-semibold tracking-[-0.01em] text-ink pt-2'>{mode.title}</span>
+                                        <span className='relative text-[13px] leading-[1.5] text-ink-3'>{mode.text}</span>
                                     </testConfigStyle.Mode>
                                 ))
                             }
                         </div>
 
-                        <div className='flex flex-col rounded-lg border border-line px-4'>
+                        <div className='flex flex-col rounded-xl border border-line bg-surface shadow-card px-5'>
                             <testConfigStyle.Field>
                                 <testConfigStyle.FieldLabel>Course</testConfigStyle.FieldLabel>
                                 <div className='flex flex-wrap gap-[6px]'>
@@ -190,7 +208,7 @@ const TestConfig = () => {
                         </div>
                         {
                             inCourse && !isPaper && asked < config.count &&
-                            <span className='flex gap-2 text-[12px] leading-[1.5] text-tag-orange bg-tag-orange-bg rounded-md px-3 py-2'>
+                            <span className='flex gap-2 text-[12px] leading-[1.5] text-medium bg-medium/10 border border-medium/20 rounded-md px-3 py-2'>
                                 <FiAlertCircle size={14} className='shrink-0 mt-[1px]'/>
                                 <span>Only {asked} {config.difficulty === 'Mixed' ? '' : `${config.difficulty.toLowerCase()} `}question{asked === 1 ? ' is' : 's are'} available for {course.name}, so the test uses {asked === 1 ? 'it' : 'all of them'}.</span>
                             </span>
@@ -204,12 +222,11 @@ const TestConfig = () => {
                     </testConfigStyle.Summary>
                 </testConfigStyle.Layout>
 
-                <section className='flex flex-col gap-3'>
-                    <kit.Title>History</kit.Title>
+                <section className='flex flex-col gap-4'>
+                    <h2 className='text-[20px] font-semibold tracking-[-0.02em] text-ink'>History</h2>
                     <TestHistory/>
                 </section>
-            </kit.PageInner>
-        </kit.Page>
+        </main>
     )
 }
 

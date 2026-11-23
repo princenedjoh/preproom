@@ -6,6 +6,7 @@ import { loadResult } from '../test/engine'
 import { TestConfigState } from '../test/pages/testConfig/testConfig'
 import { FiArrowRight, FiClock, FiCheck, FiZap, FiAward } from "react-icons/fi";
 import CourseIcon from '../../components/courseIcon/courseIcon'
+import { PageHero } from '../../components/premium/premium'
 import { useProgress, dayKey } from '../../store/progress'
 import { toneOf, toneVar } from '../../styles/tone'
 
@@ -61,17 +62,29 @@ const Pod = () => {
     const top = view.board.slice(0, 10)
 
     return (
-        <kit.Page>
-            <kit.PageInner className='gap-8'>
-                <header className='flex flex-col gap-2 pt-2'>
-                    <kit.PageTitle>Daily challenge</kit.PageTitle>
-                    <kit.Body>Five questions, the same for everyone, new at midnight. Ranked by score, then time.</kit.Body>
-                </header>
+        <main className='w-full max-w-[1200px] mx-auto px-4 md:px-6 pt-10 md:pt-14 pb-24 flex flex-col gap-8'>
+                <PageHero
+                    tone='medium'
+                    eyebrow={<span className='text-medium inline-flex items-center gap-2'><FiZap size={13} fill='currentColor'/> Daily challenge</span>}
+                    title='Five questions. Every day.'
+                    sub='The same set for everyone, new at midnight. Ranked by score, then speed.'
+                    right={
+                        <div className='flex items-center gap-4 shrink-0'>
+                            <span className={`w-16 h-16 rounded-full inline-flex items-center justify-center ${streak.activeToday ? 'bg-medium/15 text-medium' : 'bg-white/[0.05] text-ink-4'}`} >
+                                <FiZap size={26} fill={streak.activeToday ? 'currentColor' : 'none'}/>
+                            </span>
+                            <span className='flex flex-col'>
+                                <span className='text-[30px] font-semibold tracking-[-0.04em] text-ink tabular-nums leading-none'>{streak.current}</span>
+                                <span className='text-[12px] text-ink-3 mt-1'>day streak · best {Math.max(streak.best, streak.current)}</span>
+                            </span>
+                        </div>
+                    }
+                />
 
                 <div className='grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start'>
                     <div className='flex flex-col gap-6 min-w-0'>
-                        <section className='rounded-lg border border-line p-6 flex flex-col gap-6' aria-busy={!view.ready} aria-label="Today's challenge">
-                            <div className='flex flex-wrap items-center justify-between gap-3'>
+                        <section className='relative overflow-hidden rounded-xl border border-line bg-surface shadow-card p-6 md:p-7 flex flex-col gap-6' aria-busy={!view.ready} aria-label="Today's challenge">
+                            <div className='relative flex flex-wrap items-center justify-between gap-3'>
                                 <span className='inline-flex items-center gap-2 text-[13px] text-ink-3'>
                                     {now.toLocaleDateString(undefined, { weekday : 'long', day : 'numeric', month : 'long' })}
                                 </span>
@@ -79,11 +92,11 @@ const Pod = () => {
                                     <FiClock size={13}/> {done ? `Next set in ${countdown}` : `${countdown} left today`}
                                 </span>
                             </div>
-                            <div className='flex items-start gap-4'>
-                                <CourseIcon course={view.course} size={48}/>
+                            <div className='relative flex items-start gap-4'>
+                                <CourseIcon course={view.course} size={56}/>
                                 <div className='flex flex-col gap-1 min-w-0'>
                                     <span className='text-[13px] text-ink-3'>{view.course.code} · {view.count} questions · {view.minutes} min</span>
-                                    <h2 className='text-[24px] md:text-[28px] font-semibold tracking-[-0.03em] leading-tight text-ink'>
+                                    <h2 className='text-[26px] md:text-[32px] font-semibold tracking-[-0.035em] leading-tight text-ink'>
                                         {done ? <>You scored <span className='tabular-nums'>{done.score}/{done.total}</span></> : view.title.replace(/\.$/, '')}
                                     </h2>
                                     <span className='text-[14px] text-ink-2'>
@@ -95,16 +108,17 @@ const Pod = () => {
                                     </span>
                                 </div>
                             </div>
-                            <div className='flex flex-wrap items-center gap-4'>
+                            <div className='relative flex flex-wrap items-center gap-4'>
                                 {
                                     done ?
                                     <kit.SecondaryButton type='button' onClick={openResult}>
                                         {done.testID ? 'See your answers' : done.missed ? 'Review what you missed' : `Practise ${view.course.name}`} <FiArrowRight size={14}/>
                                     </kit.SecondaryButton>
                                     :
-                                    <kit.PrimaryButton type='button' disabled={!view.ready} onClick={()=>startChallenge(navigate, view.course.id)}>
+                                    <button type='button' disabled={!view.ready} onClick={()=>startChallenge(navigate, view.course.id)}
+                                        className='h-10 px-5 inline-flex items-center gap-2 rounded-[5px] bg-medium text-[#1a1300] text-[14px] font-semibold hover:brightness-110 active:scale-[0.97] transition-[filter,transform] disabled:opacity-50'>
                                         {view.status === 'in_progress' ? 'Resume challenge' : 'Start challenge'} <FiArrowRight size={14}/>
-                                    </kit.PrimaryButton>
+                                    </button>
                                 }
                                 {
                                     view.recentPlayers.length > 0 &&
@@ -120,7 +134,7 @@ const Pod = () => {
                             </div>
                         </section>
 
-                        <section className='rounded-lg border border-line p-6 flex flex-col gap-5' aria-label='Streak'>
+                        <section className='rounded-xl border border-line bg-surface shadow-card p-6 flex flex-col gap-5' aria-label='Streak'>
                             <div className='flex flex-wrap items-baseline justify-between gap-3'>
                                 <div className='flex items-baseline gap-2'>
                                     <span className='text-[28px] font-semibold tracking-[-0.03em] text-ink tabular-nums leading-none'>{streak.current}</span>
@@ -178,7 +192,7 @@ const Pod = () => {
                                     <span className='text-[14px]'>Today's set takes about ten minutes.</span>
                                 </kit.Empty>
                                 :
-                                <div className='rounded-lg border border-line overflow-hidden'>
+                                <div className='rounded-xl border border-line bg-surface shadow-card overflow-hidden'>
                                     {view.recent.map((item) => (
                                         <div key={item.key} className='flex items-center gap-4 px-4 py-3 border-b border-line last:border-0 text-[14px]'>
                                             <span className='w-[88px] shrink-0 text-ink-3'>{item.when}</span>
@@ -192,7 +206,7 @@ const Pod = () => {
                         </section>
                     </div>
 
-                    <section className='rounded-lg border border-line lg:sticky lg:top-6 overflow-hidden' aria-label="This week's leaderboard">
+                    <section className='rounded-xl border border-line bg-surface shadow-card lg:sticky lg:top-[74px] overflow-hidden' aria-label="This week's leaderboard">
                         <div className='flex items-center justify-between px-4 h-12 border-b border-line'>
                             <span className='text-[14px] font-medium text-ink'>This week</span>
                             <span className='text-[12px] text-ink-3'>Points</span>
@@ -203,14 +217,15 @@ const Pod = () => {
                             :
                             <ol className='flex flex-col py-1'>
                                 {top.map((person) => (
-                                    <li key={person.key} className={`flex items-center gap-3 px-4 h-11 ${person.you ? 'bg-accent-tint' : ''}`}>
-                                        <span className={`w-5 text-[12px] tabular-nums ${person.rank <= 3 ? 'text-ink font-semibold' : 'text-ink-3'}`}>{person.rank}</span>
-                                        <kit.Avatar color={toneVar(toneOf(person.name, person.color))} size={24}>{person.initials}</kit.Avatar>
-                                        <span className='flex-1 min-w-0 flex flex-col leading-tight'>
+                                    <li key={person.key} className={`relative flex items-center gap-3 px-4 h-12 ${person.you ? 'bg-accent-tint' : ''}`}>
+                                        <span aria-hidden className='absolute left-0 inset-y-[10px] rounded-r-full bg-white/[0.04]' style={{ width : `${Math.round(person.score / Math.max(1, top[0]?.score ?? 1) * 100)}%` }}/>
+                                        <span className={`relative w-6 h-6 rounded-full inline-flex items-center justify-center text-[11px] font-semibold tabular-nums ${person.rank === 1 ? 'bg-medium/20 text-medium' : person.rank === 2 ? 'bg-white/[0.1] text-ink' : person.rank === 3 ? 'bg-tag-brown/25 text-tag-brown' : 'text-ink-3'}`}>{person.rank}</span>
+                                        <span className='relative'><kit.Avatar color={toneVar(toneOf(person.name, person.color))} size={26}>{person.initials}</kit.Avatar></span>
+                                        <span className='relative flex-1 min-w-0 flex flex-col leading-tight'>
                                             <span className={`text-[14px] truncate ${person.you ? 'font-medium text-accent' : 'text-ink'}`}>{person.name}</span>
                                             {person.school && <span className='text-[11px] text-ink-3 truncate'>{person.school}</span>}
                                         </span>
-                                        <span className='text-[13px] font-medium text-ink tabular-nums'>{person.score.toLocaleString()}</span>
+                                        <span className='relative text-[13px] font-semibold text-ink tabular-nums'>{person.score.toLocaleString()}</span>
                                     </li>
                                 ))}
                                 {
@@ -229,8 +244,7 @@ const Pod = () => {
                         </p>
                     </section>
                 </div>
-            </kit.PageInner>
-        </kit.Page>
+        </main>
     )
 }
 

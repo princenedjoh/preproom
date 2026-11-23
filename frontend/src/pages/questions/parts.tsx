@@ -54,7 +54,7 @@ export const DailyCalendar = () => {
     const done = !!view.result
 
     return (
-        <section className='rounded-lg bg-surface border border-line p-4 flex flex-col gap-3' aria-label='Daily challenge calendar'>
+        <section className='rounded-xl bg-surface border border-line shadow-card p-4 flex flex-col gap-3' aria-label='Daily challenge calendar'>
             <div className='flex items-center gap-2'>
                 <span className='text-[14px] font-medium text-ink'>{offset === 0 ? `Day ${now.getDate()}` : month.toLocaleDateString(undefined, { month : 'long', year : 'numeric' })}</span>
                 {offset === 0 && <span className='text-[12px] text-ink-3 font-mono tabular-nums'>{left} left</span>}
@@ -120,7 +120,7 @@ export const SolvedCard = ({ questions } : { questions : Question[] }) => {
     const tone = { Easy : 'easy', Medium : 'medium', Hard : 'hard' } as const
 
     return (
-        <section className='rounded-lg bg-surface border border-line p-4 flex items-center gap-5' aria-label='Solved'>
+        <section className='rounded-xl bg-surface border border-line shadow-card p-4 flex items-center gap-5' aria-label='Solved'>
             <div className='relative w-[96px] h-[96px] shrink-0'>
                 <svg viewBox='0 0 100 100' className='w-full h-full -rotate-90'>
                     <circle cx='50' cy='50' r={r} fill='none' strokeWidth='6' stroke='rgb(var(--ink) / 0.08)'/>

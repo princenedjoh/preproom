@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { Switch } from 'antd'
 import { confirm } from '../../components/dialog/confirm'
 import * as kit from '../../styles/kit'
-import ThemeSwitch from '../../components/shell/themeSwitch'
 import CourseIcon from '../../components/courseIcon/courseIcon'
 import { toneOf, toneVar } from '../../styles/tone'
 import { plainText } from '../questions/parts'
@@ -257,10 +256,6 @@ const Profile = () => {
                         </form>
                     </kit.Panel>
                     <div className='flex flex-col gap-4'>
-                        <kit.Panel>
-                            <kit.PanelTitle>Appearance</kit.PanelTitle>
-                            <ThemeSwitch wide/>
-                        </kit.Panel>
                         <kit.Panel>
                             <kit.PanelTitle>Notifications</kit.PanelTitle>
                             {

@@ -3,7 +3,6 @@ import { Outlet, useLocation, useNavigate, NavLink } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
 import { FiSearch, FiBell, FiMenu, FiX, FiUser, FiLogOut, FiLogIn, FiZap, FiChevronDown } from 'react-icons/fi'
 import { Mark } from '../brand/logo'
-import ThemeSwitch from './themeSwitch'
 import CommandPalette, { useCommandPalette } from '../commandPalette/commandPalette'
 import { useNotifications } from '../../store/notifications'
 import { useProgress, summarize, initialsOf } from '../../store/progress'
@@ -65,7 +64,6 @@ export const AccountMenu = () => {
                             <span className='text-[12px] text-ink-3 truncate'>{signedIn ? session.user?.email : 'Progress saved on this device'}</span>
                         </span>
                     </div>
-                    <div className='px-2 pb-1'><ThemeSwitch wide/></div>
                     <div className='h-px bg-line my-1'/>
                     <button role='menuitem' type='button' onClick={()=>{ setOpen(false); navigate('/profile') }} className={menuItem}>
                         <FiUser size={15}/> Profile and settings

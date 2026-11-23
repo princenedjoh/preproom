@@ -7,10 +7,11 @@ export const Layout = styled.div.attrs({
 })``
 
 export const Mode = styled.button.attrs({
-   className : `Mode flex flex-col items-start gap-2 rounded-lg p-4 text-left w-full` as string
+   className : `Mode relative overflow-hidden flex flex-col items-start gap-2 rounded-xl p-5 text-left w-full` as string
 })<{active? : boolean}>`
-   background : ${({active}) => active ? color.accentTint : color.surface};
-   border : 1px solid ${({active}) => active ? color.alpha('accent', 0.45) : color.line};
+   background : ${color.surface};
+   border : 1px solid ${({active}) => active ? color.alpha('accent', 0.55) : color.line};
+   box-shadow : ${({active}) => active ? `var(--card), 0 0 0 1px ${color.alpha('accent', 0.25)}` : 'var(--card)'};
    ${pressable}
    &:active:not(:disabled) { transform : scale(0.985); }
    @media (hover : hover) and (pointer : fine) {
@@ -32,10 +33,11 @@ export const FieldLabel = styled.span.attrs({
 `
 
 export const Summary = styled.div.attrs({
-   className : `Summary rounded-lg p-5 flex flex-col gap-5 lg:sticky lg:top-6` as string
+   className : `Summary rounded-xl p-5 flex flex-col gap-5 lg:sticky lg:top-[74px]` as string
 })`
    background : ${color.surface};
    border : 1px solid ${color.line};
+   box-shadow : var(--card);
 `
 
 export const SummaryRow = styled.div.attrs({
@@ -46,9 +48,11 @@ export const SummaryRow = styled.div.attrs({
 `
 
 export const Table = styled.div.attrs({
-   className : `Table w-full rounded-lg overflow-hidden` as string
+   className : `Table w-full rounded-xl overflow-hidden` as string
 })`
    border : 1px solid ${color.line};
+   background : ${color.surface};
+   box-shadow : var(--card);
 `
 
 export const TableRow = styled.div.attrs({

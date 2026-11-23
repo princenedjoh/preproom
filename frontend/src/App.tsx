@@ -14,7 +14,7 @@ import { loadCatalog, useCatalog } from './data/catalog';
 // antd and MUI derive hover/active shades from real colours, so they get hex values per theme
 const hex = {
   light : { canvas : '#ffffff', surface : '#ffffff', line : '#ebebeb', ink : '#1a1a1a', ink2 : '#737373', ink4 : '#c9c9c9', accent : '#007aff' },
-  dark : { canvas : '#1a1a1a', surface : '#262626', line : '#3a3a3a', ink : '#f5f5f5', ink2 : '#a3a3a3', ink4 : '#5c5c5c', accent : '#4a9eff' },
+  dark : { canvas : '#0b0b0d', surface : '#141417', line : '#26262b', ink : '#f3f3f5', ink2 : '#a6a6b0', ink4 : '#4c4c55', accent : '#4a9eff' },
 }
 
 const antdThemeFor = (mode : 'light' | 'dark') => ({
