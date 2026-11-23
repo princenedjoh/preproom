@@ -1,6 +1,6 @@
-import { ReactNode, useEffect, useRef } from 'react'
+import React, { ReactNode, useEffect, useRef } from 'react'
 import styled, { keyframes } from 'styled-components'
-import { FiX, FiWifiOff } from 'react-icons/fi'
+import { FiX, FiWifiOff, FiChevronDown } from 'react-icons/fi'
 import { IconType } from 'react-icons'
 import { Empty, Avatar } from '../../styles/kit'
 import { toneOf, toneVar } from '../../styles/tone'
@@ -132,3 +132,16 @@ export const Dialog = ({ open, title, description, onClose, children, footer } :
         </Backdrop>
     )
 }
+
+/* Sortable column header */
+
+export const SortButton = ({ active, descending, children, className = '', ...rest } : {
+    active : boolean, descending : boolean, children : ReactNode, className? : string,
+} & React.ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button type="button" {...rest}
+        className={`inline-flex items-center gap-1 -mx-1 px-1 h-6 rounded-[4px] font-medium transition-colors duration-100 hover:bg-ink/[0.05] hover:text-ink ${active ? 'text-ink' : ''} ${className}`}>
+        {children}
+        <FiChevronDown size={12} aria-hidden
+            className={`transition-[transform,opacity] duration-150 ${active ? 'opacity-100' : 'opacity-0'} ${descending ? '' : 'rotate-180'}`} />
+    </button>
+)

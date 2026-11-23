@@ -143,6 +143,7 @@ export const Th = styled.th.attrs({
     className : `Th text-[12px] font-medium px-4 h-[40px] whitespace-nowrap` as string
 })`
     color : ${({theme}) => theme.color.ink3};
+    background : ${({theme}) => theme.color.surface};
     border-bottom : 1px solid ${({theme}) => theme.color.line};
 `
 

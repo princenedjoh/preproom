@@ -8,7 +8,7 @@ import * as sample from '../../data/sample'
 import * as api from '../../data/api'
 import { useAdmin } from '../../context/admin'
 import useLoad from '../../hooks/useLoad'
-import { SampleNotice, SkeletonRows, EmptyState, Dialog } from '../../components/ui/ui'
+import { SampleNotice, SkeletonRows, EmptyState, Dialog, SortButton } from '../../components/ui/ui'
 import SegmentedControl from '../../components/ui/segmented'
 import { PrimaryButton, SecondaryButton, FilterChip, Eyebrow } from '../../styles/kit'
 import {
@@ -42,6 +42,7 @@ const QuestionBank = () => {
     const [courseID, setCourseID] = useState('all')
     const [difficulty, setDifficulty] = useState<DifficultyFilter>('All')
     const [flaggedOnly, setFlaggedOnly] = useState(false)
+    const [sort, setSort] = useState<api.QuestionSort>('newest')
     const [confirming, setConfirming] = useState<sample.Question>()
     const [page, setPage] = useState<api.QuestionPage>()
     const [loadingMore, setLoadingMore] = useState(false)
@@ -57,7 +58,7 @@ const QuestionBank = () => {
 
     const filters : api.QuestionQuery = {
         search, courseID : courseID === 'all' ? undefined : courseID,
-        difficulty : difficulty === 'All' ? undefined : difficulty, flagged : flaggedOnly || undefined,
+        difficulty : difficulty === 'All' ? undefined : difficulty, flagged : flaggedOnly || undefined, sort,
     }
 
     useEffect(() => {
@@ -66,7 +67,7 @@ const QuestionBank = () => {
         api.fetchQuestionPage(filters).then((result) => !cancelled && setPage(result))
         return () => { cancelled = true }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [search, courseID, difficulty, flaggedOnly])
+    }, [search, courseID, difficulty, flaggedOnly, sort])
 
     const loadMore = async () => {
         if (!page) return
@@ -83,7 +84,7 @@ const QuestionBank = () => {
 
     const filtersOnNow = Boolean(search) || courseID !== 'all' || difficulty !== 'All' || flaggedOnly
     // Questions saved this session only show while the list is unfiltered
-    const results = api.uniqueById([...(filtersOnNow ? [] : added), ...(page?.items ?? [])])
+    const results = api.uniqueById([...(filtersOnNow || sort !== 'newest' ? [] : added), ...(page?.items ?? [])])
     const total = (page?.total ?? 0) + (page?.live ? 0 : filtersOnNow ? 0 : added.length)
 
     const openID = params.get('open')
@@ -165,8 +166,16 @@ const QuestionBank = () => {
                     <thead className="sticky top-0 z-[1]">
                         <tr>
                             <Th>Question</Th><Th>Course</Th><Th className="hidden md:table-cell">Topic</Th>
-                            <Th className="hidden sm:table-cell">Difficulty</Th><Th className="hidden sm:table-cell text-right" title="Share of students whose first answer was correct">Acceptance</Th><Th className="text-right">Flags</Th>
-                            <Th className="hidden lg:table-cell">Author</Th><Th className="hidden lg:table-cell">Added</Th>
+                            <Th className="hidden sm:table-cell">Difficulty</Th><Th className="hidden sm:table-cell text-right" title="Share of students whose first answer was correct" aria-sort={sort === 'acceptance' ? 'ascending' : sort === '-acceptance' ? 'descending' : 'none'}>
+                                <SortButton active={sort === 'acceptance' || sort === '-acceptance'} descending={sort === '-acceptance'} aria-label="Sort by acceptance"
+                                    onClick={() => setSort(sort === 'acceptance' ? '-acceptance' : sort === '-acceptance' ? 'newest' : 'acceptance')}>
+                                    Acceptance
+                                </SortButton>
+                            </Th><Th className="text-right">Flags</Th>
+                            <Th className="hidden lg:table-cell">Author</Th><Th className="hidden lg:table-cell" aria-sort={sort === 'newest' ? 'descending' : sort === 'oldest' ? 'ascending' : 'none'}>
+                                <SortButton active={sort === 'newest' || sort === 'oldest'} descending={sort !== 'oldest'}
+                                    onClick={() => setSort(sort === 'newest' ? 'oldest' : 'newest')}>Added</SortButton>
+                            </Th>
                         </tr>
                     </thead>
                     <tbody>

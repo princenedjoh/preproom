@@ -127,7 +127,9 @@ export const fetchPeople = () => list<sample.Person>('/admin/people', toPerson, 
 
 export const fetchNotifications = () => list<sample.AdminNotification>('/notifications?limit=50', toNotification, sample.notifications)
 
-export interface QuestionQuery { search? : string, courseID? : string, difficulty? : string, flagged? : boolean, offset? : number }
+// acceptance = lowest correct rate first (hardest); -acceptance = highest first
+export type QuestionSort = 'newest' | 'oldest' | 'acceptance' | '-acceptance'
+export interface QuestionQuery { search? : string, courseID? : string, difficulty? : string, flagged? : boolean, sort? : QuestionSort, offset? : number }
 export interface QuestionPage { items : sample.Question[], total : number, live : boolean, error? : string }
 
 export const PAGE_SIZE = 50
@@ -139,6 +141,7 @@ export const fetchQuestionPage = async (query : QuestionQuery = {}) : Promise<Qu
             courseID : query.courseID || undefined,
             difficulty : query.difficulty || undefined,
             flagged : query.flagged || undefined,
+            sort : query.sort && query.sort !== 'newest' ? query.sort : undefined,
             limit : PAGE_SIZE,
             offset : query.offset ?? 0,
         } })
@@ -150,6 +153,8 @@ export const fetchQuestionPage = async (query : QuestionQuery = {}) : Promise<Qu
             && (!query.courseID || question.courseID === query.courseID)
             && (!query.difficulty || question.difficulty === query.difficulty)
             && (!query.flagged || question.flags > 0))
+        // Sample data is newest first and has no answer stats, so only age can be re-sorted
+        if (query.sort === 'oldest') items.reverse()
         return { items, total : items.length, live : false }
     }
 }
