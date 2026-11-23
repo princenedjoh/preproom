@@ -23,7 +23,7 @@ const blankOptions = () => ['', '', '', '']
 const unwrap = (html : string) => /^<p>((?:(?!<\/?p>).)*)<\/p>$/s.exec(html)?.[1] ?? html
 
 const AddQuestion = () => {
-    const { added, addQuestion } = useAdmin()
+    const { added, addQuestion, inScope } = useAdmin()
     const courses = useLoad(api.fetchCourses)
     const topics = useLoad(api.fetchTopics)
 
@@ -147,7 +147,7 @@ const AddQuestion = () => {
                                     loading={courses.loading}
                                     status={invalid(Boolean(courseID)) ? 'error' : undefined}
                                     optionFilterProp="label"
-                                    options={courses.items.map((item) => ({ value : item.id, label : item.code ? `${item.code} · ${item.name}` : item.name }))}
+                                    options={courses.items.filter((item) => inScope(item.id)).map((item) => ({ value : item.id, label : item.code ? `${item.code} · ${item.name}` : item.name }))}
                                 />
                             </Label>
                             <Label as="div">

@@ -34,7 +34,7 @@ type DifficultyFilter = 'All' | sample.Difficulty
 const QuestionBank = () => {
     const navigate = useNavigate()
     const [params, setParams] = useSearchParams()
-    const { added, flags } = useAdmin()
+    const { added, flags, inScope } = useAdmin()
     const courses = useLoad(api.fetchCourses)
 
     const [query, setQuery] = useState(params.get('q') ?? '')
@@ -152,7 +152,7 @@ const QuestionBank = () => {
                 </SearchField>
                 <Select value={courseID} onChange={(event) => setCourseID(event.target.value)} aria-label="Filter by course">
                     <option value="all">All courses</option>
-                    {courses.items.map((item) => <option key={item.id} value={item.id}>{item.code || item.name}</option>)}
+                    {courses.items.filter((item) => inScope(item.id)).map((item) => <option key={item.id} value={item.id}>{item.code || item.name}</option>)}
                 </Select>
                 <Segmented>
                     {(['All', 'Easy', 'Medium', 'Hard'] as DifficultyFilter[]).map((level) => (

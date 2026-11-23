@@ -225,7 +225,10 @@ export const markNotificationsRead = (ids? : string[]) => http.post('/notificati
 
 /* Auth */
 
-export interface StaffUser { id : string, name : string, email : string, role : 'student' | 'moderator' | 'supervisor' | 'admin', color : string }
+export interface StaffUser {
+    id : string, name : string, email : string, role : 'student' | 'moderator' | 'supervisor' | 'admin', color : string
+    courses : string[] | null   // a moderator's assigned course ids; null means every course
+}
 
 export const me = async () : Promise<StaffUser> => (await http.get('/auth/me')).data.user
 export const login = async (email : string, password : string) : Promise<StaffUser> => (await http.post('/auth/login', { email, password })).data.user

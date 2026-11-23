@@ -19,6 +19,9 @@ interface AdminState {
     signOut : () => Promise<void>
     user? : { name : string, role : string, color : string }
     can : { managePeople : boolean, editCatalog : boolean }
+    // Course ids this person may write to; undefined means every course
+    scope? : string[]
+    inScope : (courseID : string) => boolean
     flags : sample.Flag[]
     flagsLive : boolean
     setFlagStatus : (id : string, status : sample.FlagStatus, applyAnswer? : number) => Promise<void>
@@ -91,6 +94,8 @@ export const AdminProvider = ({ children } : { children : ReactNode }) => {
     const addQuestion = (question : sample.Question) => setAdded((current) => [question, ...current])
 
     const role = session.state === 'live' ? session.user.role : 'admin'
+    const scope = session.state === 'live' ? session.user.courses ?? undefined : undefined
+    const inScope = (courseID : string) => !scope || scope.includes(courseID)
     const user = session.state === 'live'
         ? { name : session.user.name, role : roleLabel[session.user.role], color : session.user.color }
         : session.state === 'offline' ? { name : 'Sample admin', role : 'Offline preview', color : '#838383' } : undefined
@@ -99,6 +104,7 @@ export const AdminProvider = ({ children } : { children : ReactNode }) => {
         <AdminContext.Provider value={{
             session, refreshSession, signOut, user,
             can : { managePeople : role === 'admin', editCatalog : role === 'admin' || role === 'supervisor' },
+            scope, inScope,
             flags, flagsLive, setFlagStatus, notifications, markRead, added, addQuestion,
             openFlags : flags.filter((flag) => flag.status === 'open').length,
             unread : notifications.filter((item) => !item.read).length,

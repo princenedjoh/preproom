@@ -33,7 +33,7 @@ const Catalog = ({ entity } : { entity : Entity }) => {
         topics : useLoad<Row>(() => api.fetchTopics().then((result) => ({ ...result, items : result.items.map((item) => ({ ...item, parentID : item.courseID, total : item.questions })) }))),
     }
     const list = lists[entity]
-    const { can } = useAdmin()
+    const { can, inScope } = useAdmin()
     // Moderators can add topics to their own courses; everything else needs a supervisor
     const canCreate = can.editCatalog || entity === 'topics'
     const canChange = can.editCatalog
@@ -47,6 +47,8 @@ const Catalog = ({ entity } : { entity : Entity }) => {
     const [form, setForm] = useState({ name : '', code : '', parentID : '' })
     const [deleting, setDeleting] = useState<Row>()
 
+    // Moderators can only add topics to their own courses
+    const formParents = entity === 'topics' ? parents.filter((item) => inScope(item.id)) : parents
     const parentName = (id? : string) => parents.find((item) => item.id === id)?.name ?? '—'
     const childCount = (id : string) => children.filter((item) => item.parentID === id).length
     const topicQuestions = (row : Row) => row.total ?? 0
@@ -56,7 +58,7 @@ const Catalog = ({ entity } : { entity : Entity }) => {
         && (parentFilter === 'all' || row.parentID === parentFilter))
 
     const openForm = (row? : Row) => {
-        setForm({ name : row?.name ?? '', code : row?.code ?? '', parentID : row?.parentID ?? (parentFilter !== 'all' ? parentFilter : parents[0]?.id ?? '') })
+        setForm({ name : row?.name ?? '', code : row?.code ?? '', parentID : row?.parentID ?? (parentFilter !== 'all' && formParents.some((item) => item.id === parentFilter) ? parentFilter : formParents[0]?.id ?? '') })
         setEditing(row ?? 'new')
     }
 
@@ -201,7 +203,7 @@ const Catalog = ({ entity } : { entity : Entity }) => {
                         <Label>
                             {config[settings.parent].singular[0].toUpperCase() + config[settings.parent].singular.slice(1)}
                             <Select className="!rounded-[9px] !h-[44px] w-full !text-[14px] !font-medium" value={form.parentID} onChange={(event) => setForm({ ...form, parentID : event.target.value })}>
-                                {parents.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+                                {formParents.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                             </Select>
                         </Label>
                     )}
