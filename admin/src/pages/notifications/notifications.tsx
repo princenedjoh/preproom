@@ -15,7 +15,9 @@ const kinds : Record<sample.AdminNotification['kind'], { icon : IconType, path :
     system : { icon : FiActivity, path : '/' },
 }
 
-const isRecent = (time : string) => /m ago|h ago|now/i.test(time)
+const isToday = (item : sample.AdminNotification) => item.createdAt
+    ? new Date(item.createdAt).toDateString() === new Date().toDateString()
+    : /m ago|h ago|now/i.test(item.time)
 
 const Notifications = () => {
     const navigate = useNavigate()
@@ -24,8 +26,8 @@ const Notifications = () => {
 
     const shown = notifications.filter((item) => filter === 'all' || !item.read)
     const groups = [
-        { title : 'Today', items : shown.filter((item) => isRecent(item.time)) },
-        { title : 'Earlier', items : shown.filter((item) => !isRecent(item.time)) },
+        { title : 'Today', items : shown.filter(isToday) },
+        { title : 'Earlier', items : shown.filter((item) => !isToday(item)) },
     ].filter((group) => group.items.length)
 
     return (
@@ -54,7 +56,7 @@ const Notifications = () => {
                             const kind = kinds[item.kind]
                             return (
                                 <button key={item.id}
-                                    onClick={() => { markRead(item.id); navigate(kind.path) }}
+                                    onClick={() => { markRead(item.id); navigate(item.link ?? kind.path) }}
                                     className={`text-left flex items-start gap-3 px-4 py-4 border-t border-bone first:border-t-0 transition-colors duration-150 hover:bg-mist ${item.read ? '' : 'bg-[#f2f9ff]'}`}>
                                     <IconTile className="shrink-0 !w-9 !h-9"><kind.icon size={15} /></IconTile>
                                     <span className="flex flex-col gap-[2px] min-w-0 flex-1">

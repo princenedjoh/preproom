@@ -4,6 +4,7 @@ import { Interweave } from 'interweave'
 import { toast } from 'react-toastify'
 import { FiPlus, FiTrash2, FiCheck, FiEye, FiEyeOff, FiCircle, FiCheckCircle, FiRotateCcw } from 'react-icons/fi'
 import * as sample from '../../data/sample'
+import * as api from '../../data/api'
 import { useAdmin } from '../../context/admin'
 import useLoad from '../../hooks/useLoad'
 import RichField from '../../components/richField/richField'
@@ -18,14 +19,15 @@ const years = Array.from({ length : 12 }, (_, index) => new Date().getFullYear()
 
 const blankOptions = () => ['', '', '', '']
 
+// Quill wraps everything in <p>; a one-line option reads better without it
+const unwrap = (html : string) => /^<p>((?:(?!<\/?p>).)*)<\/p>$/s.exec(html)?.[1] ?? html
+
 const AddQuestion = () => {
     const { added, addQuestion } = useAdmin()
-    const programs = useLoad(sample.fetchPrograms)
-    const courses = useLoad(sample.fetchCourses)
-    const topics = useLoad(sample.fetchTopics)
+    const courses = useLoad(api.fetchCourses)
+    const topics = useLoad(api.fetchTopics)
 
     const [courseID, setCourseID] = useState<string>()
-    const [programIDs, setProgramIDs] = useState<string[]>([])
     const [topic, setTopic] = useState<string>()
     const [difficulty, setDifficulty] = useState<sample.Difficulty>('Medium')
     const [year, setYear] = useState(years[0])
@@ -55,8 +57,6 @@ const AddQuestion = () => {
     const chooseCourse = (id : string) => {
         setCourseID(id)
         setTopic(undefined)
-        const programID = courses.items.find((item) => item.id === id)?.programID
-        if (programID && !programIDs.includes(programID)) setProgramIDs([...programIDs, programID])
     }
 
     const updateOption = (index : number, value : string) =>
@@ -77,7 +77,6 @@ const AddQuestion = () => {
         setAttempted(false)
         if (!keep) {
             setCourseID(undefined)
-            setProgramIDs([])
             setTopic(undefined)
             setDifficulty('Medium')
         }
@@ -94,32 +93,28 @@ const AddQuestion = () => {
         const kept = options.filter((option) => option.length > 0)
         const correct = kept.indexOf(options[answer])
         const topicID = topics.items.find((item) => item.courseID === courseID && item.name === topic)?.id
-        let live = true
-        try {
-            await sample.api.post('/questions/add', {
-                question,
-                possibleAnswers : kept,
-                answer : options[answer],
-                explanation,
-                difficulty,
-                year,
-                programsID : programIDs,
-                coursesID : courseID ? [courseID] : [],
-                topicsID : topicID ? [topicID] : [],
-                topicName : topicID ? undefined : topic,
-            })
-        } catch {
-            live = false
+        const body : api.NewQuestion = {
+            question, options : kept.map(unwrap), answer : correct, explanation : explanation || undefined,
+            courseID : courseID!, topicID, topic : topicID ? undefined : topic, difficulty, year,
         }
-        addQuestion({
-            id : `local-${Date.now()}`, question, options : kept, answer : correct, explanation,
-            courseID : courseID ?? '', topic : topic ?? '', difficulty, year,
-            author : 'You', addedAt : 'Just now', flags : 0,
-        })
+        try {
+            addQuestion(await api.createQuestion(body))
+            toast.success('Question saved.')
+            reset(keepContext)
+        } catch (error) {
+            if (api.isOffline(error)) {
+                addQuestion({
+                    id : `local-${Date.now()}`, question, options : kept, answer : correct, explanation,
+                    courseID : courseID!, topic : topic ?? '', difficulty, year, author : 'You', addedAt : 'Just now', flags : 0,
+                })
+                toast.warn('Couldn’t reach the API, so the question is kept in this session only.')
+                reset(keepContext)
+            } else {
+                // Keep the form so nothing typed is lost
+                toast.error(api.errorMessage(error))
+            }
+        }
         setSaving(false)
-        if (live) toast.success('Question saved.')
-        else toast.warn("Couldn't reach the API, so the question is kept in this session only.")
-        reset(keepContext)
     }
 
     const invalid = (ok : boolean) => attempted && !ok
@@ -132,12 +127,12 @@ const AddQuestion = () => {
                     <ScreenLead>Write the question, mark the correct option and explain it. Students see exactly what the preview shows.</ScreenLead>
                 </div>
                 <Toolbar>
-                    <SampleNotice live={courses.live && topics.live} />
+                    <SampleNotice live={courses.live} />
                     {added.length > 0 && <Mono>{added.length} added this session</Mono>}
                 </Toolbar>
             </ScreenHeader>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
+            <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-6 items-start">
                 <div className="flex flex-col gap-4" key={formKey}>
                     <Panel>
                         <PanelTitle>Where it belongs</PanelTitle>
@@ -169,18 +164,6 @@ const AddQuestion = () => {
                                         ...courseTopics.map((item) => ({ value : item.name, label : item.name })),
                                         ...(topic && !courseTopics.some((item) => item.name === topic) ? [{ value : topic, label : `New topic: ${topic}` }] : []),
                                     ]}
-                                />
-                            </Label>
-                            <Label as="div" className="sm:col-span-2">
-                                Programs
-                                <AntSelect
-                                    mode="multiple"
-                                    placeholder="Programs that take this course"
-                                    value={programIDs}
-                                    onChange={setProgramIDs}
-                                    optionFilterProp="label"
-                                    maxTagCount="responsive"
-                                    options={programs.items.map((item) => ({ value : item.id, label : item.name }))}
                                 />
                             </Label>
                             <Label as="div">
@@ -265,7 +248,7 @@ const AddQuestion = () => {
                     </s.SaveBar>
                 </div>
 
-                <aside className="flex flex-col gap-4 lg:sticky lg:top-[80px]">
+                <aside className="flex flex-col gap-4 xl:sticky xl:top-[80px]">
                     <s.Preview>
                         <div className="flex items-center justify-between">
                             <Eyebrow>Student preview</Eyebrow>
@@ -317,7 +300,7 @@ const AddQuestion = () => {
                             <div className="flex flex-col">
                                 {added.slice(0, 5).map((item) => (
                                     <div key={item.id} className="flex items-center gap-2 py-2 border-t border-bone first:border-t-0 first:pt-0">
-                                        <CourseDot color={sample.getCourse(item.courseID)?.color ?? '#838383'} />
+                                        <CourseDot color={courses.items.find((entry) => entry.id === item.courseID)?.color ?? '#838383'} />
                                         <span className="text-[13px] truncate flex-1">{sample.plainText(item.question)}</span>
                                         <DifficultyPill level={item.difficulty}>{item.difficulty}</DifficultyPill>
                                     </div>

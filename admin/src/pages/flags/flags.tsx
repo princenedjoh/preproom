@@ -17,7 +17,7 @@ const tabs : { status : sample.FlagStatus, label : string }[] = [
     { status : 'dismissed', label : 'Dismissed' },
 ]
 
-const issueTone : Record<sample.FlagIssue, string> = {
+const issueTone : Record<string, string> = {
     'Wrong answer' : 'bg-[#ffe3ec] text-[#7a0f2f]',
     'Typo' : 'bg-mercury text-muted',
     'Unclear question' : 'bg-[#fff0e3] text-[#7a3d07]',
@@ -30,8 +30,14 @@ const Flags = () => {
     const [params, setParams] = useSearchParams()
     const { flags, setFlagStatus } = useAdmin()
     const [tab, setTab] = useState<sample.FlagStatus>('open')
-    // Answers changed by accepting a suggestion, keyed by question
-    const [answers, setAnswers] = useState<Record<string, number>>({})
+    const tone = (issue : string) => issueTone[issue] ?? 'bg-mercury text-muted'
+
+    // The API sends a snapshot of the question with each flag; sample flags look it up
+    const questionFor = (flag? : sample.Flag) => {
+        if (flag?.question) return { id : flag.questionID, ...flag.question, explanation : '', difficulty : undefined as sample.Difficulty | undefined }
+        const local = sample.getQuestion(flag?.questionID)
+        return local && { ...local, courseCode : sample.getCourse(local.courseID)?.code ?? '' }
+    }
 
     const list = flags.filter((flag) => flag.status === tab)
     const selectedID = params.get('flag')
@@ -46,17 +52,19 @@ const Flags = () => {
 
     const select = (id? : string) => setParams(id ? { flag : id } : {}, { replace : true })
 
-    const act = (flag : sample.Flag, status : sample.FlagStatus, message : string) => {
+    const act = async (flag : sample.Flag, status : sample.FlagStatus, message : string, applyAnswer? : number) => {
         const index = list.findIndex((item) => item.id === flag.id)
         const next = list[index + 1] ?? list[index - 1]
-        setFlagStatus(flag.id, status)
+        try {
+            await setFlagStatus(flag.id, status, applyAnswer)
+        } catch {
+            return
+        }
         select(next && next.id !== flag.id ? next.id : undefined)
-        sample.api.patch('/flags/update', { id : flag.id, status }).catch(() => undefined)
         toast.success(message, {
-            closeButton : ({ closeToast }) => (
+            closeButton : applyAnswer !== undefined ? undefined : ({ closeToast }) => (
                 <button className="text-[13px] font-bold text-brand-blue px-2" onClick={(event) => {
-                    setFlagStatus(flag.id, flag.status)
-                    select(flag.id)
+                    setFlagStatus(flag.id, flag.status).then(() => select(flag.id), () => undefined)
                     closeToast(event)
                 }}>Undo</button>
             ),
@@ -64,9 +72,8 @@ const Flags = () => {
     }
 
     const accept = (flag : sample.Flag) => {
-        if (flag.suggestedAnswer === undefined) return
-        setAnswers({ ...answers, [flag.questionID] : flag.suggestedAnswer })
-        act(flag, 'resolved', `Answer changed to ${letters[flag.suggestedAnswer]} and flag resolved.`)
+        if (flag.suggestedAnswer === undefined || flag.suggestedAnswer === null) return
+        act(flag, 'resolved', `Answer changed to ${letters[flag.suggestedAnswer]} and flag resolved.`, flag.suggestedAnswer)
     }
 
     // j / k to move, r to resolve, d to dismiss
@@ -83,9 +90,8 @@ const Flags = () => {
         return () => window.removeEventListener('keydown', onKey)
     })
 
-    const question = sample.getQuestion(selected?.questionID)
-    const course = sample.getCourse(question?.courseID)
-    const currentAnswer = question ? answers[question.id] ?? question.answer : undefined
+    const question = questionFor(selected)
+    const currentAnswer = question?.answer
 
     return (
         <Screen>
@@ -122,18 +128,18 @@ const Flags = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-[340px_minmax(0,1fr)] gap-4 items-start">
                     <div className="flex flex-col gap-2" role="listbox" aria-label={`${tab} flags`}>
                         {list.map((flag) => {
-                            const item = sample.getQuestion(flag.questionID)
+                            const item = questionFor(flag)
                             const active = flag.id === selected?.id
                             return (
                                 <button key={flag.id} role="option" aria-selected={active} onClick={() => select(flag.id)}
                                     className={`text-left flex flex-col gap-2 p-4 rounded-[12px] border transition-[background,border-color] duration-150
                                         ${active ? 'bg-white border-ink shadow-[0_1px_3px_rgba(0,0,0,0.1)]' : 'bg-white border-bone hover:bg-mist'}`}>
                                     <span className="flex items-center gap-2">
-                                        <span className={`rounded-full px-2 py-[2px] text-[11px] font-semibold ${issueTone[flag.issue]}`}>{flag.issue}</span>
+                                        <span className={`rounded-full px-2 py-[2px] text-[11px] font-semibold ${tone(flag.issue)}`}>{flag.issue}</span>
                                         <Mono className="ml-auto whitespace-nowrap">{flag.raisedAt}</Mono>
                                     </span>
                                     <span className="text-[13px] text-ink line-clamp-2 leading-[1.45]">{item ? sample.plainText(item.question) : 'Question removed'}</span>
-                                    <span className="text-[12px] text-ash">{flag.reporter} · {sample.getCourse(item?.courseID)?.code}</span>
+                                    <span className="text-[12px] text-ash">{flag.reporter} · {item?.courseCode}</span>
                                 </button>
                             )
                         })}
@@ -143,12 +149,12 @@ const Flags = () => {
                         <Panel className="!p-0 overflow-hidden lg:sticky lg:top-[80px]">
                             <div className="flex flex-col gap-3 p-5 border-b border-bone bg-mist">
                                 <div className="flex items-center gap-2 flex-wrap">
-                                    <span className={`rounded-full px-2 py-[2px] text-[11px] font-semibold ${issueTone[selected.issue]}`}>{selected.issue}</span>
+                                    <span className={`rounded-full px-2 py-[2px] text-[11px] font-semibold ${tone(selected.issue)}`}>{selected.issue}</span>
                                     <Muted>raised by <strong className="text-ink font-semibold">{selected.reporter}</strong> · {selected.raisedAt}</Muted>
                                     {selected.status !== 'open' && <CountBadge tone="ink" className="!uppercase !px-2">{selected.status}</CountBadge>}
                                 </div>
                                 <p className="text-[14px] leading-[1.55] text-ink">“{selected.comment}”</p>
-                                {selected.suggestedAnswer !== undefined && (
+                                {selected.suggestedAnswer !== undefined && selected.suggestedAnswer !== null && (
                                     <Muted>Suggests <strong className="text-brand-blue">option {letters[selected.suggestedAnswer]}</strong> is correct.</Muted>
                                 )}
                             </div>
@@ -157,8 +163,8 @@ const Flags = () => {
                                 <div className="flex flex-col gap-4 p-5">
                                     <div className="flex flex-wrap items-center gap-2">
                                         <Eyebrow>The question</Eyebrow>
-                                        {course && <preview.Chip className="ml-auto"><CourseDot color={course.color} />{course.code}</preview.Chip>}
-                                        <DifficultyPill level={question.difficulty}>{question.difficulty}</DifficultyPill>
+                                        {question.courseCode && <preview.Chip className="ml-auto"><CourseDot color={sample.getCourse(question.courseID)?.color ?? '#838383'} />{question.courseCode}</preview.Chip>}
+                                        {question.difficulty && <DifficultyPill level={question.difficulty}>{question.difficulty}</DifficultyPill>}
                                     </div>
                                     <preview.PreviewQuestion><Interweave content={question.question} /></preview.PreviewQuestion>
                                     <div className="flex flex-col gap-2">
@@ -190,7 +196,7 @@ const Flags = () => {
                                 {selected.status === 'open' ? (
                                     <>
                                         <GhostButton onClick={() => act(selected, 'dismissed', 'Flag dismissed.')}><FiX size={14} /> Dismiss</GhostButton>
-                                        {selected.suggestedAnswer !== undefined && selected.suggestedAnswer !== currentAnswer && (
+                                        {selected.suggestedAnswer !== undefined && selected.suggestedAnswer !== null && selected.suggestedAnswer !== currentAnswer && (
                                             <GhostButton onClick={() => accept(selected)}>Use option {letters[selected.suggestedAnswer]}</GhostButton>
                                         )}
                                         <DarkButton onClick={() => act(selected, 'resolved', 'Flag resolved.')}><FiCheck size={14} /> Resolve</DarkButton>

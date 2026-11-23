@@ -1,6 +1,6 @@
 import { IconType } from 'react-icons'
 import {
-    FiGrid, FiPlusSquare, FiDatabase, FiFlag, FiBell, FiHome, FiLayers, FiBookOpen, FiHash, FiShield, FiUsers,
+    FiGrid, FiPlusSquare, FiDatabase, FiFlag, FiBell, FiHome, FiLayers, FiBookOpen, FiHash, FiShield, FiUsers, FiKey,
 } from 'react-icons/fi'
 
 export interface NavItem {
@@ -42,6 +42,7 @@ export const navSections : NavSection[] = [
     {
         title : 'People',
         items : [
+            { label : 'Administrators', path : '/people/admins', icon : FiKey },
             { label : 'Supervisors', path : '/people/supervisors', icon : FiShield },
             { label : 'Moderators', path : '/people/moderators', icon : FiUsers },
         ],

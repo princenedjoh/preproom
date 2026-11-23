@@ -1,10 +1,3 @@
-import axios from 'axios'
-
-export const BASE_URL = process.env.REACT_APP_API_URL ?? 'http://localhost:3001'
-
-// Session cookie auth (httpOnly), shared with the student app
-export const api = axios.create({ baseURL : BASE_URL, withCredentials : true, timeout : 6000 })
-
 // Sample content used when the API is unreachable or returns nothing,
 // so every admin screen renders a realistic state during development.
 
@@ -13,7 +6,7 @@ export type Difficulty = 'Easy' | 'Medium' | 'Hard'
 export interface School { id : string, name : string }
 export interface Program { id : string, name : string, schoolID : string }
 export interface Course { id : string, code : string, name : string, programID : string, color : string, total : number }
-export interface Topic { id : string, name : string, courseID : string }
+export interface Topic { id : string, name : string, courseID : string, questions? : number }
 
 export interface Question {
     id : string
@@ -28,10 +21,11 @@ export interface Question {
     author : string
     addedAt : string
     flags : number
+    topicID? : string
 }
 
 export type FlagStatus = 'open' | 'resolved' | 'dismissed'
-export type FlagIssue = 'Wrong answer' | 'Typo' | 'Unclear question' | 'Duplicate' | 'Missing explanation'
+export type FlagIssue = 'Wrong answer' | 'Typo' | 'Unclear question' | 'Duplicate' | 'Missing explanation' | string
 
 export interface Flag {
     id : string
@@ -42,9 +36,11 @@ export interface Flag {
     suggestedAnswer? : number
     status : FlagStatus
     raisedAt : string
+    // Snapshot of the flagged question, sent by the API with each flag
+    question? : { question : string, options : string[], answer : number, courseID : string, courseCode : string }
 }
 
-export type Role = 'Supervisor' | 'Moderator'
+export type Role = 'Admin' | 'Supervisor' | 'Moderator'
 
 export interface Person {
     id : string
@@ -54,7 +50,7 @@ export interface Person {
     courses : string[]
     questionsAdded : number
     flagsResolved : number
-    status : 'Active' | 'Invited'
+    status : 'Active' | 'Invited' | 'Disabled'
     lastActive : string
     color : string
 }
@@ -66,6 +62,8 @@ export interface AdminNotification {
     body : string
     time : string
     read : boolean
+    link? : string
+    createdAt? : string
 }
 
 export const schools : School[] = [
@@ -215,47 +213,3 @@ export const questionCount = (courseID : string) => questions.filter((question) 
 
 // Strips the HTML Quill produces so it can be shown in tables
 export const plainText = (html : string) => html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim()
-
-/* API with sample fallback */
-
-export interface Loaded<T> { items : T[], live : boolean }
-
-const load = async <T,>(path : string, map : (item : any) => T, fallback : T[]) : Promise<Loaded<T>> => {
-    try {
-        const response = await api.get(path)
-        const items = Array.isArray(response.data) ? response.data.map(map) : []
-        return items.length ? { items, live : true } : { items : fallback, live : false }
-    } catch {
-        return { items : fallback, live : false }
-    }
-}
-
-export const fetchSchools = () => load<School>('/branch/getAllBranches',
-    (item) => ({ id : item._id, name : item.branchName }), schools)
-
-export const fetchPrograms = () => load<Program>('/programs/getAllPrograms',
-    (item) => ({ id : item._id, name : item.programName, schoolID : item.branchID }), programs)
-
-export const fetchCourses = () => load<Course>('/courses/getAllCourses',
-    (item) => ({ id : item._id, code : '', name : item.courseName, programID : item.programID, color : '#838383', total : item.questionCount ?? 0 }), courses)
-
-export const fetchTopics = () => load<Topic>('/topics/getAllTopics',
-    (item) => ({ id : item._id, name : item.name, courseID : item.courseID }), topics)
-
-export const fetchQuestions = () => load<Question>('/questions/getAll', (item) => {
-    const options : string[] = item.possibleAnswers ?? []
-    return {
-        id : item._id,
-        question : item.question ?? '',
-        options,
-        answer : Math.max(0, options.indexOf(item.answer)),
-        explanation : item.explanation ?? '',
-        courseID : item.coursesID?.[0] ?? '',
-        topic : '',
-        difficulty : 'Medium',
-        year : new Date().getFullYear(),
-        author : 'Editor',
-        addedAt : '',
-        flags : 0,
-    }
-}, questions)

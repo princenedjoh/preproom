@@ -1,12 +1,16 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { FiArrowRight, FiAlertCircle } from 'react-icons/fi'
 import { logos } from '../../assets'
-import { api } from '../../data/sample'
+import * as api from '../../data/api'
+import { useAdmin } from '../../context/admin'
 import { DarkButton, Label, TextInput, Eyebrow, TextLink } from '../../styles/kit'
 
 const Login = () => {
     const navigate = useNavigate()
+    const [params] = useSearchParams()
+    const next = params.get('next')?.startsWith('/') ? params.get('next')! : '/'
+    const { session, refreshSession } = useAdmin()
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
@@ -19,17 +23,18 @@ const Login = () => {
         setBusy(true)
         setError('')
         try {
-            await api.post('/auth/login', { email, password })
-            navigate('/')
-        } catch (err : any) {
-            if (err?.response) setError(err.response.status === 401 ? 'That email and password don’t match an admin account.' : 'Something went wrong. Try again.')
-            else {
-                setOffline(true)
-                setError('Can’t reach the PrepRoom API right now.')
-            }
+            const user = await api.login(email, password)
+            await refreshSession()
+            if (user.role === 'student') setError('That’s a learner account. Admin access needs a staff invite.')
+            else navigate(next, { replace : true })
+        } catch (err) {
+            setOffline(api.isOffline(err))
+            setError(api.errorMessage(err))
         }
         setBusy(false)
     }
+
+    if (session.state === 'live') return <Navigate to={next} replace />
 
     return (
         <main className="min-h-screen w-full flex items-center justify-center px-4 py-12 bg-mist">
@@ -52,7 +57,7 @@ const Login = () => {
                     )}
                     <DarkButton type="submit" disabled={busy} className="w-full disabled:opacity-60">{busy ? 'Signing in…' : 'Sign in'}</DarkButton>
                     {offline && (
-                        <TextLink type="button" className="self-center" onClick={() => navigate('/')}>Continue with sample data <FiArrowRight size={14} /></TextLink>
+                        <TextLink type="button" className="self-center" onClick={async () => { await refreshSession(); navigate(next) }}>Continue with sample data <FiArrowRight size={14} /></TextLink>
                     )}
                 </form>
                 <p className="text-center text-[12px] text-ash">Admin access is by invitation. Ask a supervisor for an invite.</p>

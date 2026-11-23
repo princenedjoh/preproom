@@ -1,22 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ToastContainer } from 'react-toastify'
 import 'react-toastify/dist/ReactToastify.css'
-import { FiMenu, FiSearch, FiBell, FiPlus, FiLogOut, FiChevronRight } from 'react-icons/fi'
+import { FiMenu, FiSearch, FiBell, FiPlus, FiLogOut, FiChevronRight, FiLock } from 'react-icons/fi'
 import { logos } from '../../assets'
 import { useAdmin } from '../../context/admin'
 import { DarkButton, Kbd } from '../../styles/kit'
 import { IconButton, CountBadge } from '../../styles/adminKit'
-import { PersonAvatar } from '../ui/ui'
+import { PersonAvatar, EmptyState, Skeleton } from '../ui/ui'
 import { navSections, isActive, currentNav } from './nav'
 import * as s from './shell.style'
-
-export const admin = { name : 'Prince Nedjoh', role : 'Administrator', color : '#202020' }
 
 const Shell = () => {
     const navigate = useNavigate()
     const { pathname } = useLocation()
-    const { openFlags, unread } = useAdmin()
+    const { openFlags, unread, session, user, can, signOut } = useAdmin()
     const [open, setOpen] = useState(false)
     const [query, setQuery] = useState('')
     const search = useRef<HTMLInputElement>(null)
@@ -43,6 +41,28 @@ const Shell = () => {
     }, [])
 
     const go = (path : string) => navigate(path)
+    const logOut = async () => {
+        await signOut()
+        navigate('/login', { replace : true })
+    }
+
+    if (session.state === 'checking') return (
+        <div className="min-h-screen flex items-center justify-center" aria-busy="true" aria-label="Loading">
+            <div className="w-[220px] flex flex-col gap-3"><Skeleton height={14} width="60%" /><Skeleton height={10} /><Skeleton height={10} width="80%" /></div>
+        </div>
+    )
+    if (session.state === 'signedOut') return <Navigate to={`/login?next=${encodeURIComponent(pathname)}`} replace />
+    if (session.state === 'forbidden') return (
+        <div className="min-h-screen flex items-center justify-center px-4">
+            <div className="w-full max-w-[440px]">
+                <EmptyState icon={FiLock} title="This account can't use the admin"
+                    body={`${session.user.email} is a learner account. Ask an administrator for a staff invite, or sign in with a staff account.`}
+                    action={<DarkButton onClick={logOut}>Sign in with another account</DarkButton>} />
+            </div>
+        </div>
+    )
+
+    const sections = navSections.filter((section) => section.title !== 'People' || can.managePeople)
     const badge = (kind? : 'flags' | 'unread') => kind === 'flags' ? openFlags : kind === 'unread' ? unread : 0
 
     return (
@@ -55,7 +75,7 @@ const Shell = () => {
                     <s.AdminTag>Admin</s.AdminTag>
                 </s.Brand>
                 <s.Nav>
-                    {navSections.map((section, index) => (
+                    {sections.map((section, index) => (
                         <div key={section.title ?? index} className="flex flex-col gap-[2px]">
                             {section.title && <s.SectionLabel>{section.title}</s.SectionLabel>}
                             {section.items.map((item) => {
@@ -78,12 +98,12 @@ const Shell = () => {
                     ))}
                 </s.Nav>
                 <s.Account>
-                    <PersonAvatar name={admin.name} color={admin.color} size={30} />
+                    <PersonAvatar name={user?.name ?? '?'} color={user?.color ?? '#838383'} size={30} />
                     <div className="flex flex-col min-w-0 flex-1">
-                        <span className="text-[13px] font-semibold text-ink truncate">{admin.name}</span>
-                        <span className="text-[11px] text-ash">{admin.role}</span>
+                        <span className="text-[13px] font-semibold text-ink truncate">{user?.name}</span>
+                        <span className="text-[11px] text-ash">{user?.role}</span>
                     </div>
-                    <IconButton aria-label="Log out" title="Log out" onClick={() => go('/login')}>
+                    <IconButton aria-label="Log out" title="Log out" onClick={logOut}>
                         <FiLogOut size={14} />
                     </IconButton>
                 </s.Account>

@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useParams, Navigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import { FiPlus, FiSearch, FiEdit2, FiTrash2, FiFolder } from 'react-icons/fi'
-import * as sample from '../../data/sample'
+import * as api from '../../data/api'
+import { useAdmin } from '../../context/admin'
 import useLoad from '../../hooks/useLoad'
 import { SampleNotice, SkeletonRows, EmptyState, Dialog } from '../../components/ui/ui'
 import { DarkButton, GhostButton, Label, TextInput } from '../../styles/kit'
@@ -13,12 +14,12 @@ type Entity = 'schools' | 'programs' | 'courses' | 'topics'
 interface Row { id : string, name : string, code? : string, parentID? : string, color? : string, total? : number }
 
 const config : Record<Entity, {
-    title : string, singular : string, lead : string, parent? : Entity, child? : Entity, endpoint : string
+    title : string, singular : string, lead : string, parent? : Entity, child? : Entity
 }> = {
-    schools : { title : 'Schools', singular : 'school', lead : 'Faculties group programs together. Students pick a school first when they sign up.', child : 'programs', endpoint : '/branch' },
-    programs : { title : 'Programs', singular : 'program', lead : 'Degree programs inside each school. A course can belong to several programs.', parent : 'schools', child : 'courses', endpoint : '/programs' },
-    courses : { title : 'Courses', singular : 'course', lead : 'Courses hold the questions students practise. Give each a short code.', parent : 'programs', child : 'topics', endpoint : '/courses' },
-    topics : { title : 'Topics', singular : 'topic', lead : 'Topics split a course into chapters so students can drill one area at a time.', parent : 'courses', endpoint : '/topics' },
+    schools : { title : 'Schools', singular : 'school', lead : 'Faculties group programs together. Students pick a school first when they sign up.', child : 'programs' },
+    programs : { title : 'Programs', singular : 'program', lead : 'Degree programs inside each school. A course can belong to several programs.', parent : 'schools', child : 'courses' },
+    courses : { title : 'Courses', singular : 'course', lead : 'Courses hold the questions students practise. Give each a short code.', parent : 'programs', child : 'topics' },
+    topics : { title : 'Topics', singular : 'topic', lead : 'Topics split a course into chapters so students can drill one area at a time.', parent : 'courses' },
 }
 
 const palette = ['#6647f0', '#0091ff', '#fd9a46', '#16c0a4', '#f0457a', '#00c07a']
@@ -26,12 +27,17 @@ const palette = ['#6647f0', '#0091ff', '#fd9a46', '#16c0a4', '#f0457a', '#00c07a
 const Catalog = ({ entity } : { entity : Entity }) => {
     const settings = config[entity]
     const lists : Record<Entity, ReturnType<typeof useLoad<Row>>> = {
-        schools : useLoad<Row>(sample.fetchSchools),
-        programs : useLoad<Row>(() => sample.fetchPrograms().then((result) => ({ ...result, items : result.items.map((item) => ({ ...item, parentID : item.schoolID })) }))),
-        courses : useLoad<Row>(() => sample.fetchCourses().then((result) => ({ ...result, items : result.items.map((item) => ({ ...item, parentID : item.programID })) }))),
-        topics : useLoad<Row>(() => sample.fetchTopics().then((result) => ({ ...result, items : result.items.map((item) => ({ ...item, parentID : item.courseID })) }))),
+        schools : useLoad<Row>(api.fetchSchools),
+        programs : useLoad<Row>(() => api.fetchPrograms().then((result) => ({ ...result, items : result.items.map((item) => ({ ...item, parentID : item.schoolID })) }))),
+        courses : useLoad<Row>(() => api.fetchCourses().then((result) => ({ ...result, items : result.items.map((item) => ({ ...item, parentID : item.programID })) }))),
+        topics : useLoad<Row>(() => api.fetchTopics().then((result) => ({ ...result, items : result.items.map((item) => ({ ...item, parentID : item.courseID, total : item.questions })) }))),
     }
     const list = lists[entity]
+    const { can } = useAdmin()
+    // Moderators can add topics to their own courses; everything else needs a supervisor
+    const canCreate = can.editCatalog || entity === 'topics'
+    const canChange = can.editCatalog
+    const [saving, setSaving] = useState(false)
     const parents = settings.parent ? lists[settings.parent].items : []
     const children = settings.child ? lists[settings.child].items : []
 
@@ -43,7 +49,7 @@ const Catalog = ({ entity } : { entity : Entity }) => {
 
     const parentName = (id? : string) => parents.find((item) => item.id === id)?.name ?? '—'
     const childCount = (id : string) => children.filter((item) => item.parentID === id).length
-    const topicQuestions = (row : Row) => sample.questions.filter((question) => question.courseID === row.parentID && question.topic === row.name).length
+    const topicQuestions = (row : Row) => row.total ?? 0
 
     const rows = list.items.filter((row) =>
         (!query || `${row.name} ${row.code ?? ''}`.toLowerCase().includes(query.toLowerCase()))
@@ -54,28 +60,55 @@ const Catalog = ({ entity } : { entity : Entity }) => {
         setEditing(row ?? 'new')
     }
 
+    const bodyFor = (name : string, code? : string, parentID? : string) => ({
+        schools : { name },
+        programs : { name, schoolID : parentID },
+        courses : { name, code, programID : parentID || undefined },
+        topics : editing === 'new' ? { name, courseID : parentID } : { name },
+    })[entity]
+
     const save = async () => {
         const name = form.name.trim()
-        if (!name || (settings.parent && !form.parentID)) return
+        if (!name || (settings.parent && !form.parentID) || saving) return
         const isNew = editing === 'new'
-        const row : Row = isNew
-            ? { id : `local-${Date.now()}`, name, code : form.code.trim() || undefined, parentID : form.parentID || undefined, color : palette[list.items.length % palette.length], total : 0 }
-            : { ...(editing as Row), name, code : form.code.trim() || undefined, parentID : form.parentID || undefined }
+        const code = form.code.trim() || undefined
+        const parentID = form.parentID || undefined
+        const base : Row = isNew
+            ? { id : `local-${Date.now()}`, name, code, parentID, color : palette[list.items.length % palette.length], total : 0 }
+            : { ...(editing as Row), name, code, parentID }
+        let row = base
+        let offline = !list.live
+        setSaving(true)
+        if (!offline) {
+            try {
+                const saved = isNew
+                    ? await api.createCatalogItem(entity, bodyFor(name, code, parentID))
+                    : await api.updateCatalogItem(entity, base.id, bodyFor(name, code, parentID))
+                row = { ...base, id : saved.id ?? base.id, color : saved.color ?? base.color }
+            } catch (error) {
+                setSaving(false)
+                if (!api.isOffline(error)) return void toast.error(api.errorMessage(error))
+                offline = true
+            }
+        }
+        setSaving(false)
         list.setItems((items) => isNew ? [row, ...items] : items.map((item) => item.id === row.id ? row : item))
         setEditing(undefined)
-        try {
-            if (isNew) await sample.api.post(`${settings.endpoint}/add`, { name, code : row.code, parentID : row.parentID })
-            else await sample.api.patch(`${settings.endpoint}/update`, { id : row.id, name, code : row.code, parentID : row.parentID })
-            toast.success(`${name} ${isNew ? 'added' : 'updated'}.`)
-        } catch {
-            toast.warn(`${name} ${isNew ? 'added' : 'updated'} in this session only. The API didn't respond.`)
-        }
+        if (offline) toast.warn(`${name} ${isNew ? 'added' : 'updated'} in this session only. The API didn’t respond.`)
+        else toast.success(`${name} ${isNew ? 'added' : 'updated'}.`)
     }
 
     const remove = async (row : Row) => {
         setDeleting(undefined)
+        if (list.live && !row.id.startsWith('local-')) {
+            try {
+                await api.deleteCatalogItem(entity, row.id)
+            } catch (error) {
+                // 409 explains what still uses it
+                if (!api.isOffline(error)) return void toast.error(api.errorMessage(error))
+            }
+        }
         list.setItems((items) => items.filter((item) => item.id !== row.id))
-        sample.api.delete(`${settings.endpoint}/delete`, { data : { id : row.id } }).catch(() => undefined)
         toast.success(`${row.name} deleted.`)
     }
 
@@ -90,7 +123,7 @@ const Catalog = ({ entity } : { entity : Entity }) => {
                 </div>
                 <Toolbar>
                     <SampleNotice live={list.live} />
-                    <DarkButton onClick={() => openForm()}><FiPlus size={14} /> Add {settings.singular}</DarkButton>
+                    {canCreate && <DarkButton onClick={() => openForm()}><FiPlus size={14} /> Add {settings.singular}</DarkButton>}
                 </Toolbar>
             </ScreenHeader>
 
@@ -129,20 +162,21 @@ const Catalog = ({ entity } : { entity : Entity }) => {
                                 {entity === 'courses' && <Td className="text-right tabular-nums">{row.total ?? 0}</Td>}
                                 <Td className={`text-right tabular-nums ${settings.child ? 'hidden sm:table-cell' : ''}`}>{settings.child ? childCount(row.id) : topicQuestions(row)}</Td>
                                 <Td className="text-right whitespace-nowrap">
-                                    <span className="inline-flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity duration-150">
+                                    {canChange && <span className="inline-flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity duration-150">
                                         <IconButton aria-label={`Rename ${row.name}`} onClick={() => openForm(row)}><FiEdit2 size={14} /></IconButton>
                                         <IconButton danger aria-label={`Delete ${row.name}`} onClick={() => setDeleting(row)}><FiTrash2 size={14} /></IconButton>
-                                    </span>
+                                    </span>}
                                 </Td>
                             </Tr>
                         ))}
                     </tbody>
                 </Table>
-                {!list.loading && rows.length === 0 && (
+                {list.error && <div className="p-4"><EmptyState icon={FiFolder} title={`Couldn’t load ${settings.title.toLowerCase()}`} body={list.error} /></div>}
+                {!list.loading && !list.error && rows.length === 0 && (
                     <div className="p-4">
                         <EmptyState icon={FiFolder}
                             title={query || parentFilter !== 'all' ? `No ${settings.title.toLowerCase()} match` : `No ${settings.title.toLowerCase()} yet`}
-                            action={<GhostButton onClick={() => openForm()}><FiPlus size={14} /> Add {settings.singular}</GhostButton>} />
+                            action={canCreate ? <GhostButton onClick={() => openForm()}><FiPlus size={14} /> Add {settings.singular}</GhostButton> : undefined} />
                     </div>
                 )}
             </TableWrap>
@@ -153,8 +187,8 @@ const Catalog = ({ entity } : { entity : Entity }) => {
                 onClose={() => setEditing(undefined)}
                 footer={<>
                     <GhostButton onClick={() => setEditing(undefined)}>Cancel</GhostButton>
-                    <DarkButton disabled={!form.name.trim() || Boolean(settings.parent && !form.parentID)} className="disabled:opacity-40" onClick={save}>
-                        {editing === 'new' ? `Add ${settings.singular}` : 'Save changes'}
+                    <DarkButton disabled={saving || !form.name.trim() || Boolean(settings.parent && !form.parentID)} className="disabled:opacity-40" onClick={save}>
+                        {saving ? 'Saving…' : editing === 'new' ? `Add ${settings.singular}` : 'Save changes'}
                     </DarkButton>
                 </>}
             >
@@ -163,7 +197,7 @@ const Catalog = ({ entity } : { entity : Entity }) => {
                         <Label>Code<TextInput value={form.code} onChange={(event) => setForm({ ...form, code : event.target.value.toUpperCase() })} placeholder="e.g. CS 201" /></Label>
                     )}
                     <Label>Name<TextInput value={form.name} onChange={(event) => setForm({ ...form, name : event.target.value })} placeholder={`${settings.singular[0].toUpperCase()}${settings.singular.slice(1)} name`} /></Label>
-                    {settings.parent && (
+                    {settings.parent && !(entity === 'topics' && editing !== 'new') && (
                         <Label>
                             {config[settings.parent].singular[0].toUpperCase() + config[settings.parent].singular.slice(1)}
                             <Select className="!rounded-[9px] !h-[44px] w-full !text-[14px] !font-medium" value={form.parentID} onChange={(event) => setForm({ ...form, parentID : event.target.value })}>

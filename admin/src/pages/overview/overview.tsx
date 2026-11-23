@@ -1,12 +1,12 @@
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { FiPlus, FiFlag, FiArrowUpRight, FiCheckCircle } from 'react-icons/fi'
 import * as sample from '../../data/sample'
 import { useAdmin } from '../../context/admin'
-import useLoad from '../../hooks/useLoad'
-import { admin } from '../../components/shell/Shell'
+import * as api from '../../data/api'
 import { Eyebrow, DarkButton, GhostButton, Panel, PanelTitle, Stat, StatValue, StatLabel, ProgressTrack, ProgressFill, TextLink } from '../../styles/kit'
 import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, TableWrap, Table, Th, Td, Tr, CourseDot, DifficultyPill, Muted, Mono } from '../../styles/adminKit'
-import { SampleNotice, SkeletonRows, EmptyState } from '../../components/ui/ui'
+import { SampleNotice, SkeletonRows, EmptyState, Skeleton } from '../../components/ui/ui'
 
 const COVERAGE_TARGET = 200
 
@@ -62,21 +62,26 @@ const ActivityChart = ({ values } : { values : number[] }) => {
 
 const Overview = () => {
     const navigate = useNavigate()
-    const { flags, openFlags, added } = useAdmin()
-    const questions = useLoad(sample.fetchQuestions)
-    const courses = useLoad(sample.fetchCourses)
+    const { flags, openFlags, added, user } = useAdmin()
+    const [data, setData] = useState<{ overview : api.Overview, live : boolean }>()
 
-    const recent = [...added, ...questions.items].slice(0, 6)
-    const totalQuestions = courses.items.reduce((sum, course) => sum + course.total, 0) + added.length
-    const activePeople = sample.people.filter((person) => person.status === 'Active').length
+    useEffect(() => { api.fetchOverview().then(setData) }, [])
+
+    const overview = data?.overview
+    const loading = !data
+    const recent = api.uniqueById([...added, ...(overview?.recentQuestions ?? [])]).slice(0, 6)
+    // The API already counts questions saved while live
+    const extra = data?.live ? 0 : added.length
+    const courses = overview?.courses ?? []
     const queue = flags.filter((flag) => flag.status === 'open').slice(0, 4)
-    const resolvedThisWeek = flags.filter((flag) => flag.status === 'resolved').length + 41
+    const resolved = flags.filter((flag) => flag.status === 'resolved').length
+    const courseInfo = (id : string) => courses.find((course) => course.id === id) ?? sample.getCourse(id)
 
     const stats = [
-        { label : 'Questions in the bank', value : totalQuestions.toLocaleString(), note : `+${sample.weeklyActivity.slice(-7).reduce((a, b) => a + b, 0) + added.length} this week` },
-        { label : 'Courses covered', value : courses.items.length, note : `${sample.programs.length} programs` },
-        { label : 'Open flags', value : openFlags, note : `${resolvedThisWeek} resolved this week`, alert : openFlags > 0 },
-        { label : 'Active contributors', value : activePeople, note : `${sample.people.length - activePeople} invites pending` },
+        { label : 'Questions in the bank', value : ((overview?.questions.total ?? 0) + extra).toLocaleString(), note : `+${(overview?.questions.week ?? 0) + extra} this week` },
+        { label : 'Courses covered', value : courses.length, note : `${courses.reduce((sum, course) => sum + course.testsThisWeek, 0)} tests taken this week` },
+        { label : 'Open flags', value : openFlags, note : openFlags > 0 ? 'Waiting for review' : `${resolved} resolved`, alert : openFlags > 0 },
+        { label : 'Learners active', value : overview?.learners.activeThisWeek ?? 0, note : `of ${(overview?.learners.total ?? 0).toLocaleString()} this week` },
     ]
 
     return (
@@ -84,11 +89,11 @@ const Overview = () => {
             <ScreenHeader>
                 <div>
                     <Eyebrow>{today}</Eyebrow>
-                    <ScreenTitle className="mt-1">{greeting()}, {admin.name.split(' ')[0]}</ScreenTitle>
+                    <ScreenTitle className="mt-1">{greeting()}{user ? `, ${user.name.split(' ')[0]}` : ''}</ScreenTitle>
                     <ScreenLead>Here is what changed in the question bank and what needs your attention.</ScreenLead>
                 </div>
                 <Toolbar>
-                    <SampleNotice live={questions.live && courses.live} />
+                    {data && <SampleNotice live={data.live} />}
                     <GhostButton onClick={() => navigate('/alerts/flags')}><FiFlag size={14} /> Review flags</GhostButton>
                     <DarkButton onClick={() => navigate('/addQuestions')}><FiPlus size={14} /> Add question</DarkButton>
                 </Toolbar>
@@ -98,7 +103,7 @@ const Overview = () => {
                 {stats.map((stat) => (
                     <Stat key={stat.label}>
                         <StatLabel>{stat.label}</StatLabel>
-                        <StatValue className="tabular-nums mt-1">{stat.value}</StatValue>
+                        {loading ? <Skeleton height={34} width="40%" /> : <StatValue className="tabular-nums mt-1">{stat.value}</StatValue>}
                         <span className={`text-[12px] mt-1 ${stat.alert ? 'text-[#c2184f] font-semibold' : 'text-ash'}`}>{stat.note}</span>
                     </Stat>
                 ))}
@@ -107,7 +112,7 @@ const Overview = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
                 <Panel className="lg:col-span-2">
                     <PanelTitle>Questions added</PanelTitle>
-                    <ActivityChart values={sample.weeklyActivity} />
+                    {overview ? <ActivityChart values={overview.weeklyActivity} /> : <Skeleton height={180} />}
                 </Panel>
                 <Panel>
                     <div className="flex items-center justify-between">
@@ -119,16 +124,16 @@ const Overview = () => {
                     ) : (
                         <div className="flex flex-col">
                             {queue.map((flag) => {
-                                const question = sample.getQuestion(flag.questionID)
-                                const course = sample.getCourse(question?.courseID)
+                                const text = flag.question?.question ?? sample.getQuestion(flag.questionID)?.question
+                                const code = flag.question?.courseCode ?? sample.getCourse(sample.getQuestion(flag.questionID)?.courseID)?.code
                                 return (
                                     <button key={flag.id} onClick={() => navigate(`/alerts/flags?flag=${flag.id}`)}
                                         className="text-left flex flex-col gap-1 py-3 border-t border-bone first:border-t-0 first:pt-0 rounded-[6px] transition-colors duration-150 hover:bg-mist">
-                                        <div className="flex items-center gap-2">
-                                            <span className="text-[12px] font-semibold text-[#c2184f]">{flag.issue}</span>
-                                            <Mono>· {course?.code} · {flag.raisedAt}</Mono>
+                                        <div className="flex items-center gap-x-2 flex-wrap">
+                                            <span className="text-[12px] font-semibold text-[#c2184f] whitespace-nowrap">{flag.issue}</span>
+                                            <Mono className="whitespace-nowrap">{code} · {flag.raisedAt}</Mono>
                                         </div>
-                                        <span className="text-[13px] text-ink line-clamp-2 leading-[1.45]">{question ? sample.plainText(question.question) : 'Question removed'}</span>
+                                        <span className="text-[13px] text-ink line-clamp-2 leading-[1.45]">{text ? sample.plainText(text) : 'Question removed'}</span>
                                     </button>
                                 )
                             })}
@@ -147,8 +152,8 @@ const Overview = () => {
                         <Table>
                             <thead><tr><Th>Question</Th><Th>Course</Th><Th className="hidden sm:table-cell">Difficulty</Th><Th className="hidden md:table-cell">Added</Th></tr></thead>
                             <tbody>
-                                {questions.loading ? <SkeletonRows columns={4} rows={5} /> : recent.map((question) => {
-                                    const course = sample.getCourse(question.courseID)
+                                {loading ? <SkeletonRows columns={4} rows={5} /> : recent.map((question) => {
+                                    const course = courseInfo(question.courseID)
                                     return (
                                         <Tr key={question.id} clickable onClick={() => navigate(`/questions?open=${question.id}`)}>
                                             <Td className="max-w-[320px]"><span className="line-clamp-1">{sample.plainText(question.question)}</span></Td>
@@ -166,7 +171,7 @@ const Overview = () => {
                     <PanelTitle>Coverage by course</PanelTitle>
                     <Muted className="-mt-2">Target is {COVERAGE_TARGET} questions per course.</Muted>
                     <div className="flex flex-col gap-4">
-                        {[...courses.items].sort((a, b) => a.total - b.total).map((course) => (
+                        {[...courses].sort((a, b) => a.total - b.total).map((course) => (
                             <div key={course.id} className="flex flex-col gap-[6px]">
                                 <div className="flex items-center justify-between gap-2 text-[13px]">
                                     <span className="flex items-center gap-2 min-w-0"><CourseDot color={course.color} /><span className="truncate font-medium">{course.name}</span></span>

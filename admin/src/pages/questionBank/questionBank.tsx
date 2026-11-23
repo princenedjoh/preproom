@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import styled, { keyframes } from 'styled-components'
 import { Interweave } from 'interweave'
 import { toast } from 'react-toastify'
 import { FiSearch, FiPlus, FiFlag, FiX, FiTrash2, FiDatabase } from 'react-icons/fi'
 import * as sample from '../../data/sample'
+import * as api from '../../data/api'
 import { useAdmin } from '../../context/admin'
 import useLoad from '../../hooks/useLoad'
 import { SampleNotice, SkeletonRows, EmptyState, Dialog } from '../../components/ui/ui'
@@ -34,36 +35,72 @@ const QuestionBank = () => {
     const navigate = useNavigate()
     const [params, setParams] = useSearchParams()
     const { added, flags } = useAdmin()
-    const loaded = useLoad(sample.fetchQuestions)
-    const courses = useLoad(sample.fetchCourses)
+    const courses = useLoad(api.fetchCourses)
 
     const [query, setQuery] = useState(params.get('q') ?? '')
+    const [search, setSearch] = useState(query)
     const [courseID, setCourseID] = useState('all')
     const [difficulty, setDifficulty] = useState<DifficultyFilter>('All')
     const [flaggedOnly, setFlaggedOnly] = useState(false)
     const [confirming, setConfirming] = useState<sample.Question>()
+    const [page, setPage] = useState<api.QuestionPage>()
+    const [loadingMore, setLoadingMore] = useState(false)
+    const [fetched, setFetched] = useState<sample.Question>()
 
     useEffect(() => { setQuery(params.get('q') ?? '') }, [params])
 
-    const openFlagsFor = (id : string) => flags.filter((flag) => flag.questionID === id && flag.status === 'open').length
-    const all = useMemo(() => [...added, ...loaded.items], [added, loaded.items])
+    // Debounce typing before asking the server
+    useEffect(() => {
+        const timer = setTimeout(() => setSearch(query.trim()), 250)
+        return () => clearTimeout(timer)
+    }, [query])
 
-    const results = all.filter((question) => {
-        const text = `${sample.plainText(question.question)} ${question.topic} ${question.author}`.toLowerCase()
-        return (!query || text.includes(query.toLowerCase()))
-            && (courseID === 'all' || question.courseID === courseID)
-            && (difficulty === 'All' || question.difficulty === difficulty)
-            && (!flaggedOnly || openFlagsFor(question.id) > 0)
-    })
+    const filters : api.QuestionQuery = {
+        search, courseID : courseID === 'all' ? undefined : courseID,
+        difficulty : difficulty === 'All' ? undefined : difficulty, flagged : flaggedOnly || undefined,
+    }
+
+    useEffect(() => {
+        let cancelled = false
+        setPage(undefined)
+        api.fetchQuestionPage(filters).then((result) => !cancelled && setPage(result))
+        return () => { cancelled = true }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search, courseID, difficulty, flaggedOnly])
+
+    const loadMore = async () => {
+        if (!page) return
+        setLoadingMore(true)
+        const more = await api.fetchQuestionPage({ ...filters, offset : page.items.length })
+        setPage({ ...page, items : api.uniqueById([...page.items, ...more.items]) })
+        setLoadingMore(false)
+    }
+
+    const openFlagsFor = (question : sample.Question) => {
+        const counted = flags.filter((flag) => flag.questionID === question.id && flag.status === 'open').length
+        return flags.length ? counted : question.flags
+    }
+
+    const filtersOnNow = Boolean(search) || courseID !== 'all' || difficulty !== 'All' || flaggedOnly
+    // Questions saved this session only show while the list is unfiltered
+    const results = api.uniqueById([...(filtersOnNow ? [] : added), ...(page?.items ?? [])])
+    const total = (page?.total ?? 0) + (page?.live ? 0 : filtersOnNow ? 0 : added.length)
 
     const openID = params.get('open')
-    const open = all.find((question) => question.id === openID)
+    const open = results.find((question) => question.id === openID) ?? (fetched?.id === openID ? fetched : undefined)
     const setOpen = (id? : string) => {
         const next = new URLSearchParams(params)
         if (id) next.set('open', id)
         else next.delete('open')
         setParams(next, { replace : true })
     }
+
+    // Deep links can point at a question that isn't on the loaded page
+    useEffect(() => {
+        if (!openID || !page?.live || results.some((question) => question.id === openID)) return
+        api.fetchQuestion(openID).then(setFetched).catch(() => toast.error('That question no longer exists.'))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [openID, page?.live])
 
     useEffect(() => {
         if (!open) return
@@ -74,17 +111,17 @@ const QuestionBank = () => {
 
     const remove = async (question : sample.Question) => {
         setConfirming(undefined)
-        setOpen()
         try {
-            await sample.api.delete('/questions/delete', { data : { id : question.id } })
-        } catch {
-            // Offline: still remove locally so the screen reflects the decision
+            if (page?.live && !question.id.startsWith('local-')) await api.deleteQuestion(question.id)
+        } catch (error) {
+            if (!api.isOffline(error)) return void toast.error(api.errorMessage(error))
         }
-        loaded.setItems((items) => items.filter((item) => item.id !== question.id))
+        setOpen()
+        setPage((current) => current && { ...current, items : current.items.filter((item) => item.id !== question.id), total : current.total - 1 })
         toast.success('Question deleted.')
     }
 
-    const filtersOn = Boolean(query) || courseID !== 'all' || difficulty !== 'All' || flaggedOnly
+    const filtersOn = filtersOnNow || Boolean(query)
     const clearFilters = () => {
         setQuery('')
         setCourseID('all')
@@ -103,7 +140,7 @@ const QuestionBank = () => {
                     <ScreenLead>Every question students can practise. Open one to check it against its flags or remove it.</ScreenLead>
                 </div>
                 <Toolbar>
-                    <SampleNotice live={loaded.live} />
+                    {page && <SampleNotice live={page.live} />}
                     <DarkButton onClick={() => navigate('/addQuestions')}><FiPlus size={14} /> Add question</DarkButton>
                 </Toolbar>
             </ScreenHeader>
@@ -123,7 +160,7 @@ const QuestionBank = () => {
                     ))}
                 </Segmented>
                 <FilterChip active={flaggedOnly} onClick={() => setFlaggedOnly(!flaggedOnly)}><FiFlag size={12} /> Flagged</FilterChip>
-                <Mono className="lg:ml-auto tabular-nums">{results.length} of {all.length}</Mono>
+                <Mono className="lg:ml-auto tabular-nums">{page ? `${results.length} of ${total}` : '…'}</Mono>
             </div>
 
             <TableWrap className="max-h-[calc(100vh-260px)] overflow-y-auto">
@@ -136,9 +173,9 @@ const QuestionBank = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {loaded.loading ? <SkeletonRows columns={7} /> : results.map((question) => {
+                        {!page ? <SkeletonRows columns={7} /> : results.map((question) => {
                             const info = course(question.courseID)
-                            const count = openFlagsFor(question.id)
+                            const count = openFlagsFor(question)
                             return (
                                 <Tr key={question.id} clickable onClick={() => setOpen(question.id)} aria-selected={question.id === openID}
                                     className={question.id === openID ? '!bg-mist' : ''}>
@@ -154,7 +191,8 @@ const QuestionBank = () => {
                         })}
                     </tbody>
                 </Table>
-                {!loaded.loading && results.length === 0 && (
+                {page?.error && <div className="p-4"><EmptyState icon={FiDatabase} title="Couldn’t load questions" body={page.error} /></div>}
+                {page && !page.error && results.length === 0 && (
                     <div className="p-4">
                         <EmptyState
                             icon={FiDatabase}
@@ -167,6 +205,13 @@ const QuestionBank = () => {
                     </div>
                 )}
             </TableWrap>
+            {page && results.length < total && (
+                <div className="flex justify-center">
+                    <GhostButton onClick={loadMore} disabled={loadingMore} className="disabled:opacity-50">
+                        {loadingMore ? 'Loading…' : `Load ${Math.min(api.PAGE_SIZE, total - results.length)} more`}
+                    </GhostButton>
+                </div>
+            )}
 
             {open && (
                 <>

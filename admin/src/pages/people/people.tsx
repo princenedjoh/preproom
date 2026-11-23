@@ -2,60 +2,114 @@ import { useState } from 'react'
 import { useParams, Navigate } from 'react-router-dom'
 import { Select as AntSelect } from 'antd'
 import { toast } from 'react-toastify'
-import { FiUserPlus, FiSearch, FiTrash2, FiRepeat, FiSend, FiUsers } from 'react-icons/fi'
+import { FiUserPlus, FiSearch, FiTrash2, FiRepeat, FiSend, FiUsers, FiLock } from 'react-icons/fi'
 import * as sample from '../../data/sample'
+import * as api from '../../data/api'
 import { SkeletonRows, EmptyState, Dialog, PersonAvatar, SampleNotice } from '../../components/ui/ui'
 import { DarkButton, GhostButton, Label, TextInput, Panel } from '../../styles/kit'
 import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, SearchField, TableWrap, Table, Th, Td, Tr, IconButton, Muted, Mono } from '../../styles/adminKit'
 import useLoad from '../../hooks/useLoad'
 
-const roles : Record<string, { role : sample.Role, lead : string, can : string[] }> = {
+const roles : Record<string, { role : sample.Role, title : string, lead : string, can : string[] }> = {
+    admins : {
+        role : 'Admin',
+        title : 'Administrators',
+        lead : 'Administrators can do everything, including managing the team. Keep this list short.',
+        can : ['Manage people', 'Change the catalog', 'Resolve flags'],
+    },
     supervisors : {
         role : 'Supervisor',
+        title : 'Supervisors',
         lead : 'Supervisors own a set of courses. They add questions, review moderators and have the final say on flags.',
         can : ['Add and edit questions', 'Resolve flags', 'Invite moderators'],
     },
     moderators : {
         role : 'Moderator',
+        title : 'Moderators',
         lead : 'Moderators add questions and triage flags for the courses they are assigned to.',
         can : ['Add questions', 'Triage flags'],
     },
 }
 
 const palette = ['#6647f0', '#0091ff', '#fd9a46', '#16c0a4', '#f0457a', '#00c07a']
-const fetchPeople = async () => ({ items : sample.people, live : false })
 
 const People = () => {
     const { group } = useParams()
     const settings = group ? roles[group] : undefined
-    const people = useLoad(fetchPeople)
-    const courses = useLoad(sample.fetchCourses)
+    const people = useLoad(api.fetchPeople)
+    const courses = useLoad(api.fetchCourses)
 
     const [query, setQuery] = useState('')
     const [inviting, setInviting] = useState(false)
     const [form, setForm] = useState({ name : '', email : '', courses : [] as string[] })
     const [removing, setRemoving] = useState<sample.Person>()
+    const [busy, setBusy] = useState(false)
 
     if (!settings) return <Navigate to="/people/supervisors" replace />
 
     const members = people.items.filter((person) => person.role === settings.role)
     const rows = members.filter((person) => !query || `${person.name} ${person.email}`.toLowerCase().includes(query.toLowerCase()))
-    const otherRole : sample.Role = settings.role === 'Supervisor' ? 'Moderator' : 'Supervisor'
+    const otherRole : sample.Role | undefined = settings.role === 'Supervisor' ? 'Moderator' : settings.role === 'Moderator' ? 'Supervisor' : undefined
     const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)
 
     const update = (id : string, change : Partial<sample.Person>) =>
         people.setItems((items) => items.map((person) => person.id === id ? { ...person, ...change } : person))
 
-    const invite = () => {
-        if (!form.name.trim() || !validEmail) return
-        people.setItems((items) => [{
-            id : `local-${Date.now()}`, name : form.name.trim(), email : form.email.trim(), role : settings.role, courses : form.courses,
-            questionsAdded : 0, flagsResolved : 0, status : 'Invited', lastActive : '—', color : palette[items.length % palette.length],
-        }, ...items])
-        sample.api.post('/people/invite', { ...form, role : settings.role }).catch(() => undefined)
-        toast.success(`Invite sent to ${form.email.trim()}.`)
+    // Runs an API call when live; offline the change is kept locally
+    const attempt = async (call : () => Promise<unknown>) => {
+        if (!people.live) return true
+        try {
+            await call()
+            return true
+        } catch (error) {
+            if (api.isOffline(error)) return true
+            toast.error(api.errorMessage(error))
+            return false
+        }
+    }
+
+    const invite = async () => {
+        if (!form.name.trim() || !validEmail || busy) return
+        setBusy(true)
+        const draft = { name : form.name.trim(), email : form.email.trim(), role : settings.role, courses : form.courses }
+        let person : sample.Person = {
+            id : `local-${Date.now()}`, ...draft, questionsAdded : 0, flagsResolved : 0, status : 'Invited', lastActive : '—',
+            color : palette[people.items.length % palette.length],
+        }
+        if (people.live) {
+            try {
+                person = await api.invitePerson(draft)
+            } catch (error) {
+                setBusy(false)
+                if (!api.isOffline(error)) return void toast.error(api.errorMessage(error))
+            }
+        }
+        setBusy(false)
+        // An existing learner is promoted rather than invited, so replace by id
+        people.setItems((items) => [person, ...items.filter((item) => item.id !== person.id)])
+        toast.success(person.status === 'Invited' ? `Invite sent to ${person.email}.` : `${person.name} joined as a ${settings.role.toLowerCase()}.`)
         setInviting(false)
         setForm({ name : '', email : '', courses : [] })
+    }
+
+    const resend = async (person : sample.Person) => {
+        if (await attempt(() => api.resendInvite(person.id))) toast.success(`Invite resent to ${person.email}.`)
+    }
+
+    const switchRole = async (person : sample.Person) => {
+        if (!otherRole) return
+        if (await attempt(() => api.updatePerson(person.id, { role : otherRole }))) {
+            update(person.id, { role : otherRole })
+            toast.success(`${person.name} is now a ${otherRole.toLowerCase()}.`)
+        }
+    }
+
+    const remove = async (person : sample.Person) => {
+        setRemoving(undefined)
+        if (await attempt(() => api.removePerson(person.id))) {
+            people.setItems((items) => items.filter((item) => item.id !== person.id))
+            toast.success(`${person.name} removed from the team.`)
+        }
     }
 
     const courseCode = (id : string) => {
@@ -67,7 +121,7 @@ const People = () => {
         <Screen>
             <ScreenHeader>
                 <div>
-                    <ScreenTitle>{group === 'supervisors' ? 'Supervisors' : 'Moderators'}</ScreenTitle>
+                    <ScreenTitle>{settings.title}</ScreenTitle>
                     <ScreenLead>{settings.lead}</ScreenLead>
                 </div>
                 <Toolbar>
@@ -141,10 +195,10 @@ const People = () => {
                                     <span className="inline-flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity duration-150">
                                         {person.status === 'Invited' ? (
                                             <IconButton aria-label={`Resend invite to ${person.name}`} title="Resend invite"
-                                                onClick={() => toast.success(`Invite resent to ${person.email}.`)}><FiSend size={14} /></IconButton>
-                                        ) : (
+                                                onClick={() => resend(person)}><FiSend size={14} /></IconButton>
+                                        ) : otherRole && (
                                             <IconButton aria-label={`Make ${person.name} a ${otherRole.toLowerCase()}`} title={`Make ${otherRole.toLowerCase()}`}
-                                                onClick={() => { update(person.id, { role : otherRole }); toast.success(`${person.name} is now a ${otherRole.toLowerCase()}.`) }}>
+                                                onClick={() => switchRole(person)}>
                                                 <FiRepeat size={14} />
                                             </IconButton>
                                         )}
@@ -155,9 +209,10 @@ const People = () => {
                         ))}
                     </tbody>
                 </Table>
-                {!people.loading && rows.length === 0 && (
+                {people.error && <div className="p-4"><EmptyState icon={FiLock} title="Can’t show the team" body={people.error} /></div>}
+                {!people.loading && !people.error && rows.length === 0 && (
                     <div className="p-4">
-                        <EmptyState icon={FiUsers} title={query ? 'Nobody matches' : `No ${group} yet`}
+                        <EmptyState icon={FiUsers} title={query ? 'Nobody matches' : `No ${settings.title.toLowerCase()} yet`}
                             action={<GhostButton onClick={() => setInviting(true)}><FiUserPlus size={14} /> Invite {settings.role.toLowerCase()}</GhostButton>} />
                     </div>
                 )}
@@ -165,12 +220,12 @@ const People = () => {
 
             <Dialog
                 open={inviting}
-                title={`Invite a ${settings.role.toLowerCase()}`}
+                title={`Invite ${settings.role === 'Admin' ? 'an' : 'a'} ${settings.role.toLowerCase()}`}
                 description="They get an email with a link to set a password. Invites expire after 7 days."
                 onClose={() => setInviting(false)}
                 footer={<>
                     <GhostButton onClick={() => setInviting(false)}>Cancel</GhostButton>
-                    <DarkButton disabled={!form.name.trim() || !validEmail} className="disabled:opacity-40" onClick={invite}><FiSend size={14} /> Send invite</DarkButton>
+                    <DarkButton disabled={busy || !form.name.trim() || !validEmail} className="disabled:opacity-40" onClick={invite}><FiSend size={14} /> {busy ? 'Sending…' : 'Send invite'}</DarkButton>
                 </>}
             >
                 <form className="flex flex-col gap-4" onSubmit={(event) => { event.preventDefault(); invite() }}>
@@ -189,16 +244,11 @@ const People = () => {
             <Dialog
                 open={Boolean(removing)}
                 title={`Remove ${removing?.name}?`}
-                description="They lose admin access straight away. Questions they added stay in the bank."
+                description={removing?.status === 'Invited' ? 'The invite link stops working.' : 'They lose admin access straight away and become a learner. Questions they added stay in the bank.'}
                 onClose={() => setRemoving(undefined)}
                 footer={<>
                     <GhostButton onClick={() => setRemoving(undefined)}>Cancel</GhostButton>
-                    <DarkButton className="!bg-[#c2184f]" onClick={() => {
-                        if (!removing) return
-                        people.setItems((items) => items.filter((person) => person.id !== removing.id))
-                        toast.success(`${removing.name} removed.`)
-                        setRemoving(undefined)
-                    }}>Remove</DarkButton>
+                    <DarkButton className="!bg-[#c2184f]" onClick={() => removing && remove(removing)}>Remove</DarkButton>
                 </>}
              />
         </Screen>
