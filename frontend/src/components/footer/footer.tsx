@@ -4,8 +4,7 @@ import * as footerStyle from './footer.style'
 import { BsInstagram, BsLinkedin, BsFacebook, BsTwitter } from 'react-icons/bs'
 import { TiSocialYoutube } from 'react-icons/ti'
 import { FaTiktok } from 'react-icons/fa'
-import { logos } from '../../assets'
-import { navRoutes } from '../../router/router'
+import { Wordmark } from '../brand/logo'
 import { useNavigate } from 'react-router-dom'
 import { SiThreadless } from 'react-icons/si'
 import theme from '../../styles/theme'
@@ -93,12 +92,7 @@ const Footer = ({rigid} : propsType) => {
                 <footerStyle.MainWrap>
                     <footerStyle.Columns>
                         <footerStyle.Brand>
-                            <footerStyle.LogoIcon 
-                                onClick={()=>{
-                                    navigate( navRoutes.find(route => route.name === 'home')!.path )
-                                }}
-                                src={logos.fullLogo}
-                            />
+                            <button type='button' className='w-fit' aria-label='PrepRoom home' onClick={()=>navigate('/')}><Wordmark/></button>
                             <AppTypography size={TypographySize.sm2} textColor={theme.colors2.gray.gray3} lineHeight={1.55}>
                                 Past questions, daily challenges and timed tests for students who want to walk into exams prepared.
                             </AppTypography>

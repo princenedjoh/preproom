@@ -34,7 +34,7 @@ const Experience = () => {
                 <div data-stagger className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                     {
                         steps.map((step) => (
-                            <div key={step.number} className='flex flex-col gap-3 rounded-[12px] bg-white p-7'>
+                            <div key={step.number} className='flex flex-col gap-3 rounded-lg bg-surface border border-line p-7'>
                                 <span className='font-display font-bold text-[60px] md:text-[72px] leading-none tracking-[-0.04em] text-onyx'>
                                     {step.number}
                                 </span>

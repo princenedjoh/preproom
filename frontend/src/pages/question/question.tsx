@@ -67,7 +67,7 @@ const QuestionPage = () => {
     const status = params.get('status')
     // Prev / next walk the list you came from (respecting a Mistakes or Saved view)
     const order = useMemo(() => (list ?? []).filter((item) =>
-        status === 'mistakes' ? state.attempts[item.id] && !state.attempts[item.id].correct || item.id === questionID
+        status === 'mistakes' ? (state.attempts[item.id] && !state.attempts[item.id].correct) || item.id === questionID
         : status === 'saved' ? state.saved[item.id] || item.id === questionID
         : status === 'unanswered' ? !state.attempts[item.id] || item.id === questionID
         : true),

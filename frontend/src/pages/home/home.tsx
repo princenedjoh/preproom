@@ -14,8 +14,7 @@ import { useGSAP } from '@gsap/react'
 
 gsap.registerPlugin(useGSAP, ScrollTrigger, SplitText)
 
-// Motion follows DESIGN.md: content settles in with a slow-out ease, one continuous
-// effect per viewport (the conic CTA border), everything gated on reduced motion.
+// Content settles in with a slow-out ease; everything is gated on reduced motion.
 const EASE = 'power3.out'
 
 const Home = () => {
@@ -27,10 +26,6 @@ const Home = () => {
 
     mm.add('(prefers-reduced-motion: no-preference)', () => {
       const split = SplitText.create('[data-hero-title]', { type : 'words', mask : 'words' })
-      // background-clip text doesn't reach into the masked word wrappers, so carry the gradient onto each word
-      split.words.forEach((word) => {
-        if(word.parentElement?.closest('.text-gradient-primary')) word.classList.add('text-gradient-primary')
-      })
 
       gsap.timeline({ defaults : { ease : EASE } })
         .from(split.words, { yPercent : 110, duration : 0.9, stagger : 0.05 })

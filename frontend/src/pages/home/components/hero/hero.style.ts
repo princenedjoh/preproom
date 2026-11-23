@@ -20,8 +20,8 @@ export const Badge = styled.span.attrs({
    className : ` Badge rounded-full px-2 py-[2px] text-[10px] font-semibold uppercase`
 })`
    letter-spacing : 0.06em;
-   color : ${({theme}) => theme.colors.text.light.white};
-   background : ${({theme}) => theme.colors2.brand.violet};
+   color : #ffffff;
+   background : ${({theme}) => theme.color.successSolid};
 `
 
 export const Checks = styled.ul.attrs({
@@ -32,8 +32,8 @@ export const Check = styled.li.attrs({
    className : ` Check flex items-start gap-[10px] text-[15px] md:text-[16px] leading-[1.45]`
 })`
    color : ${({theme}) => theme.colors2.gray.gray3};
-   b { color : ${({theme}) => theme.colors.main.primary}; font-weight : 700; }
-   svg { color : ${({theme}) => theme.colors2.brand.blue}; flex-shrink : 0; margin-top : 3px; }
+   b { color : ${({theme}) => theme.color.ink}; font-weight : 600; }
+   svg { color : ${({theme}) => theme.color.success}; flex-shrink : 0; margin-top : 3px; }
 `
 
 export const Actions = styled.div.attrs({

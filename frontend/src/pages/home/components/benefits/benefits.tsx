@@ -56,7 +56,7 @@ const Benefit = () => {
                                 <div 
                                     key={message.name}
                                     data-thread
-                                    className={`flex gap-3 rounded-[12px] p-4 border border-white/10 bg-white/[0.04] ${index === 1 ? 'lg:ml-8' : ''}`}
+                                    className={`flex gap-3 rounded-[12px] p-4 border border-on-inverse/10 bg-on-inverse/[0.04] ${index === 1 ? 'lg:ml-8' : ''}`}
                                 >
                                     <homeStyle.Avatar color={message.color} size={32} ring='transparent'>{message.initials}</homeStyle.Avatar>
                                     <div className='flex flex-col gap-1'>

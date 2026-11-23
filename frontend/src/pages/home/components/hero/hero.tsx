@@ -27,7 +27,7 @@ const Hero = () => {
                             Daily challenges are live
                         </heroStyle.Announcement>
                         <homeStyle.Display data-hero-title>
-                            Ace every exam, <span className='text-gradient-primary'>one question</span> at a time.
+                            Ace every exam, one question at a time.
                         </homeStyle.Display>
                         <heroStyle.Checks data-hero-fade>
                             {
@@ -40,16 +40,16 @@ const Hero = () => {
                             }
                         </heroStyle.Checks>
                         <heroStyle.Actions data-hero-fade>
-                            <span className='conic-border'>
-                                <homeStyle.DarkButton 
-                                    type='button'
-                                    onClick={()=>navigate('/questions')}
-                                >
-                                    Start practicing. It's free <FiArrowRight size={16} />
-                                </homeStyle.DarkButton>
-                            </span>
-                            <homeStyle.GhostButton 
+                            <homeStyle.DarkButton
                                 type='button'
+                                className='!h-10 !px-5'
+                                onClick={()=>navigate('/questions')}
+                            >
+                                Start practising, it's free <FiArrowRight size={16} />
+                            </homeStyle.DarkButton>
+                            <homeStyle.GhostButton
+                                type='button'
+                                className='!h-10'
                                 onClick={()=>navigate('/test/testconfig')}
                             >
                                 Take a test
