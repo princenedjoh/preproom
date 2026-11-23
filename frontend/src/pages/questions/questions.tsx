@@ -10,6 +10,7 @@ import { difficultyClass, difficultyShort } from '../mcqs/mcqs'
 import { DailyCalendar, SolvedCard, StatusGlyph, acceptanceOf, plainText } from './parts'
 import { FiSearch, FiBookmark, FiCheckCircle, FiClock, FiRotateCcw, FiShuffle, FiChevronDown, FiX, FiCalendar, FiBookOpen } from "react-icons/fi";
 import { useChallengeView } from '../../store/challenge'
+import { useStudy, orderCourses } from '../../store/study'
 
 const difficulties : ('All' | Difficulty)[] = ['All', 'Easy', 'Medium', 'Hard']
 const sorts = ['Default', 'Newest', 'Oldest', 'Hardest', 'Acceptance'] as const
@@ -34,7 +35,9 @@ const Questions = () => {
     const navigate = useNavigate()
     const { courseID } = useParams()
     const state = useProgress()
-    const { courses } = useCatalog()
+    const catalog = useCatalog()
+    const study = useStudy()
+    const courses = orderCourses(catalog.courses, study.courses)
     const challenge = useChallengeView()
     // /questions with no course opens the one you practised most recently
     const lastCourseID = Object.values(state.attempts).sort((a, b) => b.at - a.at)[0]?.courseID
@@ -140,7 +143,7 @@ const Questions = () => {
 
             {/* Library rail */}
             <aside className='hidden lg:flex flex-col gap-1 sticky top-[66px]' aria-label='Library'>
-                <span className='px-2 pb-1 text-[12px] font-medium text-ink-3'>Courses</span>
+                <span className='px-2 pb-1 text-[12px] font-medium text-ink-3'>{study.courses.length ? 'My courses first' : 'Courses'}</span>
                 {courses.map((item) => {
                     const value = courseProgress(state, item.id, item.questions)
                     return (

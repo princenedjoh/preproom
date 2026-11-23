@@ -44,7 +44,7 @@ const SignUp = () => {
         try {
             const user = await signup(payload)
             notify(`Welcome to PrepRoom, ${user.firstName}`)
-            navigate('/today', { replace : true })
+            navigate('/welcome', { replace : true })
         } catch(failure) {
             const problem = toApiError(failure)
             setError(problem.code === 'conflict' ? 'An account with that email already exists. Try logging in instead.' : problem.message)

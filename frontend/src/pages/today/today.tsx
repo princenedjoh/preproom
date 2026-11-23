@@ -1,12 +1,13 @@
 import { useNavigate } from 'react-router-dom'
 import * as kit from '../../styles/kit'
 import { getCourse, getQuestion, useCatalog } from '../../data/catalog'
-import { useProgress, summarize, courseProgress, weakTopics } from '../../store/progress'
+import { useProgress, summarize, courseProgress, weakTopics, dayKey } from '../../store/progress'
 import { useChallengeView } from '../../store/challenge'
 import { startChallenge as beginChallenge } from '../pod/pod'
 import TestHistory from '../../components/testHistory/testHistory'
 import CourseIcon from '../../components/courseIcon/courseIcon'
-import { FiArrowRight, FiBookmark, FiRotateCcw, FiCheck, FiClock, FiZap } from 'react-icons/fi'
+import { useStudy, orderCourses } from '../../store/study'
+import { FiArrowRight, FiBookmark, FiRotateCcw, FiCheck, FiClock, FiZap, FiTarget, FiSettings } from 'react-icons/fi'
 
 const greeting = () => {
     const hour = new Date().getHours()
@@ -19,7 +20,9 @@ const accuracyTone = (value : number) : kit.Tone => value >= 70 ? 'green' : valu
 const Today = () => {
 
     const navigate = useNavigate()
-    const { courses } = useCatalog()
+    const catalog = useCatalog()
+    const study = useStudy()
+    const courses = orderCourses(catalog.courses, study.courses)
     const state = useProgress()
     const stats = summarize(state)
     const firstName = state.profile.name.trim().split(' ')[0]
@@ -45,6 +48,11 @@ const Today = () => {
         navigate(`/questions/${course ?? courses[0].id}?status=saved`)
     }
 
+    const today = dayKey()
+    const doneToday = Object.values(state.attempts).filter((attempt) => dayKey(new Date(attempt.at)) === today).length
+    const goalShare = Math.min(1, doneToday / Math.max(1, study.goal))
+    const needsSetup = !study.onboarded && (!state.profile.school || !study.courses.length)
+
     const subline = !attempts.length ? 'Pick a course and answer your first question. Everything you do is saved here.'
         : stats.activeToday ? `You've practised today${stats.streak > 1 ? `, ${stats.streak} days in a row` : ''}. Nice.`
         : stats.streak > 0 ? `Answer one question today to keep your ${stats.streak}-day streak.`
@@ -53,11 +61,33 @@ const Today = () => {
     return (
         <kit.Page>
             <kit.PageInner>
+                {
+                    needsSetup &&
+                    <div className='flex flex-wrap items-center gap-3 rounded-lg border border-accent/30 bg-accent-tint px-4 py-3'>
+                        <FiSettings size={16} className='text-accent shrink-0'/>
+                        <span className='flex-1 min-w-[200px] text-[14px] text-ink'>Tell us your school and courses, and PrepRoom puts your papers first. It takes 30 seconds.</span>
+                        <kit.PrimaryButton type='button' className='!h-8' onClick={()=>navigate('/welcome')}>Set up</kit.PrimaryButton>
+                    </div>
+                }
                 <header className='flex flex-col gap-2 pt-2'>
                     <kit.Eyebrow>{new Date().toLocaleDateString(undefined, { weekday : 'long', month : 'long', day : 'numeric' })}</kit.Eyebrow>
                     <kit.PageTitle>{greeting()}{firstName ? `, ${firstName}` : ''}</kit.PageTitle>
                     <kit.Body>{subline}</kit.Body>
                 </header>
+                <section className='flex items-center gap-4 rounded-lg bg-surface border border-line px-4 py-3' aria-label='Daily goal'>
+                    <span className='relative w-11 h-11 shrink-0'>
+                        <svg viewBox='0 0 44 44' className='w-full h-full -rotate-90'>
+                            <circle cx='22' cy='22' r='18' fill='none' strokeWidth='4' stroke='rgb(var(--ink) / 0.08)'/>
+                            <circle cx='22' cy='22' r='18' fill='none' strokeWidth='4' strokeLinecap='round' stroke='rgb(var(--success))' strokeDasharray={`${113.1 * goalShare} 113.1`} style={{ transition : 'stroke-dasharray 600ms var(--ease-out)' }}/>
+                        </svg>
+                        <FiTarget size={15} className={`absolute inset-0 m-auto ${goalShare >= 1 ? 'text-success' : 'text-ink-3'}`}/>
+                    </span>
+                    <span className='flex flex-col flex-1 min-w-0'>
+                        <span className='text-[14px] font-medium text-ink'>{goalShare >= 1 ? 'Daily goal reached' : 'Daily goal'}</span>
+                        <span className='text-[13px] text-ink-3 tabular-nums'>{doneToday} of {study.goal} questions today</span>
+                    </span>
+                    <button type='button' onClick={()=>navigate('/welcome')} className='text-[13px] text-ink-3 hover:text-ink'>Change</button>
+                </section>
 
                 <div className='grid grid-cols-1 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)] gap-4'>
                     {

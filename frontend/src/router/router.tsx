@@ -21,6 +21,7 @@ import Today from "../pages/today/today"
 import ResetPassword from "../pages/resetPassword/resetPassword"
 import QuestionPage from "../pages/question/question"
 import Plan from "../pages/plan/plan"
+import Welcome from "../pages/welcome/welcome"
 
 const authRoutes = [
     {
@@ -128,6 +129,7 @@ const Router = () => {
             <Route element={<FocusShell />}>
                 <Route path='/test/session' element={<Session />} />
                 <Route path='/questions/:courseID/:questionID' element={<QuestionPage />} />
+                <Route path='/welcome' element={<Welcome />} />
             </Route>
             <Route element={<SiteShell />}>
                 {siteRoutes.map((route) => <Route key={route.path} path={route.path} element={<route.route />} />)}

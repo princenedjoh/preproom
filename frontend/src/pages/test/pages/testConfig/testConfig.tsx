@@ -8,6 +8,7 @@ import { getCourse, useCatalog, fetchQuestions, fetchPapers } from '../../../../
 import TestHistory from '../../../../components/testHistory/testHistory'
 import SegmentedControl from '../../../../components/UI/segmented/segmented'
 import CourseIcon from '../../../../components/courseIcon/courseIcon'
+import { useStudy, orderCourses, getStudy } from '../../../../store/study'
 import { FiArrowRight, FiFlag, FiLayers, FiFileText, FiZap, FiAlertCircle } from "react-icons/fi";
 
 export interface TestConfigState {
@@ -37,9 +38,10 @@ const TestConfig = () => {
     const navigate = useNavigate()
     const incoming = (useLocation().state ?? {}) as Partial<TestConfigState>
 
-    const { courses } = useCatalog()
+    const catalog = useCatalog()
+    const courses = orderCourses(catalog.courses, useStudy().courses)
     const [config, setConfig] = useState<TestConfigState>({
-        courseID : getCourse(incoming.courseID).id,
+        courseID : getCourse(incoming.courseID ?? getStudy().courses[0]).id,
         mode : 'mcqs',
         count : 10,
         minutes : 20,
