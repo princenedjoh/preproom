@@ -88,21 +88,13 @@ code {
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-/* Press feedback on every kit button */
-.DarkButton, .LightButton, .GhostButton, .IconButton, .FilterChip, .SegmentedItem, .NavLink {
-  transition: background 150ms var(--ease-out), color 150ms var(--ease-out), border-color 150ms var(--ease-out),
-    opacity 150ms var(--ease-out), box-shadow 150ms var(--ease-out), transform 120ms var(--ease-out);
+/* Press feedback for admin-only controls (kit buttons use the shared pressable mixin) */
+.IconButton, .NavLink {
+  transition: background 150ms var(--ease-out), color 150ms var(--ease-out), box-shadow 150ms var(--ease-out), transform 120ms var(--ease-out);
 }
-.DarkButton:active, .LightButton:active, .GhostButton:active, .IconButton:active, .FilterChip:active, .NavLink:active {
-  transform: scale(0.97);
-}
+.IconButton:active:not(:disabled), .NavLink:active { transform: scale(0.97); }
+.IconButton:focus-visible, .NavLink:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(0, 145, 255, 0.35); }
 button:disabled { cursor: not-allowed; }
-button:disabled:active { transform: none; }
-
-/* Hover only on devices that hover */
-@media not all and (hover: hover) {
-  .DarkButton:hover, .LightButton:hover { opacity: 1; }
-}
 
 /* Tables: aligned numbers */
 .Table { font-variant-numeric: tabular-nums; }

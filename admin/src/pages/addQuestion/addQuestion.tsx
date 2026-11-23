@@ -9,7 +9,8 @@ import { useAdmin } from '../../context/admin'
 import useLoad from '../../hooks/useLoad'
 import RichField from '../../components/richField/richField'
 import { SampleNotice } from '../../components/ui/ui'
-import { DarkButton, GhostButton, Panel, PanelTitle, Segmented, SegmentedItem, Label, Eyebrow } from '../../styles/kit'
+import SegmentedControl from '../../components/ui/segmented'
+import { DarkButton, GhostButton, Panel, PanelTitle, Label, Eyebrow } from '../../styles/kit'
 import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, IconButton, DifficultyPill, CourseDot, Muted, Mono } from '../../styles/adminKit'
 import * as s from './addQuestion.style'
 
@@ -168,11 +169,8 @@ const AddQuestion = () => {
                             </Label>
                             <Label as="div">
                                 Difficulty
-                                <Segmented className="w-fit">
-                                    {(['Easy', 'Medium', 'Hard'] as sample.Difficulty[]).map((level) => (
-                                        <SegmentedItem key={level} type="button" active={difficulty === level} onClick={() => setDifficulty(level)}>{level}</SegmentedItem>
-                                    ))}
-                                </Segmented>
+                                <SegmentedControl aria-label="Difficulty" className="w-fit" value={difficulty} onChange={setDifficulty}
+                                    options={['Easy', 'Medium', 'Hard'] as sample.Difficulty[]} />
                             </Label>
                             <Label as="div">
                                 Exam year

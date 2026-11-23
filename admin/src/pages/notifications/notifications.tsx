@@ -5,7 +5,8 @@ import { IconType } from 'react-icons'
 import * as sample from '../../data/sample'
 import { useAdmin } from '../../context/admin'
 import { EmptyState } from '../../components/ui/ui'
-import { GhostButton, Segmented, SegmentedItem, IconTile, Eyebrow } from '../../styles/kit'
+import SegmentedControl from '../../components/ui/segmented'
+import { GhostButton, IconTile, Eyebrow } from '../../styles/kit'
 import { Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, Mono } from '../../styles/adminKit'
 
 const kinds : Record<sample.AdminNotification['kind'], { icon : IconType, path : string }> = {
@@ -38,10 +39,8 @@ const Notifications = () => {
                     <ScreenLead>New flags, contributor activity and weekly digests.</ScreenLead>
                 </div>
                 <Toolbar>
-                    <Segmented>
-                        <SegmentedItem active={filter === 'all'} onClick={() => setFilter('all')}>All</SegmentedItem>
-                        <SegmentedItem active={filter === 'unread'} onClick={() => setFilter('unread')}>Unread{unread ? ` · ${unread}` : ''}</SegmentedItem>
-                    </Segmented>
+                    <SegmentedControl aria-label="Show" value={filter} onChange={setFilter}
+                        options={[{ value : 'all', label : 'All' }, { value : 'unread', label : `Unread${unread ? ` · ${unread}` : ''}` }]} />
                     <GhostButton disabled={!unread} className="disabled:opacity-40" onClick={() => markRead()}><FiCheck size={14} /> Mark all read</GhostButton>
                 </Toolbar>
             </ScreenHeader>

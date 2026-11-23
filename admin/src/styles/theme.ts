@@ -150,8 +150,13 @@ const theme = {
 
     motion : {
         ease : 'cubic-bezier(0.33, 1, 0.68, 1)',
+        // Strong curves: ease-out for enter/press, in-out for on-screen movement, drawer for sheets
+        easeOut : 'cubic-bezier(0.23, 1, 0.32, 1)',
+        easeInOut : 'cubic-bezier(0.77, 0, 0.175, 1)',
+        easeDrawer : 'cubic-bezier(0.32, 0.72, 0, 1)',
         duration : '0.45s',
         hover : '0.15s',
+        press : '0.12s',
     },
 
     typography: {

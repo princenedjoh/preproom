@@ -6,7 +6,8 @@ import { FiCheck, FiX, FiCheckCircle, FiArrowRight, FiCornerUpLeft } from 'react
 import * as sample from '../../data/sample'
 import { useAdmin } from '../../context/admin'
 import { EmptyState } from '../../components/ui/ui'
-import { DarkButton, GhostButton, Segmented, SegmentedItem, Panel, Eyebrow, Kbd } from '../../styles/kit'
+import SegmentedControl from '../../components/ui/segmented'
+import { DarkButton, GhostButton, Panel, Eyebrow, Kbd } from '../../styles/kit'
 import { Screen, ScreenHeader, ScreenTitle, ScreenLead, CourseDot, DifficultyPill, Muted, Mono, CountBadge } from '../../styles/adminKit'
 import { letters } from '../addQuestion/addQuestion'
 import * as preview from '../addQuestion/addQuestion.style'
@@ -107,18 +108,16 @@ const Flags = () => {
                 </div>
             </ScreenHeader>
 
-            <Segmented className="w-fit">
-                {tabs.map((item) => {
-                    const count = flags.filter((flag) => flag.status === item.status).length
-                    return (
-                        <SegmentedItem key={item.status} active={tab === item.status} onClick={() => { setTab(item.status); select() }}
-                            className="inline-flex items-center gap-2">
-                            {item.label}
-                            <span className="text-[11px] tabular-nums text-ash">{count}</span>
-                        </SegmentedItem>
-                    )
-                })}
-            </Segmented>
+            <SegmentedControl
+                aria-label="Flag status"
+                className="w-fit"
+                value={tab}
+                onChange={(status) => { setTab(status); select() }}
+                options={tabs.map((item) => ({
+                    value : item.status,
+                    label : <span className="inline-flex items-center gap-2">{item.label}<span className="text-[11px] tabular-nums text-ash">{flags.filter((flag) => flag.status === item.status).length}</span></span>,
+                }))}
+            />
 
             {list.length === 0 ? (
                 <EmptyState icon={FiCheckCircle}

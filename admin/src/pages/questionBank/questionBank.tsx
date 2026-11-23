@@ -9,7 +9,8 @@ import * as api from '../../data/api'
 import { useAdmin } from '../../context/admin'
 import useLoad from '../../hooks/useLoad'
 import { SampleNotice, SkeletonRows, EmptyState, Dialog } from '../../components/ui/ui'
-import { DarkButton, GhostButton, FilterChip, Segmented, SegmentedItem, Eyebrow } from '../../styles/kit'
+import SegmentedControl from '../../components/ui/segmented'
+import { DarkButton, GhostButton, FilterChip, Eyebrow } from '../../styles/kit'
 import {
     Screen, ScreenHeader, ScreenTitle, ScreenLead, Toolbar, SearchField, Select, TableWrap, Table, Th, Td, Tr,
     CourseDot, DifficultyPill, Muted, Mono, IconButton,
@@ -154,11 +155,8 @@ const QuestionBank = () => {
                     <option value="all">All courses</option>
                     {courses.items.filter((item) => inScope(item.id)).map((item) => <option key={item.id} value={item.id}>{item.code || item.name}</option>)}
                 </Select>
-                <Segmented>
-                    {(['All', 'Easy', 'Medium', 'Hard'] as DifficultyFilter[]).map((level) => (
-                        <SegmentedItem key={level} active={difficulty === level} onClick={() => setDifficulty(level)}>{level}</SegmentedItem>
-                    ))}
-                </Segmented>
+                <SegmentedControl aria-label="Difficulty" value={difficulty} onChange={setDifficulty}
+                    options={['All', 'Easy', 'Medium', 'Hard'] as DifficultyFilter[]} />
                 <FilterChip active={flaggedOnly} onClick={() => setFlaggedOnly(!flaggedOnly)}><FiFlag size={12} /> Flagged</FilterChip>
                 <Mono className="lg:ml-auto tabular-nums">{page ? `${results.length} of ${total}` : '…'}</Mono>
             </div>

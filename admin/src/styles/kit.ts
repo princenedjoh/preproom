@@ -1,4 +1,20 @@
-import styled from "styled-components";
+import styled, { css } from "styled-components";
+
+// Every pressable element: instant scale feedback on press, hover only on real pointers,
+// and a visible ring for keyboard focus.
+export const pressable = css`
+    transition :
+        transform ${({theme}) => theme.motion.press} ${({theme}) => theme.motion.easeOut},
+        background-color ${({theme}) => theme.motion.hover} ease,
+        border-color ${({theme}) => theme.motion.hover} ease,
+        color ${({theme}) => theme.motion.hover} ease,
+        opacity ${({theme}) => theme.motion.hover} ease,
+        box-shadow ${({theme}) => theme.motion.hover} ease;
+    -webkit-tap-highlight-color : transparent;
+    &:active:not(:disabled) { transform : scale(0.97); }
+    &:focus-visible { outline : none; box-shadow : 0 0 0 3px rgba(0, 145, 255, 0.35); }
+    &:disabled { opacity : 0.4; cursor : not-allowed; }
+`
 
 // Shared design-system primitives (DESIGN.md): pills, display type, cards, status chips
 
@@ -67,8 +83,10 @@ export const DarkButton = styled.button.attrs({
     color : ${({theme}) => theme.colors.text.light.white};
     background : ${({theme}) => theme.colors.main.primary};
     border : none;
-    transition : opacity ${({theme}) => theme.motion.hover} ease;
-    &:hover { opacity : 0.85; }
+    ${pressable}
+    @media (hover : hover) and (pointer : fine) {
+        &:hover:not(:disabled) { opacity : 0.86; }
+    }
 `
 
 export const LightButton = styled(DarkButton)`
@@ -83,8 +101,10 @@ export const GhostButton = styled.button.attrs({
     color : ${({theme}) => theme.colors.main.primary};
     background : transparent;
     border : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
-    transition : background ${({theme}) => theme.motion.hover} ease;
-    &:hover { background : rgba(0, 0, 0, 0.04); }
+    ${pressable}
+    @media (hover : hover) and (pointer : fine) {
+        &:hover:not(:disabled) { background : rgba(0, 0, 0, 0.04); }
+    }
 `
 
 export const TagPill = styled.span.attrs({
@@ -141,8 +161,11 @@ export const TextLink = styled.button.attrs({
     className : `TextLink inline-flex items-center gap-1 text-[14px] font-bold w-fit` as string
 })`
     color : ${({theme}) => theme.colors2.brand.blue};
-    transition : gap ${({theme}) => theme.motion.hover} ease;
-    &:hover { gap : 8px; }
+    ${pressable}
+    svg { transition : transform ${({theme}) => theme.motion.hover} ${({theme}) => theme.motion.easeOut}; }
+    @media (hover : hover) and (pointer : fine) {
+        &:hover svg { transform : translateX(3px); }
+    }
 `
 
 /* App screens */
@@ -204,8 +227,10 @@ export const FilterChip = styled.button.attrs({
     color : ${({theme, active}) => active ? theme.colors.text.light.white : theme.colors2.gray.gray2};
     background : ${({theme, active}) => active ? theme.colors.main.primary : theme.colors.background.light.white};
     border : ${({theme, active}) => `1px solid ${active ? theme.colors.main.primary : theme.colors.border.light.primary}`};
-    transition : background ${({theme}) => theme.motion.hover} ease;
-    &:hover { background : ${({theme, active}) => active ? theme.colors.main.primary : theme.colors.background.light.primary}; }
+    ${pressable}
+    @media (hover : hover) and (pointer : fine) {
+        &:hover { background : ${({theme, active}) => active ? theme.colors.main.primary : theme.colors.background.light.primary}; }
+    }
 `
 
 export const ProgressTrack = styled.div.attrs({
@@ -220,7 +245,7 @@ export const ProgressFill = styled.div.attrs({
 })<{value : number, color? : string}>`
     width : ${({value}) => Math.max(0, Math.min(100, value))}%;
     background : ${({theme, color}) => color ?? theme.colors2.brand.emerald};
-    transition : width 0.45s cubic-bezier(0.33, 1, 0.68, 1);
+    transition : width 0.6s cubic-bezier(0.23, 1, 0.32, 1);
 `
 
 export const Stat = styled.div.attrs({
@@ -236,6 +261,7 @@ export const StatValue = styled.span.attrs({
     font-family : ${({theme}) => theme.fonts.display};
     font-weight : 700;
     letter-spacing : -0.04em;
+    font-variant-numeric : tabular-nums;
     color : ${({theme}) => theme.colors2.brand.onyx};
 `
 
