@@ -1,12 +1,27 @@
-import styled from "styled-components";
+import styled, { keyframes } from "styled-components";
+import { pressable } from "../../styles/kit";
+
+const reveal = keyframes`
+    from { opacity : 0; transform : translateY(-4px); }
+    to { opacity : 1; transform : translateY(0); }
+`
+
 
 export const Card = styled.article.attrs({
     className : ` Card rounded-[12px] p-5 md:p-6 flex flex-col gap-4` as string
 })`
     background : ${({theme}) => theme.colors.background.light.white};
     border : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
-    transition : border-color ${({theme}) => theme.motion.hover} ease;
-    &:hover { border-color : ${({theme}) => theme.colors2.gray.gray5}; }
+    transition : border-color ${({theme}) => theme.motion.hover} ease, box-shadow ${({theme}) => theme.motion.hover} ease;
+    outline : none;
+    scroll-margin-top : 96px;
+    @media (hover : hover) and (pointer : fine) {
+        &:hover { border-color : ${({theme}) => theme.colors2.gray.gray5}; }
+    }
+    &:focus-visible, &[data-focused='true'] {
+        border-color : ${({theme}) => theme.colors2.gray.gray4};
+        box-shadow : 0 0 0 4px rgba(0, 0, 0, 0.04);
+    }
 `
 
 export const Meta = styled.div.attrs({
@@ -52,10 +67,13 @@ export const Option = styled.button.attrs({
         muted : theme.colors.border.light.primary,
     })[state]}`};
     cursor : ${({state}) => state === 'idle' ? 'pointer' : 'default'};
-    transition : background ${({theme}) => theme.motion.hover} ease, border-color ${({theme}) => theme.motion.hover} ease;
-    &:hover {
-        border-color : ${({theme, state}) => state === 'idle' ? theme.colors2.gray.gray5 : undefined};
-        background : ${({theme, state}) => state === 'idle' ? theme.colors.background.light.primary : undefined};
+    ${pressable}
+    &:active:not(:disabled) { transform : ${({state}) => state === 'idle' ? 'scale(0.98)' : 'none'}; }
+    @media (hover : hover) and (pointer : fine) {
+        &:hover {
+            border-color : ${({theme, state}) => state === 'idle' ? theme.colors2.gray.gray5 : undefined};
+            background : ${({theme, state}) => state === 'idle' ? theme.colors.background.light.primary : undefined};
+        }
     }
 `
 
@@ -66,6 +84,8 @@ export const OptionKey = styled.span.attrs({
     background : ${({theme, state}) => state === 'correct' ? theme.colors2.brand.emerald
         : state === 'wrong' ? theme.colors2.red.red3 : theme.colors.background.light.white};
     border : ${({theme, state}) => state === 'correct' || state === 'wrong' ? 'none' : `1px solid ${theme.colors.border.light.primary}`};
+    font-family : ${({theme}) => theme.fonts.mono};
+    transition : background ${({theme}) => theme.motion.hover} ease, color ${({theme}) => theme.motion.hover} ease;
 `
 
 export const Explanation = styled.div.attrs({
@@ -74,6 +94,8 @@ export const Explanation = styled.div.attrs({
     color : ${({theme}) => theme.colors2.gray.gray3};
     background : ${({theme}) => theme.colors.background.light.primary};
     b { color : ${({theme}) => theme.colors.main.primary}; }
+    animation : ${reveal} 220ms ${({theme}) => theme.motion.easeOut};
+    @media (prefers-reduced-motion : reduce) { animation : none; }
 `
 
 export const Footer = styled.div.attrs({
@@ -84,9 +106,11 @@ export const Action = styled.button.attrs({
     className : ` Action inline-flex items-center gap-[6px] rounded-full px-3 py-[6px] text-[13px] font-semibold` as string
 })<{active? : boolean}>`
     color : ${({theme, active}) => active ? theme.colors2.brand.violet : theme.colors2.gray.gray3};
-    transition : background ${({theme}) => theme.motion.hover} ease, color ${({theme}) => theme.motion.hover} ease;
-    &:hover {
-        color : ${({theme, active}) => active ? theme.colors2.brand.violet : theme.colors.main.primary};
-        background : rgba(0, 0, 0, 0.04);
+    ${pressable}
+    @media (hover : hover) and (pointer : fine) {
+        &:hover:not(:disabled) {
+            color : ${({theme, active}) => active ? theme.colors2.brand.violet : theme.colors.main.primary};
+            background : rgba(0, 0, 0, 0.04);
+        }
     }
 `

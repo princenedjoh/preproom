@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { pressable } from "../../../../styles/kit";
 
 export const Layout = styled.div.attrs({
    className : ` Layout grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start` as string
@@ -10,8 +11,11 @@ export const Mode = styled.button.attrs({
    background : ${({theme}) => theme.colors.background.light.white};
    border : ${({theme, active}) => `1px solid ${active ? theme.colors.main.primary : theme.colors.border.light.primary}`};
    box-shadow : ${({theme, active}) => active ? `inset 0 0 0 1px ${theme.colors.main.primary}` : 'none'};
-   transition : border-color ${({theme}) => theme.motion.hover} ease;
-   &:hover { border-color : ${({theme, active}) => active ? theme.colors.main.primary : theme.colors2.gray.gray5}; }
+   ${pressable}
+   &:active:not(:disabled) { transform : scale(0.985); }
+   @media (hover : hover) and (pointer : fine) {
+      &:hover { border-color : ${({theme, active}) => active ? theme.colors.main.primary : theme.colors2.gray.gray5}; }
+   }
 `
 
 export const Field = styled.div.attrs({

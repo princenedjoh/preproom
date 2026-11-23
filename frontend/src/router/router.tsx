@@ -15,6 +15,7 @@ import Profile from "../pages/profile/profile"
 import Legal from "../pages/legal/legal"
 import Contact from "../pages/contact/contact"
 import NotFound from "../pages/notFound/notFound"
+import Today from "../pages/today/today"
 
 const authRoutes = [
     {
@@ -71,6 +72,11 @@ export const navRoutes = [
         name : 'home',
         path : '/',
         route : Home
+    },
+    {
+        name : 'today',
+        path : '/today',
+        route : Today
     },
     {
         name : 'questions',

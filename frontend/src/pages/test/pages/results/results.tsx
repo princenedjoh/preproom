@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { Interweave } from 'interweave'
 import * as kit from '../../../../styles/kit'
@@ -7,6 +7,25 @@ import { alphabets } from '../../../mcqs/mcqs'
 import { getCourse } from '../../../../data/sample'
 import { TestResultState } from '../session/session'
 import { FiRotateCcw, FiArrowRight, FiCheck, FiX, FiMinus } from "react-icons/fi";
+
+// The score counts up once on arrival: a rare, earned moment, so it can take a little longer
+const CountUp = ({ to } : { to : number }) => {
+    const [value, setValue] = useState(0)
+    useEffect(()=>{
+        if(window.matchMedia('(prefers-reduced-motion: reduce)').matches){ setValue(to); return }
+        let frame = 0
+        const start = performance.now()
+        const duration = 900
+        const step = (now : number) => {
+            const t = Math.min(1, (now - start) / duration)
+            setValue(Math.round(to * (1 - Math.pow(1 - t, 4))))
+            if(t < 1) frame = requestAnimationFrame(step)
+        }
+        frame = requestAnimationFrame(step)
+        return () => cancelAnimationFrame(frame)
+    },[to])
+    return <>{value}</>
+}
 
 const Results = () => {
 
@@ -39,17 +58,24 @@ const Results = () => {
                 <div className='grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] gap-8 items-end'>
                     <div className='flex flex-col gap-3'>
                         <kit.Eyebrow>{course.code} · Test results</kit.Eyebrow>
-                        <span className='font-display font-extrabold text-[80px] md:text-[112px] leading-[0.95] tracking-[-0.05em] text-onyx'>
-                            {percent}<span className='text-fog'>%</span>
+                        <span className='font-display font-extrabold text-[80px] md:text-[112px] leading-[0.95] tracking-[-0.05em] text-onyx tabular-nums'>
+                            <CountUp to={percent}/><span className='text-fog'>%</span>
                         </span>
                         <kit.PageTitle className='!text-[28px] md:!text-[34px]'>{verdict}</kit.PageTitle>
                         <div className='flex flex-wrap gap-3 pt-2'>
                             <kit.DarkButton type='button' onClick={()=>navigate('/test/session', { state : config })}>
                                 <FiRotateCcw size={15}/> Retake test
                             </kit.DarkButton>
-                            <kit.GhostButton type='button' onClick={()=>navigate(`/questions/${course.id}`)}>
-                                Practice {course.name} <FiArrowRight size={15}/>
-                            </kit.GhostButton>
+                            {
+                                correct < questions.length ?
+                                <kit.GhostButton type='button' onClick={()=>navigate(`/questions/${course.id}?status=mistakes`)}>
+                                    Review mistakes <FiArrowRight size={15}/>
+                                </kit.GhostButton>
+                                :
+                                <kit.GhostButton type='button' onClick={()=>navigate(`/questions/${course.id}`)}>
+                                    Practice {course.name} <FiArrowRight size={15}/>
+                                </kit.GhostButton>
+                            }
                         </div>
                     </div>
                     <div className='grid grid-cols-2 gap-3'>

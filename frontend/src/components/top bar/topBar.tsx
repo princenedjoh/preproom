@@ -18,8 +18,10 @@ import { FiSearch, FiMenu, FiX, FiArrowRight } from "react-icons/fi";
 import { RiMapPinUserFill } from 'react-icons/ri'
 import { ClickAwayListener } from '@mui/base/ClickAwayListener';
 import SwipeableTemporaryDrawer from './components/drawer'
+import CommandPalette, { useCommandPalette } from '../commandPalette/commandPalette'
 import { getLenis } from '../smoothScroll/smoothScroll'
-import { notifications, profile } from '../../data/sample'
+import { useNotifications } from '../../store/notifications'
+import { useProgress, summarize } from '../../store/progress'
 import "react-toastify/dist/ReactToastify.css"
 import "../reactToastify/toastifyCustomStyles.css"
 
@@ -31,10 +33,10 @@ const programs = [
 ]
 
 const navigations = [
-    { name : 'Home', route : '/', match : '' },
+    { name : 'Today', route : '/today', match : 'today' },
     { name : 'Questions', route : '/questions', match : 'questions' },
+    { name : 'Tests', route : '/test/testconfig', match : 'test' },
     { name : 'Challenges', route : '/challenges', match : 'challenges' },
-    { name : 'Test', route : '/test/testconfig', match : 'test' },
 ]
 
 export const LogoText = () => {
@@ -51,12 +53,16 @@ const TopBar = () => {
     const location = useLocation().pathname
     const currentTab = location.split('/')[1].toLowerCase()
     const hasSession = !!cookie.get("jwtToken")
-    const unread = notifications.filter((item) => item.unread).length
+    const unread = useNotifications().filter((item) => item.unread).length
+    const progressState = useProgress()
+    const { streak } = summarize(progressState)
 
     const [searchValue, setSearchValue] = useState('')
-    const [program, setProgram] = useState(profile.program.replace('BSc ', ''))
+    const [program, setProgram] = useState(progressState.profile.program.replace(/^(BSc|BA|BEng|MSc)\s+/, ''))
     const [courseVisibility, setCourseVisibility] = useState(false)
     const [menuOpen, setMenuOpen] = useState(false)
+    const [paletteOpen, setPaletteOpen] = useCommandPalette()
+    const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform)
 
     useEffect(()=>{
         setMenuOpen(false)
@@ -78,6 +84,7 @@ const TopBar = () => {
   return (
     <>
       <ToastContainer/>
+      <CommandPalette open={paletteOpen} onClose={()=>setPaletteOpen(false)}/>
       <topBarStyle.Main>
         <topBarStyle.Inner>
             <div className='flex items-center'>
@@ -99,6 +106,11 @@ const TopBar = () => {
             </div>
             <ClickAwayListener onClickAway={()=>setCourseVisibility(false)}>
                 <div className='flex items-center gap-[6px]'>
+                    <topBarStyle.SearchTrigger type='button' onClick={()=>setPaletteOpen(true)} aria-label='Search'>
+                        <FiSearch size={14}/>
+                        <span className='hidden lg:inline'>Search</span>
+                        <kbd className='hidden lg:inline font-mono text-[11px] text-ash ml-3'>{isMac ? '⌘K' : 'Ctrl K'}</kbd>
+                    </topBarStyle.SearchTrigger>
                     <div className='hidden lg:flex flex-col relative'>
                         <Chip 
                             size='small'
@@ -165,7 +177,7 @@ const TopBar = () => {
                         </ClickableTab>
                     </Badge>
                     <div className='hidden sm:flex'>
-                        <Badge count={profile.streak} size='small' color={theme.colors2.brand.violet}>
+                        <Badge count={streak} size='small' color={theme.colors2.brand.violet}>
                             <ClickableTab padding='8px' aria-label='Streak' onClick={()=>navigate('/challenges')}>
                                 <HiFire color={theme.colors2.orange.orange3} size={'18px'} />
                             </ClickableTab>

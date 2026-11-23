@@ -1,7 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import * as kit from '../../styles/kit'
-import { notifications as initial, Notification as NotificationType } from '../../data/sample'
+import SegmentedControl from '../../components/UI/segmented/segmented'
+import { Notification as NotificationType } from '../../data/sample'
+import { useNotifications, AppNotification } from '../../store/notifications'
+import { progress } from '../../store/progress'
 import { FiMessageCircle, FiBell, FiCheckCircle, FiAward, FiInfo } from "react-icons/fi";
 import { HiFire } from "react-icons/hi2";
 
@@ -16,22 +19,18 @@ const icons = {
 const tabs = ['All', 'Unread', 'Mentions'] as const
 const groups : NotificationType['group'][] = ['Today', 'This week', 'Earlier']
 
-const routes : Record<NotificationType['kind'], string> = {
-    reply : '/questions', challenge : '/challenges', streak : '/challenges', result : '/test/testconfig', system : '/questions',
-}
-
 const Notification = () => {
 
     const navigate = useNavigate()
-    const [items, setItems] = useState(initial)
+    const items = useNotifications()
     const [tab, setTab] = useState<typeof tabs[number]>('All')
 
     const visible = items.filter((item) => tab === 'All' || (tab === 'Unread' ? item.unread : item.kind === 'reply'))
     const unreadCount = items.filter((item) => item.unread).length
 
-    const open = (item : NotificationType) => {
-        setItems(items.map((other) => other.id === item.id ? { ...other, unread : false } : other))
-        navigate(routes[item.kind])
+    const open = (item : AppNotification) => {
+        progress.markRead([item.id])
+        navigate(item.route)
     }
 
     return (
@@ -46,20 +45,18 @@ const Notification = () => {
                         type='button'
                         disabled={unreadCount === 0}
                         className='disabled:opacity-40 self-start sm:self-auto'
-                        onClick={()=>setItems(items.map((item) => ({ ...item, unread : false })))}
+                        onClick={()=>progress.markRead(items.map((item) => item.id))}
                     >
                         Mark all as read
                     </kit.GhostButton>
                 </div>
-                <kit.Segmented className='self-start'>
-                    {
-                        tabs.map((item) => (
-                            <kit.SegmentedItem key={item} type='button' active={tab === item} onClick={()=>setTab(item)}>
-                                {item}{item === 'Unread' && unreadCount > 0 ? ` · ${unreadCount}` : ''}
-                            </kit.SegmentedItem>
-                        ))
-                    }
-                </kit.Segmented>
+                <SegmentedControl
+                    aria-label='Filter notifications'
+                    className='self-start'
+                    value={tab}
+                    onChange={setTab}
+                    options={tabs.map((item) => ({ value : item, label : item === 'Unread' && unreadCount > 0 ? `Unread · ${unreadCount}` : item }))}
+                />
                 {
                     visible.length === 0 ?
                     <kit.Empty>
@@ -83,7 +80,7 @@ const Notification = () => {
                                                     key={item.id}
                                                     type='button'
                                                     onClick={()=>open(item)}
-                                                    className={`w-full flex items-start gap-4 px-5 py-4 text-left border-b border-bone last:border-0 transition-colors duration-150 hover:bg-mist`}
+                                                    className={`w-full flex items-start gap-4 px-5 py-4 text-left border-b border-bone last:border-0 transition-colors duration-150 hover:bg-mist focus-visible:outline-none focus-visible:bg-mist`}
                                                 >
                                                     <span 
                                                         className='w-9 h-9 rounded-full flex items-center justify-center shrink-0'

@@ -12,7 +12,6 @@ export interface Course {
     name : string
     color : string
     questions : number
-    progress : number
 }
 
 export interface Question {
@@ -28,14 +27,6 @@ export interface Question {
     discussions : number
     saves : number
 }
-
-export const courses : Course[] = [
-    { id : 'cs201', code : 'CS 201', name : 'Data Structures', color : '#6647f0', questions : 184, progress : 62 },
-    { id : 'phy104', code : 'PHY 104', name : 'Mechanics', color : '#0091ff', questions : 142, progress : 38 },
-    { id : 'math152', code : 'MATH 152', name : 'Calculus II', color : '#fd9a46', questions : 210, progress : 21 },
-    { id : 'chem110', code : 'CHEM 110', name : 'Organic Chemistry', color : '#16c0a4', questions : 96, progress : 54 },
-    { id : 'econ101', code : 'ECON 101', name : 'Microeconomics', color : '#f0457a', questions : 128, progress : 9 },
-]
 
 export const questions : Question[] = [
     {
@@ -104,6 +95,93 @@ export const questions : Question[] = [
     },
 ]
 
+
+const q = (id : string, courseID : string, topic : string, difficulty : Difficulty, year : number, question : string, options : string[], answer : number, explanation : string, discussions = 0, saves = 0) : Question =>
+    ({ id, courseID, topic, difficulty, year, question, options, answer, explanation, discussions, saves })
+
+questions.push(
+    q('p1', 'phy104', 'Kinematics', 'Easy', 2023, 'A ball is thrown straight up. At the top of its flight, what is its acceleration?',
+        ['Zero', '9.8 m/s² downward', '9.8 m/s² upward', 'It depends on the mass'], 1,
+        'Gravity acts the whole time. The velocity is momentarily zero at the top, but the acceleration is still g downward.', 31, 154),
+    q('p2', 'phy104', 'Kinematics', 'Easy', 2022, 'A car starts from rest and accelerates uniformly at 2 m/s² for 5 s. How far does it travel?',
+        ['10 m', '25 m', '50 m', '12.5 m'], 1, 'From s = ut + ½at² with u = 0: s = ½ × 2 × 5² = 25 m.', 12, 66),
+    q('p3', 'phy104', "Newton's laws", 'Medium', 2024, "A book rests on a table. Which force is the Newton's third-law pair of the book's weight?",
+        ['The normal force of the table on the book', 'The gravitational pull of the book on the Earth', 'Friction between book and table', 'The normal force of the book on the table'], 1,
+        "Third-law pairs act on different bodies and are the same type of force. Earth pulls the book down; the book pulls Earth up.", 44, 201),
+    q('p4', 'phy104', "Newton's laws", 'Easy', 2021, 'A 10 N force pushes a 2 kg block across a frictionless floor. What is its acceleration?',
+        ['0.2 m/s²', '5 m/s²', '12 m/s²', '20 m/s²'], 1, 'a = F / m = 10 / 2 = 5 m/s².', 4, 29),
+    q('p5', 'phy104', 'Energy', 'Medium', 2023, 'A 1 kg ball is dropped from 5 m. Ignoring air resistance and taking g = 10 m/s², how fast is it moving when it lands?',
+        ['5 m/s', '10 m/s', '50 m/s', '100 m/s'], 1, 'mgh = ½mv², so v = √(2gh) = √100 = 10 m/s. The mass cancels.', 9, 58),
+    q('p6', 'phy104', 'Projectiles', 'Medium', 2022, 'On level ground with no air resistance, which launch angle gives a projectile its greatest range?',
+        ['30°', '45°', '60°', '90°'], 1, 'Range = v² sin 2θ / g, which is largest when sin 2θ = 1, i.e. θ = 45°.', 17, 83),
+    q('p7', 'phy104', 'Circular motion', 'Hard', 2024, 'How much work does gravity do on a satellite over one complete circular orbit?',
+        ['Positive work', 'Negative work', 'Zero', 'It depends on the orbital speed'], 2,
+        'In a circular orbit the gravitational force is always perpendicular to the velocity, so no work is done.', 26, 117),
+
+    q('m1', 'math152', 'Integration by parts', 'Medium', 2023, 'Evaluate ∫ x eˣ dx.',
+        ['x eˣ + C', '(x − 1) eˣ + C', '(x + 1) eˣ + C', '½ x² eˣ + C'], 1,
+        'Take u = x and dv = eˣ dx: x eˣ − ∫ eˣ dx = (x − 1) eˣ + C.', 22, 140),
+    q('m2', 'math152', 'Definite integrals', 'Easy', 2022, 'Evaluate ∫₀¹ x² dx.',
+        ['1/2', '1/3', '1', '2/3'], 1, 'The antiderivative is x³/3, and 1³/3 − 0 = 1/3.', 3, 41),
+    q('m3', 'math152', 'Series', 'Medium', 2024, 'Does the series Σ 1/n² (n = 1 to ∞) converge?',
+        ['Yes, it converges', 'No, it diverges', 'It oscillates', 'It cannot be determined'], 0,
+        'It is a p-series with p = 2 > 1, so it converges (its sum is π²/6).', 14, 77),
+    q('m4', 'math152', 'Series', 'Easy', 2021, 'What happens to the harmonic series Σ 1/n?',
+        ['It converges to 1', 'It converges to ln 2', 'It diverges', 'It converges to e'], 2,
+        'It is a p-series with p = 1, which diverges even though its terms tend to zero.', 8, 52),
+    q('m5', 'math152', 'Taylor series', 'Easy', 2023, 'What are the first three terms of the Maclaurin series for eˣ?',
+        ['1 + x + x²', '1 + x + x²/2', 'x + x²/2 + x³/6', '1 − x + x²/2'], 1, 'eˣ = Σ xⁿ / n!, so 1 + x + x²/2! + …', 6, 63),
+    q('m6', 'math152', 'Integration techniques', 'Medium', 2022, 'Evaluate ∫ 1 / (1 + x²) dx.',
+        ['ln(1 + x²) + C', 'arctan x + C', 'arcsin x + C', '1 / (2x) + C'], 1, 'The derivative of arctan x is 1 / (1 + x²).', 5, 47),
+    q('m7', 'math152', 'Series', 'Hard', 2024, 'What is the radius of convergence of Σ xⁿ / n!?',
+        ['0', '1', 'e', '∞'], 3, 'By the ratio test |x| / (n + 1) → 0 for every x, so the series converges everywhere.', 19, 98),
+
+    q('c1', 'chem110', 'Functional groups', 'Easy', 2023, 'Which functional group does ethanol contain?',
+        ['Carbonyl', 'Hydroxyl', 'Carboxyl', 'Amino'], 1, 'Ethanol is CH₃CH₂OH; the –OH group is a hydroxyl, which makes it an alcohol.', 2, 35),
+    q('c2', 'chem110', 'Nomenclature', 'Easy', 2022, 'What is the IUPAC name of CH₃CH₂CH₂CH₃?',
+        ['Propane', 'Butane', 'But-1-ene', '2-methylpropane'], 1, 'Four carbons in a straight chain with only single bonds: butane.', 1, 22),
+    q('c3', 'chem110', 'Bonding', 'Medium', 2024, 'What is the hybridisation of each carbon atom in ethyne (C₂H₂)?',
+        ['sp', 'sp²', 'sp³', 'sp³d'], 0, 'Each carbon forms a triple bond and one C–H bond: two electron domains, so sp.', 11, 70),
+    q('c4', 'chem110', 'Reaction mechanisms', 'Hard', 2023, 'Which alkyl halide reacts fastest by an SN2 mechanism?',
+        ['Tertiary', 'Secondary', 'Primary', 'Methyl'], 3, 'SN2 needs backside attack, so the least hindered substrate, a methyl halide, reacts fastest.', 28, 133),
+    q('c5', 'chem110', 'Reaction mechanisms', 'Medium', 2021, 'What is the major product when HBr adds to propene?',
+        ['1-bromopropane', '2-bromopropane', '1,2-dibromopropane', 'Propan-2-ol'], 1,
+        'Markovnikov addition: H goes to the carbon with more hydrogens, giving the more stable secondary carbocation.', 16, 91),
+    q('c6', 'chem110', 'Isomerism', 'Medium', 2022, 'Which compound shows cis–trans (geometric) isomerism?',
+        ['But-1-ene', 'But-2-ene', 'Propene', '2-methylpropene'], 1,
+        'Each carbon of the C=C in but-2-ene carries two different groups, so cis and trans forms exist.', 7, 49),
+
+    q('e1', 'econ101', 'Demand', 'Easy', 2023, 'Other things equal, when the price of a normal good rises, its quantity demanded…',
+        ['Rises', 'Falls', 'Stays the same', 'Shifts the demand curve right'], 1, 'This is the law of demand: a movement along the demand curve, not a shift of it.', 3, 30),
+    q('e2', 'econ101', 'Elasticity', 'Medium', 2022, 'A good has a price elasticity of demand of −0.4. Demand for it is…',
+        ['Perfectly inelastic', 'Inelastic', 'Unit elastic', 'Elastic'], 1, '|−0.4| is between 0 and 1, so demand is inelastic.', 10, 64),
+    q('e3', 'econ101', 'Market interventions', 'Medium', 2024, 'A price ceiling set below the equilibrium price causes…',
+        ['A surplus', 'A shortage', 'No effect', 'An increase in supply'], 1, 'At the lower price, quantity demanded exceeds quantity supplied.', 13, 72),
+    q('e4', 'econ101', 'Market structures', 'Hard', 2023, 'In long-run equilibrium, a firm in perfect competition earns…',
+        ['Positive economic profit', 'Zero economic profit', 'Negative accounting profit', 'Monopoly profit'], 1,
+        'Free entry and exit push price down to minimum average total cost, so P = MC = min ATC.', 21, 108),
+    q('e5', 'econ101', 'Basics', 'Easy', 2021, 'Opportunity cost is…',
+        ['The money spent on a choice', 'The value of the next best alternative given up', 'The total cost of production', 'A cost that cannot be recovered'], 1,
+        'It is what you give up by choosing one option over the best alternative.', 2, 26),
+    q('e6', 'econ101', 'Demand', 'Medium', 2022, 'Coffee and sugar are complements. If the price of coffee rises, the demand for sugar…',
+        ['Rises', 'Falls', 'Is unchanged', 'Becomes perfectly elastic'], 1, 'Less coffee is bought, so less sugar is needed to go with it.', 5, 39),
+)
+
+const courseBase = [
+    { id : 'cs201', code : 'CS 201', name : 'Data Structures', color : '#6647f0' },
+    { id : 'phy104', code : 'PHY 104', name : 'Mechanics', color : '#0091ff' },
+    { id : 'math152', code : 'MATH 152', name : 'Calculus II', color : '#fd9a46' },
+    { id : 'chem110', code : 'CHEM 110', name : 'Organic Chemistry', color : '#16c0a4' },
+    { id : 'econ101', code : 'ECON 101', name : 'Microeconomics', color : '#f0457a' },
+]
+
+export const courses : Course[] = courseBase.map((course) => ({
+    ...course,
+    questions : questions.filter((question) => question.courseID === course.id).length,
+}))
+
+export const getQuestion = (id : string) => questions.find((question) => question.id === id)
+
 export const topics = Array.from(new Set(questions.map((question) => question.topic)))
 
 export const getCourse = (id? : string) => courses.find((course) => course.id === id) ?? courses[0]
@@ -131,8 +209,7 @@ export const fetchQuestions = async (courseID : string) : Promise<Question[]> =>
             saves : 0,
         }))
     } catch {
-        const forCourse = questions.filter((question) => question.courseID === courseID)
-        return forCourse.length > 0 ? forCourse : questions
+        return questions.filter((question) => question.courseID === courseID)
     }
 }
 

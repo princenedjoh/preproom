@@ -1,9 +1,13 @@
-import { useState } from 'react'
+import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Switch } from 'antd'
+import { Switch, Modal } from 'antd'
 import * as kit from '../../styles/kit'
-import { courses, profile, testHistory, getCourse } from '../../data/sample'
-import { FiEdit2, FiArrowRight, FiLogOut } from "react-icons/fi";
+import SegmentedControl from '../../components/UI/segmented/segmented'
+import TestHistory from '../../components/testHistory/testHistory'
+import { courses } from '../../data/sample'
+import { progress, getProgress, useProgress, summarize, courseProgress, initialsOf, ProfileInfo } from '../../store/progress'
+import { notify } from '../../utils/notify'
+import { FiEdit2, FiArrowRight, FiLogOut, FiTrash2 } from "react-icons/fi";
 import Cookies from 'universal-cookie'
 
 const cookie = new Cookies()
@@ -12,90 +16,106 @@ const tabs = ['Overview', 'Settings'] as const
 const Profile = () => {
 
     const navigate = useNavigate()
+    const state = useProgress()
+    const stats = summarize(state)
     const [tab, setTab] = useState<typeof tabs[number]>('Overview')
-    const [prefs, setPrefs] = useState({ dailyReminder : true, replies : true, weeklyReport : false })
+    const [form, setForm] = useState<ProfileInfo>(state.profile)
+    const dirty = JSON.stringify(form) !== JSON.stringify(state.profile)
+
+    const save = (event : FormEvent) => {
+        event.preventDefault()
+        if(!form.name.trim()) return
+        progress.setProfile({ ...form, name : form.name.trim() })
+        notify('Profile saved')
+    }
 
     const logout = () => {
         cookie.remove('jwtToken', { path : '/' })
         navigate('/auth/login')
     }
 
+    const clearData = () => {
+        Modal.confirm({
+            title : 'Clear your progress?',
+            content : 'This removes your answers, saved questions, test history and streak from this device. It cannot be undone.',
+            okText : 'Clear everything',
+            cancelText : 'Cancel',
+            okButtonProps : { shape : 'round', danger : true },
+            cancelButtonProps : { shape : 'round' },
+            onOk : () => {
+                progress.reset()
+                setForm(getProgress().profile)
+                notify('Progress cleared')
+            },
+        })
+    }
+
     return (
         <kit.Page>
             <kit.PageInner>
                 <div className='flex flex-col md:flex-row md:items-center gap-5 md:justify-between'>
-                    <div className='flex items-center gap-4'>
+                    <div className='flex items-center gap-4 min-w-0'>
                         <kit.Avatar color='#202020' size={72} ring='#ffffff' className='!text-[22px] shadow-[0_0_0_1px_#e8e8e8]'>
-                            {profile.initials}
+                            {initialsOf(state.profile.name)}
                         </kit.Avatar>
-                        <div className='flex flex-col gap-1'>
-                            <kit.PageTitle className='!text-[30px] md:!text-[36px]'>{profile.name}</kit.PageTitle>
-                            <span className='text-[14px] text-muted'>{profile.program} · {profile.school} · {profile.year}</span>
+                        <div className='flex flex-col gap-1 min-w-0'>
+                            <kit.PageTitle className='!text-[30px] md:!text-[36px] truncate'>{state.profile.name}</kit.PageTitle>
+                            <span className='text-[14px] text-muted'>{[state.profile.program, state.profile.school, state.profile.year].filter(Boolean).join(' · ')}</span>
                         </div>
                     </div>
-                    <kit.Segmented className='self-start md:self-auto'>
-                        {tabs.map((item) => (
-                            <kit.SegmentedItem key={item} type='button' active={tab === item} onClick={()=>setTab(item)}>{item}</kit.SegmentedItem>
-                        ))}
-                    </kit.Segmented>
+                    <SegmentedControl aria-label='Profile section' className='self-start md:self-auto' value={tab} onChange={setTab} options={tabs}/>
                 </div>
 
                 {
                     tab === 'Overview' ?
                     <>
                         <div className='grid grid-cols-2 md:grid-cols-4 gap-3'>
-                            <kit.Stat><kit.StatValue>{profile.solved}</kit.StatValue><kit.StatLabel>Questions solved</kit.StatLabel></kit.Stat>
-                            <kit.Stat><kit.StatValue>{profile.accuracy}%</kit.StatValue><kit.StatLabel>Accuracy</kit.StatLabel></kit.Stat>
-                            <kit.Stat><kit.StatValue>{profile.tests}</kit.StatValue><kit.StatLabel>Tests taken</kit.StatLabel></kit.Stat>
-                            <kit.Stat><kit.StatValue>{profile.streak}</kit.StatValue><kit.StatLabel>Day streak</kit.StatLabel></kit.Stat>
+                            <kit.Stat><kit.StatValue>{stats.solved}</kit.StatValue><kit.StatLabel>Questions answered</kit.StatLabel></kit.Stat>
+                            <kit.Stat><kit.StatValue>{stats.solved ? `${stats.accuracy}%` : '–'}</kit.StatValue><kit.StatLabel>Accuracy</kit.StatLabel></kit.Stat>
+                            <kit.Stat><kit.StatValue>{stats.tests}</kit.StatValue><kit.StatLabel>Tests taken</kit.StatLabel></kit.Stat>
+                            <kit.Stat>
+                                <kit.StatValue>{stats.streak}</kit.StatValue>
+                                <kit.StatLabel>Day streak{stats.best > stats.streak ? ` · best ${stats.best}` : ''}</kit.StatLabel>
+                            </kit.Stat>
                         </div>
                         <div className='grid grid-cols-1 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] gap-6 items-start'>
                             <kit.Panel className='!p-6'>
                                 <kit.PanelTitle>Course progress</kit.PanelTitle>
                                 <div className='flex flex-col gap-5'>
                                     {
-                                        courses.map((course) => (
-                                            <button 
-                                                key={course.id}
-                                                type='button'
-                                                onClick={()=>navigate(`/questions/${course.id}`)}
-                                                className='flex flex-col gap-2 text-left group'
-                                            >
-                                                <div className='flex items-center justify-between text-[14px]'>
-                                                    <span className='flex items-center gap-2 font-semibold text-ink'>
-                                                        <span className='w-[8px] h-[8px] rounded-[3px]' style={{ background : course.color }}/>
-                                                        {course.name}
-                                                        <FiArrowRight size={13} className='opacity-0 group-hover:opacity-100 transition-opacity text-ash'/>
-                                                    </span>
-                                                    <span className='text-muted tabular-nums'>{course.progress}%</span>
-                                                </div>
-                                                <kit.ProgressTrack><kit.ProgressFill value={course.progress} color={course.color}/></kit.ProgressTrack>
-                                            </button>
-                                        ))
+                                        courses.map((course) => {
+                                            const value = courseProgress(state, course.id, course.questions)
+                                            return (
+                                                <button
+                                                    key={course.id}
+                                                    type='button'
+                                                    onClick={()=>navigate(`/questions/${course.id}`)}
+                                                    className='flex flex-col gap-2 text-left group rounded-[8px] -m-2 p-2 hover:bg-mist transition-colors duration-150 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(0,145,255,0.35)]'
+                                                >
+                                                    <div className='flex items-center justify-between text-[14px] w-full'>
+                                                        <span className='flex items-center gap-2 font-semibold text-ink'>
+                                                            <span className='w-[8px] h-[8px] rounded-[3px]' style={{ background : course.color }}/>
+                                                            {course.name}
+                                                            <FiArrowRight size={13} className='opacity-0 group-hover:opacity-100 transition-opacity text-ash'/>
+                                                        </span>
+                                                        <span className='text-muted tabular-nums text-[13px]'>
+                                                            {value.answered}/{course.questions}
+                                                            {value.answered > 0 && <span className='text-ash'> · {value.accuracy}% right</span>}
+                                                        </span>
+                                                    </div>
+                                                    <kit.ProgressTrack><kit.ProgressFill value={value.percent} color={course.color}/></kit.ProgressTrack>
+                                                </button>
+                                            )
+                                        })
                                     }
                                 </div>
                             </kit.Panel>
                             <kit.Panel className='!p-6'>
                                 <div className='flex items-center justify-between'>
                                     <kit.PanelTitle>Recent tests</kit.PanelTitle>
-                                    <kit.TextLink type='button' onClick={()=>navigate('/test/testconfig')}>All tests <FiArrowRight size={13}/></kit.TextLink>
+                                    {state.tests.length > 0 && <kit.TextLink type='button' onClick={()=>navigate('/test/testconfig')}>New test <FiArrowRight size={13}/></kit.TextLink>}
                                 </div>
-                                <div className='flex flex-col'>
-                                    {
-                                        testHistory.map((record) => {
-                                            const percent = Math.round(record.score / record.total * 100)
-                                            return (
-                                                <div key={record.id} className='flex items-center gap-3 py-3 border-b border-mercury last:border-0'>
-                                                    <div className='flex flex-col flex-1 min-w-0'>
-                                                        <span className='text-[14px] font-semibold text-ink truncate'>{record.title}</span>
-                                                        <span className='text-[12px] text-ash'>{getCourse(record.courseID).code} · {record.date}</span>
-                                                    </div>
-                                                    <kit.StatusPill status={percent >= 70 ? 'done' : percent >= 50 ? 'progress' : 'review'}>{percent}%</kit.StatusPill>
-                                                </div>
-                                            )
-                                        })
-                                    }
-                                </div>
+                                <TestHistory compact limit={5}/>
                             </kit.Panel>
                         </div>
                     </>
@@ -103,14 +123,21 @@ const Profile = () => {
                     <div className='grid grid-cols-1 lg:grid-cols-2 gap-6 items-start'>
                         <kit.Panel className='!p-6'>
                             <kit.PanelTitle><FiEdit2 size={14}/> Account</kit.PanelTitle>
-                            <form className='flex flex-col gap-4' onSubmit={(e)=>e.preventDefault()}>
-                                <kit.Label>Full name<kit.TextInput defaultValue={profile.name}/></kit.Label>
-                                <kit.Label>Programme<kit.TextInput defaultValue={profile.program}/></kit.Label>
+                            <form className='flex flex-col gap-4' onSubmit={save}>
+                                <kit.Label>Full name
+                                    <kit.TextInput required autoComplete='name' value={form.name} onChange={(e)=>setForm({ ...form, name : e.target.value })}/>
+                                </kit.Label>
+                                <kit.Label>Programme
+                                    <kit.TextInput value={form.program} onChange={(e)=>setForm({ ...form, program : e.target.value })}/>
+                                </kit.Label>
                                 <div className='grid grid-cols-2 gap-3'>
-                                    <kit.Label>School<kit.TextInput defaultValue={profile.school}/></kit.Label>
-                                    <kit.Label>Level<kit.TextInput defaultValue={profile.year}/></kit.Label>
+                                    <kit.Label>School<kit.TextInput value={form.school} onChange={(e)=>setForm({ ...form, school : e.target.value })}/></kit.Label>
+                                    <kit.Label>Level<kit.TextInput value={form.year} onChange={(e)=>setForm({ ...form, year : e.target.value })}/></kit.Label>
                                 </div>
-                                <kit.DarkButton type='submit' className='self-start'>Save changes</kit.DarkButton>
+                                <div className='flex items-center gap-3'>
+                                    <kit.DarkButton type='submit' disabled={!dirty || !form.name.trim()}>Save changes</kit.DarkButton>
+                                    {dirty && <button type='button' className='text-[13px] text-ash hover:text-ink transition-colors' onClick={()=>setForm(state.profile)}>Discard</button>}
+                                </div>
                             </form>
                         </kit.Panel>
                         <div className='flex flex-col gap-6'>
@@ -122,19 +149,24 @@ const Profile = () => {
                                         ['replies', 'Replies to my comments'],
                                         ['weeklyReport', 'Weekly progress email'],
                                     ] as const).map(([key, label]) => (
-                                        <label key={key} className='flex items-center justify-between gap-3 text-[14px] text-carbon'>
+                                        <label key={key} className='flex items-center justify-between gap-3 text-[14px] text-carbon cursor-pointer'>
                                             {label}
-                                            <Switch size='small' checked={prefs[key]} onChange={(value)=>setPrefs({ ...prefs, [key] : value })}/>
+                                            <Switch size='small' checked={state.prefs[key]} onChange={(value)=>progress.setPrefs({ [key] : value })}/>
                                         </label>
                                     ))
                                 }
                             </kit.Panel>
                             <kit.Panel className='!p-6'>
-                                <kit.PanelTitle>Session</kit.PanelTitle>
-                                <span className='text-[14px] text-muted'>Log out of PrepRoom on this device.</span>
-                                <kit.GhostButton type='button' className='self-start' onClick={logout}>
-                                    <FiLogOut size={14}/> Log out
-                                </kit.GhostButton>
+                                <kit.PanelTitle>Data and session</kit.PanelTitle>
+                                <span className='text-[14px] text-muted'>Your progress is stored on this device.</span>
+                                <div className='flex flex-wrap gap-2'>
+                                    <kit.GhostButton type='button' onClick={logout}>
+                                        <FiLogOut size={14}/> Log out
+                                    </kit.GhostButton>
+                                    <kit.GhostButton type='button' className='!text-[#d9365f]' onClick={clearData}>
+                                        <FiTrash2 size={14}/> Clear my data
+                                    </kit.GhostButton>
+                                </div>
                             </kit.Panel>
                         </div>
                     </div>

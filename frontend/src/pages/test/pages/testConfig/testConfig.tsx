@@ -3,7 +3,9 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Switch } from 'antd'
 import * as testConfigStyle from './testConfig.style'
 import * as kit from '../../../../styles/kit'
-import { courses, getCourse, testHistory, Difficulty } from '../../../../data/sample'
+import { courses, getCourse, questions as bank, Difficulty } from '../../../../data/sample'
+import TestHistory from '../../../../components/testHistory/testHistory'
+import SegmentedControl from '../../../../components/UI/segmented/segmented'
 import { RiCheckboxMultipleFill } from "react-icons/ri";
 import { GiPapers } from "react-icons/gi";
 import { HiTrophy } from "react-icons/hi2";
@@ -16,6 +18,7 @@ export interface TestConfigState {
     minutes : number
     difficulty : 'Mixed' | Difficulty
     instantFeedback : boolean
+    year? : number
 }
 
 const modes = [
@@ -41,8 +44,30 @@ const TestConfig = () => {
         difficulty : 'Mixed',
         instantFeedback : false,
     })
-    const update = (patch : Partial<TestConfigState>) => setConfig({ ...config, ...patch })
+    const update = (patch : Partial<TestConfigState>) => setConfig((previous) => ({ ...previous, ...patch }))
     const course = getCourse(config.courseID)
+    const inCourse = bank.filter((question) => question.courseID === config.courseID)
+    const years = Array.from(new Set(inCourse.map((question) => question.year))).sort((a, b) => b - a)
+    const year = config.year && years.includes(config.year) ? config.year : years[0]
+    const isPaper = config.mode === 'paper'
+    const isChallenge = config.mode === 'challenge'
+
+    // What will actually be asked, so the summary never over-promises
+    const pool = isPaper ? inCourse.filter((question) => question.year === year)
+        : config.difficulty === 'Mixed' ? inCourse : inCourse.filter((question) => question.difficulty === config.difficulty)
+    const available = pool.length || inCourse.length
+    const asked = isPaper ? available : Math.min(config.count, available)
+
+    const chooseMode = (mode : string) => {
+        if(mode === 'challenge') update({ mode, count : 5, minutes : 10, difficulty : 'Mixed', instantFeedback : false })
+        else if(mode === 'paper') update({ mode, difficulty : 'Mixed' })
+        else update({ mode })
+    }
+
+    const start = () => {
+        const final : TestConfigState = isPaper ? { ...config, year, count : available } : { ...config, year : undefined }
+        navigate('/test/session', { state : final })
+    }
 
     return (
         <kit.Page>
@@ -62,7 +87,7 @@ const TestConfig = () => {
                                         key={mode.id}
                                         type='button'
                                         active={config.mode === mode.id}
-                                        onClick={()=>update({ mode : mode.id })}
+                                        onClick={()=>chooseMode(mode.id)}
                                         aria-pressed={config.mode === mode.id}
                                     >
                                         <kit.IconTile><mode.icon size={17}/></kit.IconTile>
@@ -88,42 +113,35 @@ const TestConfig = () => {
                         </testConfigStyle.Field>
 
                         <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                            <testConfigStyle.Field>
-                                <testConfigStyle.FieldLabel>Questions</testConfigStyle.FieldLabel>
-                                <kit.Segmented>
+                            {
+                                isPaper ?
+                                <testConfigStyle.Field>
+                                    <testConfigStyle.FieldLabel>Paper</testConfigStyle.FieldLabel>
+                                    <SegmentedControl aria-label='Paper year' value={year} onChange={(value)=>update({ year : value })} options={years}/>
+                                </testConfigStyle.Field>
+                                :
+                                <testConfigStyle.Field>
+                                    <testConfigStyle.FieldLabel>Questions</testConfigStyle.FieldLabel>
                                     {
-                                        counts.map((count) => (
-                                            <kit.SegmentedItem key={count} type='button' active={config.count === count} onClick={()=>update({ count })}>
-                                                {count}
-                                            </kit.SegmentedItem>
-                                        ))
+                                        isChallenge ? <span className='text-[14px] text-muted h-[38px] flex items-center'>5 questions, fixed for challenges</span>
+                                        : <SegmentedControl aria-label='Questions' value={config.count} onChange={(count)=>update({ count })} options={counts}/>
                                     }
-                                </kit.Segmented>
-                            </testConfigStyle.Field>
+                                </testConfigStyle.Field>
+                            }
                             <testConfigStyle.Field>
                                 <testConfigStyle.FieldLabel>Time limit</testConfigStyle.FieldLabel>
-                                <kit.Segmented>
-                                    {
-                                        durations.map((minutes) => (
-                                            <kit.SegmentedItem key={minutes} type='button' active={config.minutes === minutes} onClick={()=>update({ minutes })}>
-                                                {minutes} min
-                                            </kit.SegmentedItem>
-                                        ))
-                                    }
-                                </kit.Segmented>
+                                {
+                                    isChallenge ? <span className='text-[14px] text-muted h-[38px] flex items-center'>10 minutes</span>
+                                    : <SegmentedControl aria-label='Time limit' value={config.minutes} onChange={(minutes)=>update({ minutes })} options={durations.map((minutes) => ({ value : minutes, label : `${minutes} min` }))}/>
+                                }
                             </testConfigStyle.Field>
-                            <testConfigStyle.Field>
-                                <testConfigStyle.FieldLabel>Difficulty</testConfigStyle.FieldLabel>
-                                <kit.Segmented>
-                                    {
-                                        difficulties.map((difficulty) => (
-                                            <kit.SegmentedItem key={difficulty} type='button' active={config.difficulty === difficulty} onClick={()=>update({ difficulty })}>
-                                                {difficulty}
-                                            </kit.SegmentedItem>
-                                        ))
-                                    }
-                                </kit.Segmented>
-                            </testConfigStyle.Field>
+                            {
+                                !isPaper && !isChallenge &&
+                                <testConfigStyle.Field>
+                                    <testConfigStyle.FieldLabel>Difficulty</testConfigStyle.FieldLabel>
+                                    <SegmentedControl aria-label='Difficulty' value={config.difficulty} onChange={(difficulty)=>update({ difficulty })} options={difficulties}/>
+                                </testConfigStyle.Field>
+                            }
                             <testConfigStyle.Field>
                                 <testConfigStyle.FieldLabel>Feedback</testConfigStyle.FieldLabel>
                                 <label className='flex items-center gap-3 text-[14px] text-muted h-[38px]'>
@@ -141,12 +159,19 @@ const TestConfig = () => {
                         </div>
                         <div className='flex flex-col gap-3'>
                             <testConfigStyle.SummaryRow>Mode <b>{modes.find((mode) => mode.id === config.mode)?.title}</b></testConfigStyle.SummaryRow>
-                            <testConfigStyle.SummaryRow>Questions <b>{config.count}</b></testConfigStyle.SummaryRow>
+                            {isPaper && <testConfigStyle.SummaryRow>Paper <b>{year}</b></testConfigStyle.SummaryRow>}
+                            <testConfigStyle.SummaryRow>Questions <b className='tabular-nums'>{asked}</b></testConfigStyle.SummaryRow>
                             <testConfigStyle.SummaryRow>Time limit <b>{config.minutes} minutes</b></testConfigStyle.SummaryRow>
-                            <testConfigStyle.SummaryRow>Difficulty <b>{config.difficulty}</b></testConfigStyle.SummaryRow>
+                            {!isPaper && <testConfigStyle.SummaryRow>Difficulty <b>{config.difficulty}</b></testConfigStyle.SummaryRow>}
+                            {
+                                !isPaper && asked < config.count &&
+                                <span className='text-[12px] leading-[1.5] text-[#b5651d] bg-[#fff6ec] rounded-[8px] px-3 py-2'>
+                                    Only {asked} {config.difficulty === 'Mixed' ? '' : `${config.difficulty.toLowerCase()} `}question{asked === 1 ? ' is' : 's are'} available for {course.name}, so the test will use {asked === 1 ? 'it' : 'all of them'}.
+                                </span>
+                            }
                         </div>
                         <span className='conic-border w-full'>
-                            <kit.DarkButton type='button' className='w-full' onClick={()=>navigate('/test/session', { state : config })}>
+                            <kit.DarkButton type='button' className='w-full' onClick={start}>
                                 Start test <FiArrowRight size={16}/>
                             </kit.DarkButton>
                         </span>
@@ -158,40 +183,7 @@ const TestConfig = () => {
 
                 <div className='flex flex-col gap-4'>
                     <kit.Title>Test history</kit.Title>
-                    <testConfigStyle.Table>
-                        <testConfigStyle.TableRow head>
-                            <span>Test</span>
-                            <span className='hidden md:block'>Date</span>
-                            <span className='hidden md:block'>Score</span>
-                            <span className='hidden md:block'>Time</span>
-                            <span/>
-                        </testConfigStyle.TableRow>
-                        {
-                            testHistory.map((record) => {
-                                const percent = Math.round(record.score / record.total * 100)
-                                const recordCourse = getCourse(record.courseID)
-                                return (
-                                    <testConfigStyle.TableRow key={record.id}>
-                                        <div className='flex flex-col min-w-0'>
-                                            <span className='font-semibold truncate'>{record.title}</span>
-                                            <span className='text-[12px] text-ash truncate'>
-                                                {recordCourse.code} · <span className='md:hidden'>{record.date} · {record.score}/{record.total}</span><span className='hidden md:inline'>{recordCourse.name}</span>
-                                            </span>
-                                        </div>
-                                        <span className='hidden md:block text-muted'>{record.date}</span>
-                                        <span className='hidden md:flex items-center gap-2'>
-                                            {record.score}/{record.total}
-                                            <kit.StatusPill status={percent >= 70 ? 'done' : percent >= 50 ? 'progress' : 'review'}>{percent}%</kit.StatusPill>
-                                        </span>
-                                        <span className='hidden md:block text-muted'>{record.minutes} min</span>
-                                        <kit.GhostButton type='button' className='!px-4 !py-[7px]' onClick={()=>navigate(`/questions/${record.courseID}`)}>
-                                            Review
-                                        </kit.GhostButton>
-                                    </testConfigStyle.TableRow>
-                                )
-                            })
-                        }
-                    </testConfigStyle.Table>
+                    <TestHistory/>
                 </div>
             </kit.PageInner>
         </kit.Page>

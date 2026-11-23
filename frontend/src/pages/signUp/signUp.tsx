@@ -1,198 +1,102 @@
+import { FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import * as signUpStyle from './signUp.styled'
-import { useState } from 'react'
-import { RiLockPasswordFill } from 'react-icons/ri'
-import {logos} from '../../assets'
-import { IoEnter } from 'react-icons/io5'
-import { MdEmail } from 'react-icons/md'
-import theme from '../../styles/theme'
 import axios from 'axios'
-import Cookies from 'universal-cookie'
-import { ToastContainer, toast } from "react-toastify"
-import "react-toastify/dist/ReactToastify.css"
-import "../../components/reactToastify/toastifyCustomStyles.css"
+import * as kit from '../../styles/kit'
 import { BASE_URL } from '../../variables/variables'
-import { BiSolidUserPin } from 'react-icons/bi'
-import { PiGenderIntersexBold } from 'react-icons/pi'
-import Input from '../../components/UI/input/input'
-import Dropdown, { tagType } from '../../components/UI/input/dropdown'
+import { AuthShell, AuthSwitch, Field, FormError, Spinner, isEmail } from '../../components/auth/auth'
+import { progress } from '../../store/progress'
+import { notify } from '../../utils/notify'
+
+const strength = (password : string) => {
+    let score = 0
+    if(password.length >= 8) score++
+    if(password.length >= 12) score++
+    if(/[A-Z]/.test(password) && /[a-z]/.test(password)) score++
+    if(/\d/.test(password) || /[^A-Za-z0-9]/.test(password)) score++
+    return score
+}
+const strengthLabel = ['Too short', 'Weak', 'Fair', 'Good', 'Strong']
+const strengthColor = ['#f0457a', '#f0457a', '#fd9a46', '#0091ff', '#00c07a']
 
 const SignUp = () => {
-    const [firstName, setFirstName] = useState("")
-    const [lastName, setLastName] = useState("")
-    const [gender, setGender] = useState("")
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
-    const [genderTypes] = useState<tagType[]>([
-        {
-            name : "Male",
-            id : "male"
-        },
-        {
-            name : "Female",
-            id : "female"
-        },
-        {
-            name : "Other",
-            id : "other"
-        },
-    ])
 
     const navigate = useNavigate()
-    const data = {
-        firstName,
-        lastName,
-        gender,
-        email,
-        password
-    }
+    const [form, setForm] = useState({ firstName : '', lastName : '', email : '', password : '' })
+    const [touched, setTouched] = useState(false)
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const set = (key : keyof typeof form) => (event : React.ChangeEvent<HTMLInputElement>) => setForm({ ...form, [key] : event.target.value })
 
-    const cookies = new Cookies()
-    const submitHandler = async (e:any) =>{
-        e.preventDefault()
+    const errors = {
+        firstName : touched && !form.firstName.trim() ? 'Enter your first name' : null,
+        lastName : touched && !form.lastName.trim() ? 'Enter your last name' : null,
+        email : touched && !isEmail(form.email) ? 'Enter a valid email address' : null,
+        password : touched && form.password.length < 8 ? 'Use at least 8 characters' : null,
+    }
+    const score = strength(form.password)
+
+    const submit = async (event : FormEvent) => {
+        event.preventDefault()
+        setTouched(true)
+        setError(null)
+        if(!form.firstName.trim() || !form.lastName.trim() || !isEmail(form.email) || form.password.length < 8) return
+        setLoading(true)
+        const payload = { ...form, firstName : form.firstName.trim(), lastName : form.lastName.trim(), email : form.email.trim() }
         try {
-            const response = await axios.post(`${BASE_URL}/users/add`, data,
-            {
-                validateStatus: () => true
-            })
-            if(response.status === 200){
-                toast.success(
-                    "signUp Successfull",
-                    {
-                        hideProgressBar : true,
-                        closeOnClick : true
-                    }
-                )
-                const {accessToken} = response.data
-                cookies.set('jwtToken', accessToken);
-                navigate("/auth/login")
+            const response = await axios.post(`${BASE_URL}/users/add`, payload, { validateStatus : () => true, timeout : 8000 })
+            if(response.status === 200 || response.status === 201){
+                progress.setProfile({ name : `${payload.firstName} ${payload.lastName}` })
+                notify('Account created. Log in to continue.')
+                navigate('/auth/login', { state : { from : '/today' } })
             }
             else if(response.status === 409){
-                toast.error(
-                    response.data,
-                    {
-                        hideProgressBar : true,
-                        closeOnClick : true
-                    }
-                )
+                setError('An account with that email already exists. Try logging in instead.')
             }
-            else{
-                toast.error(
-                    "Unable to sign up, please try again later",
-                    {
-                        hideProgressBar : true,
-                        closeOnClick : true
-                    }
-                )
+            else {
+                setError(typeof response.data === 'string' && response.data.length < 160 ? response.data : 'We could not create your account. Please try again.')
             }
-        } catch (error) {
-            toast.error(
-                "Error Signing in, Please try again later",
-                {
-                    hideProgressBar : true,
-                    closeOnClick : true
-                }
-            )
+        } catch {
+            setError("We couldn't reach PrepRoom. Check your connection and try again.")
+        } finally {
+            setLoading(false)
         }
     }
 
-
-    const [terms] = useState([
-        {
-            name : 'Terms',
-            route : '/usage/terms'
-        },
-        {
-            name : 'Privacy',
-            route : '/usage/privacy'
-        },
-        {
-            name : 'Contact',
-            route : '/contact'
-        }
-    ])
-
-    return(
-        <signUpStyle.Main>
-            <ToastContainer/>
-            <signUpStyle.Head>
-                <signUpStyle.Avatar
-                    src={logos.logoMark}
-                />
-                <signUpStyle.Title>Create your account</signUpStyle.Title>
-                <signUpStyle.Subtitle>Free forever. Start practicing in under a minute.</signUpStyle.Subtitle>
-            </signUpStyle.Head>
-            <signUpStyle.Container
-                onSubmit={(e)=>submitHandler(e)}
-            >
-                <div className='grid grid-cols-2 gap-3 w-full'>
-                <Input 
-                    placeholder='First name'
-                    value={firstName}
-                    setState={setFirstName}
-                    type="text"
-                    variant='borderless'
-                    PreIcon={BiSolidUserPin}
-                />
-                <Input 
-                    placeholder='Last name'
-                    value={lastName}
-                    setState={setLastName}
-                    type="text"
-                    PreIcon={BiSolidUserPin}
-                />
+    return (
+        <AuthShell
+            title='Create your account'
+            subtitle='Free past questions, timed tests and daily challenges.'
+            footer={<AuthSwitch text='Already have an account?' to='/auth/login' label='Log in'/>}
+        >
+            <form className='flex flex-col gap-4' onSubmit={submit} noValidate>
+                {error && <FormError>{error}</FormError>}
+                <div className='grid grid-cols-2 gap-3'>
+                    <Field label='First name' autoComplete='given-name' autoFocus value={form.firstName} onChange={set('firstName')} error={errors.firstName}/>
+                    <Field label='Last name' autoComplete='family-name' value={form.lastName} onChange={set('lastName')} error={errors.lastName}/>
                 </div>
-                <Input 
-                    placeholder='Email'
-                    value={email}
-                    setState={setEmail}
-                    type="email"
-                    PreIcon={MdEmail}
-                />
-                <Dropdown 
-                    placeholder='Gender'
-                    tags={genderTypes}
-                    setValue={setGender}
-                    value={gender}
-                    PreIcon={PiGenderIntersexBold}
-                />
-                <Input 
-                    type="password"
-                    value={password}
-                    setState={setPassword}
-                    placeholder='Password'
-                    allowClear
-                    PreIcon={RiLockPasswordFill}
-                />
-                <signUpStyle.Submit
-                    type='submit'
-                >
-                    Create account <IoEnter
-                        size={"20px"}
-                        color={theme.colors.background.light.white}
-                    />
-                </signUpStyle.Submit>
-            </signUpStyle.Container>
-            <signUpStyle.HaveAnAccount>
-                Already have an account? 
-                <signUpStyle.Link>
-                    <Link to={"/auth/login"}>Log in</Link>
-                </signUpStyle.Link>
-            </signUpStyle.HaveAnAccount>
-            <signUpStyle.Terms>
-                {
-                    terms.map((termsMap, index : number)=>{
-                        return(
-                            <Link 
-                                key={index}
-                                to={termsMap.route}>
-                                {termsMap.name}
-                            </Link>
-                        )
-                    })
-                }
-            </signUpStyle.Terms>
-        </signUpStyle.Main>
+                <Field label='Email' type='email' autoComplete='email' inputMode='email' placeholder='you@school.edu' value={form.email} onChange={set('email')} error={errors.email}/>
+                <div className='flex flex-col gap-2'>
+                    <Field label='Password' type='password' autoComplete='new-password' placeholder='At least 8 characters' value={form.password} onChange={set('password')} error={errors.password}/>
+                    {
+                        form.password && !errors.password &&
+                        <div className='flex items-center gap-3' aria-live='polite'>
+                            <div className='flex-1 grid grid-cols-4 gap-1'>
+                                {[1, 2, 3, 4].map((step) => (
+                                    <span key={step} className='h-[4px] rounded-full transition-colors duration-200' style={{ background : score >= step ? strengthColor[score] : '#eeeeee' }}/>
+                                ))}
+                            </div>
+                            <span className='text-[12px] text-ash w-[60px] text-right'>{strengthLabel[score]}</span>
+                        </div>
+                    }
+                </div>
+                <kit.DarkButton type='submit' className='w-full h-[46px] mt-1' disabled={loading} aria-busy={loading}>
+                    {loading ? <><Spinner/> Creating account</> : 'Create account'}
+                </kit.DarkButton>
+                <p className='text-[12px] leading-[1.5] text-ash text-center'>
+                    By signing up you agree to our <Link to='/usage/terms' className='underline hover:text-ink'>Terms</Link> and <Link to='/usage/privacy' className='underline hover:text-ink'>Privacy Policy</Link>.
+                </p>
+            </form>
+        </AuthShell>
     )
 }
 

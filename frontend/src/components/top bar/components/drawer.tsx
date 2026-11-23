@@ -3,7 +3,7 @@ import SwipeableDrawer from '@mui/material/SwipeableDrawer';
 import { useNavigate } from 'react-router-dom';
 import Cookies from 'universal-cookie';
 import * as kit from '../../../styles/kit';
-import { profile } from '../../../data/sample';
+import { useProgress, summarize, initialsOf, reviewLink } from '../../../store/progress';
 import { FiUser, FiClipboard, FiBookmark, FiBell, FiSettings, FiLogOut, FiLogIn } from "react-icons/fi";
 import { HiFire } from "react-icons/hi2";
 
@@ -17,7 +17,7 @@ interface drawerChildrenProp {
 const links = [
   { icon : FiUser, label : 'Profile', route : '/profile' },
   { icon : FiClipboard, label : 'Test history', route : '/test/testconfig' },
-  { icon : FiBookmark, label : 'Saved questions', route : '/questions' },
+  { icon : FiBookmark, label : 'Saved questions', route : 'saved' },
   { icon : FiBell, label : 'Notifications', route : '/notification' },
   { icon : FiSettings, label : 'Settings', route : '/profile' },
 ]
@@ -29,10 +29,13 @@ const SwipeableTemporaryDrawer = ({
 
   const navigate = useNavigate()
   const [open, setOpen] = React.useState(false)
+  const state = useProgress()
+  const { streak } = summarize(state)
+  const saved = Object.keys(state.saved).length
 
   const go = (route : string) => {
     setOpen(false)
-    navigate(route)
+    navigate(route === 'saved' ? reviewLink('saved') : route)
   }
 
   const logout = () => {
@@ -48,20 +51,22 @@ const SwipeableTemporaryDrawer = ({
         open={open}
         onClose={()=>setOpen(false)}
         onOpen={()=>setOpen(true)}
-        PaperProps={{ sx : { width : 300, borderLeft : '1px solid #e8e8e8', boxShadow : 'none' } }}
+        transitionDuration={{ enter : 320, exit : 220 }}
+        SlideProps={{ easing : { enter : 'cubic-bezier(0.32, 0.72, 0, 1)', exit : 'cubic-bezier(0.32, 0.72, 0, 1)' } }}
+        PaperProps={{ sx : { width : 300, maxWidth : '88vw', borderLeft : '1px solid #e8e8e8', boxShadow : 'none' } }}
       >
         <div className='flex flex-col h-full p-5 gap-5' data-lenis-prevent>
           <div className='flex items-center gap-3'>
-            <kit.Avatar color='#202020' size={44} ring='transparent' className='!text-[14px]'>{profile.initials}</kit.Avatar>
+            <kit.Avatar color='#202020' size={44} ring='transparent' className='!text-[14px]'>{hasSession ? initialsOf(state.profile.name) : <FiUser size={18}/>}</kit.Avatar>
             <div className='flex flex-col min-w-0'>
-              <span className='text-[15px] font-bold text-ink truncate'>{hasSession ? profile.name : 'Guest'}</span>
-              <span className='text-[13px] text-ash truncate'>{hasSession ? `${profile.program} · ${profile.school}` : 'Log in to save progress'}</span>
+              <span className='text-[15px] font-bold text-ink truncate'>{hasSession ? state.profile.name : 'Guest'}</span>
+              <span className='text-[13px] text-ash truncate'>{hasSession ? [state.profile.program, state.profile.school].filter(Boolean).join(' · ') : 'Progress is saved on this device'}</span>
             </div>
           </div>
           {
-            hasSession &&
+            streak > 0 &&
             <div className='flex items-center gap-2 rounded-[12px] bg-mist border border-bone px-4 py-3 text-[13px] text-carbon'>
-              <HiFire className='text-[#fd9a46]' size={16}/> <b className='text-ink'>{profile.streak}-day streak</b> · keep it going
+              <HiFire className='text-[#fd9a46]' size={16}/> <b className='text-ink'>{streak}-day streak</b> · keep it going
             </div>
           }
           <nav className='flex flex-col gap-1'>
@@ -71,9 +76,10 @@ const SwipeableTemporaryDrawer = ({
                   key={link.label}
                   type='button'
                   onClick={()=>go(link.route)}
-                  className='flex items-center gap-3 rounded-[9px] px-3 py-[10px] text-[14px] font-medium text-carbon hover:bg-black/[0.04] transition-colors duration-150'
+                  className='flex items-center gap-3 rounded-[9px] px-3 py-[10px] text-[14px] font-medium text-carbon hover:bg-black/[0.04] active:scale-[0.98] transition-[background-color,transform] duration-150 focus-visible:outline-none focus-visible:shadow-[0_0_0_3px_rgba(0,145,255,0.35)]'
                 >
                   <link.icon size={16} className='text-ash'/> {link.label}
+                  {link.label === 'Saved questions' && saved > 0 && <span className='ml-auto font-mono text-[11px] text-ash tabular-nums'>{saved}</span>}
                 </button>
               ))
             }

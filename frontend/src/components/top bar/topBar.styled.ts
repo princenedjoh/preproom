@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { pressable } from "../../styles/kit";
 
 export const Main = styled.div.attrs({
     className : `Main w-full h-[64px] fixed top-0 left-0
@@ -6,7 +7,22 @@ export const Main = styled.div.attrs({
 })`
     color : ${({theme}) => theme.colors.text.dark.primary};
     border-bottom : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
-    background : ${({theme}) => `${theme.colors.background.light.white}cc`};
+    background : rgba(255, 255, 255, 0.72);
+    backdrop-filter : blur(20px) saturate(180%);
+    -webkit-backdrop-filter : blur(20px) saturate(180%);
+    @media (prefers-reduced-transparency : reduce) { background : #ffffff; backdrop-filter : none; }
+`
+
+export const SearchTrigger = styled.button.attrs({
+    className : `SearchTrigger inline-flex items-center gap-2 rounded-full h-9 px-[10px] lg:px-3 text-[13px] font-medium` as string
+})`
+    color : ${({theme}) => theme.colors2.gray.gray3};
+    background : ${({theme}) => theme.colors.background.light.primary};
+    border : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
+    ${pressable}
+    @media (hover : hover) and (pointer : fine) {
+        &:hover { color : ${({theme}) => theme.colors.main.primary}; border-color : ${({theme}) => theme.colors2.gray.gray5}; }
+    }
 `
 
 export const Inner = styled.div.attrs({
@@ -60,10 +76,12 @@ export const NavigationContainer = styled.div.attrs({
     font-weight : ${({active}) => active ? 600 : 500};
     color : ${({theme, active}) => active ? theme.colors.main.primary : theme.colors2.gray.gray3};
     background : ${({active}) => active ? 'rgba(0, 0, 0, 0.06)' : 'none'};
-    transition : background ${({theme}) => theme.motion.hover} ease, color ${({theme}) => theme.motion.hover} ease;
-    &:hover {
-        color : ${({theme}) => theme.colors.main.primary};
-        background : ${({active}) => active ? 'rgba(0, 0, 0, 0.06)' : 'rgba(0, 0, 0, 0.04)'};
+    ${pressable}
+    @media (hover : hover) and (pointer : fine) {
+        &:hover {
+            color : ${({theme}) => theme.colors.main.primary};
+            background : ${({active}) => active ? 'rgba(0, 0, 0, 0.06)' : 'rgba(0, 0, 0, 0.04)'};
+        }
     }
 `
 
@@ -74,10 +92,12 @@ export const AuthButton = styled.button.attrs({
     color : ${({theme, filled}) => filled ? theme.colors.text.light.white : theme.colors.main.primary};
     background : ${({theme, filled}) => filled ? theme.colors.main.primary : 'transparent'};
     border : ${({theme, filled}) => filled ? 'none' : `1px solid ${theme.colors.border.light.primary}`};
-    transition : opacity ${({theme}) => theme.motion.hover} ease, background ${({theme}) => theme.motion.hover} ease;
-    &:hover {
-        opacity : ${({filled}) => filled ? 0.85 : 1};
-        background : ${({filled}) => filled ? undefined : 'rgba(0, 0, 0, 0.04)'};
+    ${pressable}
+    @media (hover : hover) and (pointer : fine) {
+        &:hover {
+            opacity : ${({filled}) => filled ? 0.86 : 1};
+            background : ${({filled}) => filled ? undefined : 'rgba(0, 0, 0, 0.04)'};
+        }
     }
 `
 
@@ -117,9 +137,16 @@ export const SearchInput = styled.input.attrs({
 
 export const CourseSearch = styled.div.attrs({
    className : ` CourseSearch w-[240px] h-[320px] p-[12px] rounded-[12px] duration-300 absolute 
-   top-[34px] right-0 flex flex-col gap-[10px] overflow-scroll` as string
+   top-[34px] right-0 flex flex-col gap-[10px] overflow-auto` as string
 })<{visible? : boolean}>`
-    display : ${({visible}) => visible ? 'flex' : 'none'};
+    transform-origin : top right;
+    opacity : ${({visible}) => visible ? 1 : 0};
+    transform : ${({visible}) => visible ? 'scale(1)' : 'scale(0.96) translateY(-4px)'};
+    visibility : ${({visible}) => visible ? 'visible' : 'hidden'};
+    pointer-events : ${({visible}) => visible ? 'auto' : 'none'};
+    transition : ${({visible}) => visible
+        ? 'opacity 180ms cubic-bezier(0.23, 1, 0.32, 1), transform 180ms cubic-bezier(0.23, 1, 0.32, 1), visibility 0s'
+        : 'opacity 120ms ease-out, transform 120ms ease-out, visibility 0s 120ms'};
     border : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
     background : ${({theme}) => theme.colors2.shades.white};
     box-shadow : ${({theme}) => theme.shadows.screenshot};
@@ -130,6 +157,7 @@ export const MenuButton = styled.button.attrs({
 })`
     color : ${({theme}) => theme.colors.main.primary};
     border : ${({theme}) => `1px solid ${theme.colors.border.light.primary}`};
+    ${pressable}
 `
 
 export const MobileMenu = styled.div.attrs({
@@ -139,7 +167,7 @@ export const MobileMenu = styled.div.attrs({
     opacity : ${({open}) => open ? 1 : 0};
     transform : ${({open}) => open ? 'translateY(0)' : 'translateY(-8px)'};
     pointer-events : ${({open}) => open ? 'auto' : 'none'};
-    transition : opacity 0.25s cubic-bezier(0.33, 1, 0.68, 1), transform 0.25s cubic-bezier(0.33, 1, 0.68, 1);
+    transition : opacity 0.24s cubic-bezier(0.23, 1, 0.32, 1), transform 0.24s cubic-bezier(0.23, 1, 0.32, 1);
 `
 
 export const MobileLink = styled.button.attrs({
